@@ -1,0 +1,100 @@
+<h2>DESCRIPTION</h2>
+
+<em>t.rast.reclass</em> is a wrapper around the <em>r.reclass</em> module
+and creates a reclassified map for each registered map of a space time
+raster dataset and registers it in an output space time raster dataset.
+Metadata of the input space time raster dataset are transfered to the
+output space time raster dataset as far as possible. A new <em>title</em>
+and <em>description</em> can be assigned to the <em>output</em> space
+time raster dataset, if it does not exist. The reclassified maps can also
+be registered into an existing space time raster dataset if the
+<em>e-flag</em> is set.
+
+<p>
+This module is not sensitive to the current region and mask settings.
+
+<h2>NOTES</h2>
+Parallel processing is supported. Internally, several <em>r.reclass</em>
+modules will be started, depending on the number of specified parallel
+processes (<em>nprocs</em>) and the number of input maps to reclassify.
+<p>
+
+<h2>EXAMPLES</h2>
+
+<h3>Reclassification of monthly data into yearly data</h3>
+
+<div class="code"><pre>
+t.rast.reclass input=tempmean_monthly output=tempmean_yearly \
+                 basename=tempmean_year \
+                 granularity="1 years" method=average
+
+t.support input=tempmean_yearly \
+          title="Yearly precipitation" \
+          description="Aggregated precipitation dataset with yearly resolution"
+
+t.info tempmean_yearly
+ +-------------------- Space Time Raster Dataset -----------------------------+
+ |                                                                            |
+ +-------------------- Basic information -------------------------------------+
+ | Id: ........................ tempmean_yearly@climate_2000_2012
+ | Name: ...................... tempmean_yearly
+ | Mapset: .................... climate_2000_2012
+ | Creator: ................... lucadelu
+ | Temporal type: ............. absolute
+ | Creation time: ............. 2014-11-27 10:25:21.243319
+ | Modification time:.......... 2014-11-27 10:25:21.862136
+ | Semantic type:.............. mean
+ +-------------------- Absolute time -----------------------------------------+
+ | Start time:................. 2009-01-01 00:00:00
+ | End time:................... 2013-01-01 00:00:00
+ | Granularity:................ 1 year
+ | Temporal type of maps:...... interval
+ +-------------------- Spatial extent ----------------------------------------+
+ | North:...................... 320000.0
+ | South:...................... 10000.0
+ | East:.. .................... 935000.0
+ | West:....................... 120000.0
+ | Top:........................ 0.0
+ | Bottom:..................... 0.0
+ +-------------------- Metadata information ----------------------------------+
+ | Raster register table:...... raster_map_register_514082e62e864522a13c8123d1949dea
+ | North-South resolution min:. 500.0
+ | North-South resolution max:. 500.0
+ | East-west resolution min:... 500.0
+ | East-west resolution max:... 500.0
+ | Minimum value min:.......... 7.370747
+ | Minimum value max:.......... 8.81603
+ | Maximum value min:.......... 17.111387
+ | Maximum value max:.......... 17.915511
+ | Aggregation type:........... average
+ | Number of registered maps:.. 4
+ |
+ | Title: Yearly precipitation
+ | Monthly precipitation
+ | Description: Aggregated precipitation dataset with yearly resolution
+ | Dataset with monthly precipitation
+ | Command history:
+ | # 2014-11-27 10:25:21
+ | t.rast.aggregate input="tempmean_monthly"
+ |     output="tempmean_yearly" basename="tempmean_year" granularity="1 years"
+ |     method="average"
+ |
+ | # 2014-11-27 10:26:21
+ | t.support input=tempmean_yearly \
+ |        title="Yearly precipitation" \
+ |        description="Aggregated precipitation dataset with yearly resolution"
+ +----------------------------------------------------------------------------+
+</pre></div>
+
+<h2>SEE ALSO</h2>
+
+<em>
+<a href="r.reclass.html">r.reclass</a>,
+<a href="t.info.html">t.info</a>,
+</em>
+<p>
+<a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath
