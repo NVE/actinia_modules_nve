@@ -1,0 +1,109 @@
+<h2>DESCRIPTION</h2>
+
+<em>t.register.local</em> links all local raster data files in a given
+<em>input</em> directory, with a given <em>file_pattern</em>, and a given
+<em>suffix</em> to the GRASSDB. Time stamps are extracted from the file
+name with a user defined <em>time_format</em> regular expression.
+
+The <em>start_time</em> option allows to register only files newer than
+the given time stamp in ISO format (%Y%m%d) optionally including "%H:%M"
+
+A <em>semantic_labels</em> file can be used to filter bands in the
+input files and assign semantic labels to them.
+
+The resulting <em>output</em> SpaceTimeRasterDataset can be described with
+a <em>long_name</em> and units the raster data represent.
+
+In addition, <em>nodata</em> values of the source data and a <em>color</em>
+map can be defined
+
+The raster maps can also be registered into an existing SpaceTimeRasterDataset
+if the <em>e-flag</em> is set.
+
+<p>
+This module is not sensitive to the current region and mask settings.
+Parallel processing is supported, depending on the number of specified
+parallel processes (<em>nprocs</em>) and the number of input maps to
+register.
+<p>
+
+<h2>EXAMPLES</h2>
+
+<h3>Register Sentinel-2 snow cover data</h3>
+
+<div class="code"><pre>
+t.register.local --o -o suffix="nc" units="%" nprocs=5 time_format="%Y%m%d" \
+    input="/hdata/fjernanalyse2/Sentinel2/Sentinel2jobs/workdir/snowcover/" \
+	semantic_labels="/hdata/fjernanalyse3/CopernicusUtviklingOgTest/data_import/semantic_labels_snow_cover.txt" \
+	output=Sentinel_2_snow_cover \
+	long_name="Snow cover from Sentinel-2, classification and fraction"
+
+t.info Sentinel_2_snow_cover
+ +-------------------- Space Time Raster Dataset -----------------------------+
+ |                                                                            |
+ +-------------------- Basic information -------------------------------------+
+ | Id: ........................ Sentinel_2_snow_cover@Sentinel_2_snow_cover
+ | Name: ...................... Sentinel_2_snow_cover
+ | Mapset: .................... Sentinel_2_snow_cover
+ | Creator: ................... actiniad
+ | Temporal type: ............. absolute
+ | Creation time: ............. 2022-12-07 21:29:12.023462
+ | Temporal type: ............. absolute
+ | Creation time: ............. 2022-12-07 21:29:12.023462
+ | Modification time:.......... 2022-12-08 06:20:51.837265
+ | Semantic type:.............. mean
+ +-------------------- Absolute time -----------------------------------------+
+ | Start time:................. 2021-06-25 00:00:00
+ | End time:................... 2022-12-07 00:00:00
+ | Granularity:................ 1 day
+ | Temporal type of maps:...... point
+ +-------------------- Spatial extent ----------------------------------------+
+ | North:...................... 12833400.0
+ | South:...................... 6387540.0
+ | East:.. .................... 1283160.0
+ | West:....................... -196080.0
+ | Top:........................ 0.0
+ | Bottom:..................... 0.0
+ +-------------------- Metadata information ----------------------------------+
+ | Raster register table:...... raster_map_register_1d72255a0d074986af455ad279dda25b
+ | North-South resolution min:. 20.0
+ | North-South resolution max:. 20.0
+ | East-west resolution min:... 20.0
+ | East-west resolution max:... 20.0
+ | Minimum value min:.......... 0.0
+ | Minimum value max:.......... 100.0
+ | Maximum value min:.......... 0.0
+ | Maximum value max:.......... 100.0
+ | Aggregation type:........... None
+ | Number of semantic labels:.. 1
+ | Semantic labels:............ fractional_snow_cover
+ | Number of registered maps:.. 36236
+ |
+ | Title:
+ | Snow cover from Sentinel-2, classification and fraction
+ | Description:
+ | Snow cover from Sentinel-2, classification and fraction
+ | Command history:
+ | # 2022-12-07 21:29:12
+ | t.create type="strds" temporaltype="absolute"
+ |     semantictype="mean"
+ |     title="Snow cover from Sentinel-2, classification and fraction"
+ |     description="Snow cover from Sentinel-2, classification and fraction"
+ |     output="Sentinel_2_snow_cover" --v
+ |
+ +----------------------------------------------------------------------------+
+</pre></div>
+
+<h2>SEE ALSO</h2>
+
+<em>
+<a href="r.external.html">r.reclass</a>,
+<a href="t.create.html">t.info</a>,
+<a href="t.register.html">t.info</a>,
+</em>
+<p>
+<a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath
