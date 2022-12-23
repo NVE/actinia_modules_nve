@@ -26,12 +26,12 @@ Currently, the following parameters for com1DFA simulations are supported:
   <tr>
     <td>rho</td>
     <td>rho_kgPerSqM</td>
-    <td>Density of snow in kg/m3</td>
+    <td>Density of snow in <var>kg</var>/<var>m</var><sup>3</sup></td>
   </tr>
   <tr>
     <td>rhoEnt</td>
     <td>rhoEnt_kgPerSqM</td>
-    <td>Density of entrained snow in kg/m3</td>
+    <td>Density of entrained snow in <var>kg</var>/<var>m</var><sup>3</sup></td>
   </tr>
   <tr>
     <td>frictModel</td>
@@ -70,7 +70,7 @@ values to simulate for.
 
 <div class="code"><pre>
 r.avaframe.com1dfa --o -l elevation="DTM_10m@DTM" nprocs=8 format="csv" buffer=1500 \
-    release_area="https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmSamosAT/MapServer/0/query?where=objectid+%3D+1&outFields=*&f=json" \
+    release_area="https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmSamosAT/MapServer/0/query?where=objectid+%3D+1&amp;outFields=*&amp;f=json" \
     ppr="ppr" pft="pft" pfv="pfv"
 
 </pre></div>
