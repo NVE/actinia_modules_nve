@@ -36,7 +36,7 @@
 
 # %option
 # % key: release_area
-# % tpe: string
+# % type: string
 # % required: yes
 # % multiple: no
 # % description: Path or URL to OGR readable vector dataset with release area(s)
@@ -47,7 +47,7 @@
 
 # %option
 # % key: buffer
-# % tpe: integert
+# % type: integert
 # % multiple: no
 # % answer: 2000
 # % description: Buffer around release area for area of interest
@@ -63,7 +63,7 @@
 
 # %option
 # % key: pft
-# % tpe: string
+# % type: string
 # % required: yes
 # % multiple: no
 # % description: Name of the output imagery group for pft
@@ -71,7 +71,7 @@
 
 # %option
 # % key: pfv
-# % tpe: string
+# % type: string
 # % required: yes
 # % multiple: no
 # % description: Name of the output imagery group for pfv
@@ -79,7 +79,7 @@
 
 # %option
 # % key: format
-# % tpe: string
+# % type: string
 # % required: no
 # % multiple: no
 # % options: csv, json
