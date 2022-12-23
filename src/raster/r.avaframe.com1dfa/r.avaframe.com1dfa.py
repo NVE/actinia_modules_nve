@@ -47,7 +47,7 @@
 
 # %option
 # % key: buffer
-# % type: integert
+# % type: integer
 # % multiple: no
 # % answer: 2000
 # % description: Buffer around release area for area of interest
@@ -55,7 +55,7 @@
 
 # %option
 # % key: ppr
-# % tpe: string
+# % type: string
 # % required: yes
 # % multiple: no
 # % description: Name of the output imagery group for ppr
