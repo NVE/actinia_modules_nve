@@ -219,6 +219,7 @@ def main():
         "r.out.gdal",
         input=options["elevation"],
         output=str(avalanche_dir / "Inputs" / "raster.asc"),
+        nodata=-9999,
         format="AAIGrid",
         overwrite=True,
         verbose=True,
