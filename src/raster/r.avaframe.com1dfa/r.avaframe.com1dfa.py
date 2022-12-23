@@ -93,6 +93,7 @@
 import sys
 
 # Get ID, rho, rhoEnt, shape
+from functools import partial
 from pathlib import Path
 from multiprocessing import Pool
 
@@ -107,7 +108,7 @@ def write_avaframe_config(
     mesh_cell_size=None,
     friction_model="samosAT",
     release_thickness="0.5",
-    release_thickness_range_variation="+3.5$8",
+    # release_thickness_range_variation="+3.5$8",
 ):
     """Write Avaframe config file"""
     with open(config_file_path, "w", encoding="utf8") as cfg_file:
@@ -130,8 +131,8 @@ def write_avaframe_config(
                 line = "relThFromShp = False"
             elif line.startswith("relTh ="):
                 line = f"relTh = {release_thickness}"
-            elif line.startswith("relThRangeVariation ="):
-                line = f"relThRangeVariation = {release_thickness_range_variation}"
+            # elif line.startswith("relThRangeVariation ="):
+            #     line = f"relThRangeVariation = {release_thickness_range_variation}"
 
             cfg_file.write(line + "\n")
 
@@ -158,6 +159,36 @@ def import_result(asc_path):
     )
 
 
+def run_com1dfa(thickness, config_dict=None):
+    """Run com1DFA for thickness"""
+    thickness_str = str(thickness).replace(".", ".")
+    avalanche_dir = config_dict["avalanche_dir"]
+    # Create ini-file with configuration
+    cfg_ini_file = avalanche_dir / f"cfg_{thickness_str}.ini"
+    write_avaframe_config(
+        cfg_ini_file,
+        # density of snow [kg/m³]
+        rho=config_dict["rho_kgPerSqM"],
+        # density of entrained snow [kg/m³]
+        rho_ent=config_dict["rhoEnt_kgPerSqM"],
+        # friction model (samosAT, Coulomb, Voellmy)
+        friction_model=config_dict["frictModel"],
+        mesh_cell_size=config_dict["mesh_cell_size"],
+        release_thickness=thickness,
+        # release_thickness_range_variation="+3.5$8",
+    )
+
+    # Start logging
+    log = logUtils.initiateLogger(str(avalanche_dir), "r.avaframe.com1dfa")
+    log.info("MAIN SCRIPT")
+    log.info("Current avalanche: %s", str(avalanche_dir))
+
+    # call com1DFA and perform simulations
+    return com1DFA.com1DFAMain(
+        str(avalanche_dir), config_dict["main"], cfgFile=cfg_ini_file
+    )
+
+
 def main():
     """Run com1DFA simulation from Avaframe with selected configuration"""
     # options = {"elevation": "DTM_10m@DTM",
@@ -166,22 +197,26 @@ def main():
     #         "0/query?where=objectid+%3D+1&outFields=*&f=json",
     #     "buffer": 1000,
     # }
-
-    buffer = float(options["buffer"])
-
     friction_model_dict = {
         1: "samosAT",
         2: "Coulomb",
         3: "Voellmy",
     }
 
+    buffer = float(options["buffer"])
+
+    # Currently hardcoded settings
+    release_thicknesses = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
     release_name = "NonsnibbaRelease"
 
     # Get release area
     ogr_dataset = gdal.OpenEx(options["release_area"], gdal.OF_VECTOR)
     layer = ogr_dataset.GetLayerByIndex(0)
     release_extent = layer.GetExtent()  # Extent is west, east, south, north
-    config = layer.GetFeature(1)
+    config = dict(layer.GetFeature(1))
+
+    # Define directory for simulations
+    avalanche_dir = Path(gscript.tempfile(create=False))
 
     # Set relevant region from release area, buffer and DTM
     region = gscript.parse_command(
@@ -194,18 +229,27 @@ def main():
         w=release_extent[0] - buffer,
     )
 
-    # Define directory for simulations
-    avalanche_dir = Path(gscript.tempfile(create=False))
+    config["mesh_cell_size"] = region["nsres"]
+    config["avalanche_dir"] = avalanche_dir
+    config["frictModel"] = friction_model_dict[config["frictModel"]]
 
     # Configue avaframe
     config_main = cfgUtils.getGeneralConfig()
     config_main["FLAGS"]["savePlot"] = "False"
-    config_main["FLAGS"]["ReportDir"] = "False"
-    config_main["FLAGS"]["reportOneFile"] = "False"
+    # config_main["FLAGS"]["ReportDir"] = "False"
+    # config_main["FLAGS"]["reportOneFile"] = "False"
     config_main["MAIN"]["avalancheDir"] = str(avalanche_dir)
+
+    config["main"] = config_main
+
+    run_com1dfa_thickness = partial(run_com1dfa, config_dict=config)
 
     # Initialize project
     initializeProject.initializeFolderStruct(config_main["MAIN"]["avalancheDir"])
+
+    (avalanche_dir / "Outputs" / "com1DFA").mkdir(
+        mode=0o777, parents=True, exist_ok=True
+    )
 
     # Write release area to shape
     gdal.VectorTranslate(
@@ -225,41 +269,20 @@ def main():
         verbose=True,
     )
 
-    # Create ini-file with configuration
-    cfg_ini_file = avalanche_dir / "cfg.ini"
-    write_avaframe_config(
-        cfg_ini_file,
-        # density of snow [kg/m³]
-        rho=config["rho_kgPerSqM"],
-        # density of entrained snow [kg/m³]
-        rho_ent=config["rhoEnt_kgPerSqM"],
-        # friction model (samosAT, Coulomb, Voellmy)
-        friction_model=friction_model_dict[config["frictModel"]],
-        mesh_cell_size=region["nsres"],
-        release_thickness=float(config["snowDepth_cm"]) / 100.0,
-        release_thickness_range_variation="+3.5$8",
-    )
+    with Pool(min(int(options["nprocs"]), len(release_thicknesses))) as pool:
+        com1dfa_results_list = pool.map(run_com1dfa_thickness, release_thicknesses)
 
-    # Start logging
-    log = logUtils.initiateLogger(str(avalanche_dir), "r.avaframe")
-    log.info("MAIN SCRIPT")
-    log.info("Current avalanche: %s", str(avalanche_dir))
-
-    # call com1DFA and perform simulations
-    com1dfa_results = com1DFA.com1DFAMain(
-        str(avalanche_dir), config_main, cfgFile=cfg_ini_file
-    )
-
-    if options["format"] == "json":
-        print(com1dfa_results[3].to_json())
-    if options["format"] == "csv":
-        print(com1dfa_results[3].to_csv())
+    for com1dfa_results in com1dfa_results_list:
+        if options["format"] == "json":
+            print(com1dfa_results[3].to_json())
+        if options["format"] == "csv":
+            print(com1dfa_results[3].to_csv())
 
     # Link result ASCII files
     result_files = list(
         (avalanche_dir / "Outputs" / "com1DFA" / "peakFiles").glob("*.asc")
     )
-    with Pool(int(options["nprocs"])) as pool:
+    with Pool(min(int(options["nprocs"]), len(result_files))) as pool:
         if flags["l"]:
             pool.map(link_result, result_files)
         else:
