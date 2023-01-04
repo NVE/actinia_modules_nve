@@ -301,9 +301,7 @@ def main():
             print(com1dfa_results[3].to_csv())
 
     # Link result ASCII files
-    result_files = list(
-        (avalanche_dir / "Outputs" / "com1DFA" / "peakFiles").glob("*.asc")
-    )
+    result_files = list((avalanche_dir).rglob("**/Outputs/com1DFA/peakFiles/*.asc"))
     with Pool(min(int(options["nprocs"]), len(result_files))) as pool:
         if flags["l"]:
             pool.map(link_result, result_files)
