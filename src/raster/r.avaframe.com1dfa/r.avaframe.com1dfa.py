@@ -138,7 +138,7 @@ def write_avaframe_config(
 
 
 def link_result(asc_path):
-    # Export DTM to ASCII
+    """Link output ASCII to mapset"""
     Module(
         "r.external",
         flags="or",
@@ -149,7 +149,7 @@ def link_result(asc_path):
 
 
 def import_result(asc_path):
-    # Export DTM to ASCII
+    """Import output ASCII into mapset"""
     Module(
         "r.in.gdal",
         flags="o",
@@ -160,9 +160,26 @@ def import_result(asc_path):
 
 
 def run_com1dfa(thickness, config_dict=None):
-    """Run com1DFA for thickness"""
+    """Run com1DFA for given thickness"""
     thickness_str = str(thickness).replace(".", ".")
-    avalanche_dir = config_dict["avalanche_dir"]
+
+    avalanche_base_dir = config_dict["avalanche_dir"]
+    avalanche_dir = avalanche_base_dir / gscript.tempname(12)
+    config_dict["MAIN"]["avalancheDir"] = str(avalanche_dir)
+
+    # Create simulation directory
+    (avalanche_dir).mkdir(mode=0o777, parents=True, exist_ok=True)
+
+    # Initialize simulation
+    initializeProject.initializeFolderStruct(config_dict["MAIN"]["avalancheDir"])
+
+    # Link input data
+    for shape_file in avalanche_base_dir.glob(f"{config_dict['release_name']}*"):
+        shape_file.symlink_to(avalanche_dir / "Inputs" / "REL" / shape_file.name)
+    (avalanche_base_dir / "raster.asc").symlink_to(
+        avalanche_dir / "Inputs" / "raster.asc"
+    )
+
     # Create ini-file with configuration
     cfg_ini_file = avalanche_dir / f"cfg_{thickness_str}.ini"
     write_avaframe_config(
@@ -214,13 +231,18 @@ def main():
 
     # actinia requires input URLs to be quoted if eg & is used
     if not ogr_dataset:
-        ogr_dataset = gdal.OpenEx(parse.unquote(options["release_area"]), gdal.OF_VECTOR)
+        ogr_dataset = gdal.OpenEx(
+            parse.unquote(options["release_area"]), gdal.OF_VECTOR
+        )
     layer = ogr_dataset.GetLayerByIndex(0)
     release_extent = layer.GetExtent()  # Extent is west, east, south, north
     config = dict(layer.GetFeature(1))
 
     # Define directory for simulations
     avalanche_dir = Path(gscript.tempfile(create=False))
+
+    # Create simulation base directory
+    (avalanche_dir).mkdir(mode=0o777, parents=True, exist_ok=True)
 
     # Set relevant region from release area, buffer and DTM
     region = gscript.parse_command(
@@ -245,15 +267,9 @@ def main():
     config_main["MAIN"]["avalancheDir"] = str(avalanche_dir)
 
     config["main"] = config_main
+    config["release_name"] = release_name
 
     run_com1dfa_thickness = partial(run_com1dfa, config_dict=config)
-
-    # Initialize project
-    initializeProject.initializeFolderStruct(config_main["MAIN"]["avalancheDir"])
-
-    (avalanche_dir / "Outputs" / "com1DFA").mkdir(
-        mode=0o777, parents=True, exist_ok=True
-    )
 
     # Write release area to shape
     gdal.VectorTranslate(
