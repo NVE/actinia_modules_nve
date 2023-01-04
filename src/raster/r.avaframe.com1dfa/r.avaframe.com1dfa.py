@@ -171,13 +171,15 @@ def run_com1dfa(thickness, config_dict=None):
     (avalanche_dir).mkdir(mode=0o777, parents=True, exist_ok=True)
 
     # Initialize simulation
-    initializeProject.initializeFolderStruct(config_dict["main"]["MAIN"]["avalancheDir"])
+    initializeProject.initializeFolderStruct(
+        config_dict["main"]["MAIN"]["avalancheDir"]
+    )
 
     # Link input data
     for shape_file in avalanche_base_dir.glob(f"{config_dict['release_name']}*"):
-        shape_file.symlink_to(avalanche_dir / "Inputs" / "REL" / shape_file.name)
-    (avalanche_base_dir / "raster.asc").symlink_to(
-        avalanche_dir / "Inputs" / "raster.asc"
+        (avalanche_dir / "Inputs" / "REL" / shape_file.name).symlink_to(shape_file)
+    (avalanche_dir / "Inputs" / "raster.asc").symlink_to(
+        avalanche_base_dir / "raster.asc"
     )
 
     # Create ini-file with configuration
