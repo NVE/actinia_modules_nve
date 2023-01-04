@@ -263,7 +263,7 @@ def main():
 
     # Configue avaframe
     config_main = cfgUtils.getGeneralConfig()
-    config_main["FLAGS"]["savePlot"] = "False"
+    # config_main["FLAGS"]["savePlot"] = "False"
     # config_main["FLAGS"]["ReportDir"] = "False"
     # config_main["FLAGS"]["reportOneFile"] = "False"
     config_main["MAIN"]["avalancheDir"] = str(avalanche_dir)
