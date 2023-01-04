@@ -92,10 +92,10 @@
 
 import sys
 
-# Get ID, rho, rhoEnt, shape
 from functools import partial
 from pathlib import Path
 from multiprocessing import Pool
+from urllib import parse
 
 # Local imports
 import grass.script as gscript
@@ -211,6 +211,10 @@ def main():
 
     # Get release area
     ogr_dataset = gdal.OpenEx(options["release_area"], gdal.OF_VECTOR)
+
+    # actinia requires input URLs to be quoted if eg & is used
+    if not ogr_dataset:
+        ogr_dataset = gdal.OpenEx(parse.unquote(options["release_area"]), gdal.OF_VECTOR)
     layer = ogr_dataset.GetLayerByIndex(0)
     release_extent = layer.GetExtent()  # Extent is west, east, south, north
     config = dict(layer.GetFeature(1))
