@@ -273,7 +273,7 @@ def main():
 
     # Write release area to shape
     gdal.VectorTranslate(
-        str(avalanche_dir / "Inputs" / "REL" / f"{release_name}.shp"),
+        str(avalanche_dir / f"{release_name}.shp"),
         ogr_dataset,
         options='-f "ESRI Shapefile"',
     )
@@ -282,7 +282,7 @@ def main():
     Module(
         "r.out.gdal",
         input=options["elevation"],
-        output=str(avalanche_dir / "Inputs" / "raster.asc"),
+        output=str(avalanche_dir / "raster.asc"),
         nodata=-9999,
         format="AAIGrid",
         overwrite=True,
