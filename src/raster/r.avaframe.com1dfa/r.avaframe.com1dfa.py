@@ -165,13 +165,13 @@ def run_com1dfa(thickness, config_dict=None):
 
     avalanche_base_dir = config_dict["avalanche_dir"]
     avalanche_dir = avalanche_base_dir / gscript.tempname(12)
-    config_dict["MAIN"]["avalancheDir"] = str(avalanche_dir)
+    config_dict["main"]["MAIN"]["avalancheDir"] = str(avalanche_dir)
 
     # Create simulation directory
     (avalanche_dir).mkdir(mode=0o777, parents=True, exist_ok=True)
 
     # Initialize simulation
-    initializeProject.initializeFolderStruct(config_dict["MAIN"]["avalancheDir"])
+    initializeProject.initializeFolderStruct(config_dict["main"]["MAIN"]["avalancheDir"])
 
     # Link input data
     for shape_file in avalanche_base_dir.glob(f"{config_dict['release_name']}*"):
