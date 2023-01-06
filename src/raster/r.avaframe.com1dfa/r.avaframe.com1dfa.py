@@ -127,6 +127,8 @@ def write_avaframe_config(
                 line = f"frictModel = {friction_model}"
             elif line.startswith("meshCellSize =") and mesh_cell_size:
                 line = f"meshCellSize = {mesh_cell_size}"
+            elif line.startswith("sphKernelRadius =") and mesh_cell_size:
+                line = f"sphKernelRadius = {mesh_cell_size}"
             elif line.startswith("relThFromShp ="):
                 line = "relThFromShp = False"
             elif line.startswith("relTh ="):
@@ -224,10 +226,6 @@ def main():
 
     buffer = float(options["buffer"])
 
-    # Currently hardcoded settings
-    release_thicknesses = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
-    release_name = "NonsnibbaRelease"
-
     # Get release area
     ogr_dataset = gdal.OpenEx(options["release_area"], gdal.OF_VECTOR)
 
@@ -239,6 +237,10 @@ def main():
     layer = ogr_dataset.GetLayerByIndex(0)
     release_extent = layer.GetExtent()  # Extent is west, east, south, north
     config = dict(layer.GetFeature(1))
+
+    # Currently hardcoded settings
+    release_thicknesses = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
+    release_name = f"com1DFA_{config['OBJECTID']}"
 
     # Define directory for simulations
     avalanche_dir = Path(gscript.tempfile(create=False))
@@ -300,7 +302,7 @@ def main():
         if options["format"] == "csv":
             print(com1dfa_results[3].to_csv())
 
-    # Link result ASCII files
+    # Link or import result ASCII files
     result_files = list((avalanche_dir).rglob("**/Outputs/com1DFA/peakFiles/*.asc"))
     with Pool(min(int(options["nprocs"]), len(result_files))) as pool:
         if flags["l"]:
@@ -322,16 +324,6 @@ def main():
                 ]
             ),
         )
-        # Module(
-        #     "r.out.gdal",
-        #     flags="cmf",
-        #     input=result_type,
-        #     output=str(avalanche_dir / f"{result_type}.tif"),
-        #     format="COG",
-        #     type="Float32",
-        #     createopt="PREDICTOR=FLOATING_POINT",
-        #     overwrite=True,
-        # )
 
 
 if __name__ == "__main__":
