@@ -236,7 +236,7 @@ def main():
         )
     layer = ogr_dataset.GetLayerByIndex(0)
     release_extent = layer.GetExtent()  # Extent is west, east, south, north
-    config = dict(layer.GetFeature(1))
+    config = dict(layer.GetNextFeature())  # first feature contains config attributes
 
     # Currently hardcoded settings
     release_thicknesses = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
