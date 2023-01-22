@@ -161,6 +161,44 @@ def import_result(asc_path):
     )
 
 
+def convert_result(asc_path, config=None, format="GTiff", directory="/tmp"):
+    """Convert ascii file to GeoTiff"""
+    result_prefix = {
+        "pft": "MaxFlowThickness",
+        "pfv": "MaxFlowVelocity",
+        "ppr": "MaxPressure",
+    }
+    mapname = asc_path.stem
+    # {Produktnavn}_{objectid}_{snowDepth_cm}_{rho_kgPerSqM}_{rhoEnt_kgPerSqM}_{frictModel}.tif
+    gtiff_name = "_".join(
+        [
+            result_prefix[mapname[-3:]],
+            str(config["OBJECTID"]),
+            str(config["snowDepth_cm"]),
+            str(config["rho_kgPerSqM"]),
+            str(config["rhoEnt_kgPerSqM"]),
+            str(config["frictModel"]),
+        ]
+    )
+    Module(
+        "r.external",
+        flags="or",
+        input=str(asc_path),
+        output=mapname,
+        quiet=True,
+    )
+    Module(
+        "r.out.gdal",
+        flags="f",
+        input=mapname,
+        output=str(Path(directory) / f"{gtiff_name}.tif"),
+        format="GTiff",
+        createopt="COMPRESS=LZW,PREDICTOR=3",
+        type="Float32",
+    )
+    return 0
+
+
 def run_com1dfa(thickness, config_dict=None):
     """Run com1DFA for given thickness"""
     thickness_str = str(thickness).replace(".", ".")
@@ -193,7 +231,7 @@ def run_com1dfa(thickness, config_dict=None):
         # density of entrained snow [kg/m³]
         rho_ent=config_dict["rhoEnt_kgPerSqM"],
         # friction model (samosAT, Coulomb, Voellmy)
-        friction_model=config_dict["frictModel"],
+        friction_model=config_dict["frictModel_name"],
         mesh_cell_size=config_dict["mesh_cell_size"],
         release_thickness=thickness,
         # release_thickness_range_variation="+3.5$8",
@@ -219,9 +257,9 @@ def main():
     #     "buffer": 1000,
     # }
     friction_model_dict = {
-        1: "samosAT",
-        2: "Coulomb",
-        3: "Voellmy",
+        0: "samosAT",
+        1: "Coulomb",
+        2: "Voellmy",
     }
 
     buffer = float(options["buffer"])
@@ -239,7 +277,12 @@ def main():
     config = dict(layer.GetNextFeature())  # first feature contains config attributes
 
     # Currently hardcoded settings
-    release_thicknesses = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
+    if config["multipleSnowDepth_cm"]:
+        release_thicknesses = list(
+            map(float, config["multipleSnowDepth_cm"].split(","))
+        )
+    else:
+        release_thicknesses = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
     release_name = f"com1DFA_{config['OBJECTID']}"
 
     # Define directory for simulations
@@ -261,12 +304,12 @@ def main():
 
     config["mesh_cell_size"] = region["nsres"]
     config["avalanche_dir"] = avalanche_dir
-    config["frictModel"] = friction_model_dict[config["frictModel"]]
+    config["frictModel_name"] = friction_model_dict[config["frictModel"]]
 
     # Configue avaframe
     config_main = cfgUtils.getGeneralConfig()
-    # config_main["FLAGS"]["savePlot"] = "False"
-    # config_main["FLAGS"]["ReportDir"] = "False"
+    config_main["FLAGS"]["savePlot"] = "False"
+    config_main["FLAGS"]["createReport"] = "False"
     # config_main["FLAGS"]["reportOneFile"] = "False"
     config_main["MAIN"]["avalancheDir"] = str(avalanche_dir)
 
@@ -296,34 +339,48 @@ def main():
     with Pool(min(int(options["nprocs"]), len(release_thicknesses))) as pool:
         com1dfa_results_list = pool.map(run_com1dfa_thickness, release_thicknesses)
 
-    for com1dfa_results in com1dfa_results_list:
+    if options["format"]:
+        import pandas as pd
+
+        com1dfa_results_pd = pd.concat(
+            [com1dfa_results[3] for com1dfa_results in com1dfa_results_list]
+        )
         if options["format"] == "json":
-            print(com1dfa_results[3].to_json())
+            print(com1dfa_results_pd.to_json())
         if options["format"] == "csv":
-            print(com1dfa_results[3].to_csv())
+            print(com1dfa_results_pd.to_csv())
 
     # Link or import result ASCII files
     result_files = list((avalanche_dir).rglob("**/Outputs/com1DFA/peakFiles/*.asc"))
     with Pool(min(int(options["nprocs"]), len(result_files))) as pool:
         if flags["l"]:
             pool.map(link_result, result_files)
+        if flags["e"]:
+            convert_result_gtiff = partial(
+                convert_result,
+                config=config,
+                format="GTiff",
+                directory=options["export_directory"],
+            )
+            pool.map(convert_result_gtiff, result_files)
         else:
             pool.map(import_result, result_files)
 
     # Create imagery group from results
-    for result_type in ["ppr", "pft", "pfv"]:
-        Module(
-            "i.group",
-            group=result_type,
-            subgroup=result_type,
-            input=",".join(
-                [
-                    result_file.stem
-                    for result_file in result_files
-                    if result_file.stem.endswith(result_type)
-                ]
-            ),
-        )
+    if not flags["e"]:
+        for result_type in ["ppr", "pft", "pfv"]:
+            Module(
+                "i.group",
+                group=result_type,
+                subgroup=result_type,
+                input=",".join(
+                    [
+                        result_file.stem
+                        for result_file in result_files
+                        if result_file.stem.endswith(result_type)
+                    ]
+                ),
+            )
 
 
 if __name__ == "__main__":
