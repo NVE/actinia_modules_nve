@@ -90,7 +90,6 @@
 # % required: no
 # % multiple: no
 # % options: csv, json
-# % answer: csv
 # % description: Format for output of simulation report to stdout
 # %end
 
@@ -151,6 +150,7 @@ def write_avaframe_config(
             #     line = f"relThRangeVariation = {release_thickness_range_variation}"
 
             cfg_file.write(line + "\n")
+    return 0
 
 
 def link_result(asc_path):
@@ -162,6 +162,7 @@ def link_result(asc_path):
         output=asc_path.stem,
         quiet=True,
     )
+    return 0
 
 
 def import_result(asc_path):
@@ -173,9 +174,12 @@ def import_result(asc_path):
         output=asc_path.stem,
         quiet=True,
     )
+    return 0
 
 
-def convert_result(asc_path, config=None, format="GTiff", directory="/tmp"):
+def convert_result(
+    asc_path, config=None, results_df=None, format="GTiff", directory="/tmp"
+):
     """Convert ascii file to GeoTiff"""
     result_prefix = {
         "pft": "MaxFlowThickness",
@@ -188,7 +192,13 @@ def convert_result(asc_path, config=None, format="GTiff", directory="/tmp"):
         [
             result_prefix[mapname[-3:]],
             str(config["OBJECTID"]),
-            str(config["snowDepth_cm"]),
+            str(
+                [
+                    int(results_df.loc[idx] * 100)
+                    for idx in results_df.index
+                    if idx in mapname
+                ][0]
+            ),
             str(config["rho_kgPerSqM"]),
             str(config["rhoEnt_kgPerSqM"]),
             str(config["frictModel"]),
@@ -363,12 +373,12 @@ def main():
     with Pool(min(int(options["nprocs"]), len(release_thicknesses))) as pool:
         com1dfa_results_list = pool.map(run_com1dfa_thickness, release_thicknesses)
 
-    if options["format"]:
-        import pandas as pd
+    com1dfa_results_pd = pd.concat(
+        [com1dfa_results[3] for com1dfa_results in com1dfa_results_list]
+    )
 
-        com1dfa_results_pd = pd.concat(
-            [com1dfa_results[3] for com1dfa_results in com1dfa_results_list]
-        )
+    if options["format"]:
+
         if options["format"] == "json":
             print(com1dfa_results_pd.to_json())
         if options["format"] == "csv":
@@ -380,6 +390,7 @@ def main():
         if options["export_directory"]:
             convert_result_gtiff = partial(
                 convert_result,
+                results_df=com1dfa_results_pd["relTh"],
                 config=config,
                 format="GTiff",
                 directory=options["export_directory"],
@@ -391,7 +402,7 @@ def main():
             pool.map(import_result, result_files)
 
     # Create imagery group from results
-    if not flags["e"]:
+    if not options["export_directory"]:
         for result_type in ["ppr", "pft", "pfv"]:
             Module(
                 "i.group",
@@ -424,5 +435,9 @@ if __name__ == "__main__":
         from osgeo import gdal
     except ImportError:
         gs.fatal(_("Unable to load GDAL library"))
+    try:
+        import pandas as pd
+    except ImportError:
+        gs.fatal(_("Unable to load pandas library"))
 
     sys.exit(main())
