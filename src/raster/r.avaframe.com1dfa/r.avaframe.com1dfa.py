@@ -108,7 +108,7 @@ from multiprocessing import Pool
 from urllib import parse
 
 # Local imports
-import grass.script as gscript
+import grass.script as gs
 
 
 def write_avaframe_config(
@@ -214,7 +214,7 @@ def run_com1dfa(thickness, config_dict=None):
     thickness_str = str(thickness).replace(".", ".")
 
     avalanche_base_dir = config_dict["avalanche_dir"]
-    avalanche_dir = avalanche_base_dir / gscript.tempname(12)
+    avalanche_dir = avalanche_base_dir / gs.tempname(12)
     config_dict["main"]["MAIN"]["avalancheDir"] = str(avalanche_dir)
 
     # Create simulation directory
@@ -276,11 +276,11 @@ def main():
 
     if options["export_directory"]:
         if not Path(options["export_directory"]).exists():
-            gscript.fatal(
+            gs.fatal(
                 _("Directory <{}> does not exist".format(options["export_directory"]))
             )
         if not os.access(options["export_directory"], os.W_OK):
-            gscript.fatal(
+            gs.fatal(
                 _("Directory <{}> is not writable".format(options["export_directory"]))
             )
 
@@ -306,13 +306,13 @@ def main():
     release_name = f"com1DFA_{config['OBJECTID']}"
 
     # Define directory for simulations
-    avalanche_dir = Path(gscript.tempfile(create=False))
+    avalanche_dir = Path(gs.tempfile(create=False))
 
     # Create simulation base directory
     (avalanche_dir).mkdir(mode=0o777, parents=True, exist_ok=True)
 
     # Set relevant region from release area, buffer and DTM
-    region = gscript.parse_command(
+    region = gs.parse_command(
         "g.region",
         flags="g",
         align=options["elevation"],
@@ -404,7 +404,7 @@ def main():
 
 
 if __name__ == "__main__":
-    options, flags = gscript.parser()
+    options, flags = gs.parser()
 
     # lazy imports
     from grass.pygrass.modules.interface import Module
@@ -415,10 +415,10 @@ if __name__ == "__main__":
         from avaframe.in3Utils import logUtils
         from avaframe.in3Utils import cfgUtils
     except ImportError:
-        gscript.fatal(_("Unable to load avaframe library"))
+        gs.fatal(_("Unable to load avaframe library"))
     try:
         from osgeo import gdal
     except ImportError:
-        gscript.fatal(_("Unable to load GDAL library"))
+        gs.fatal(_("Unable to load GDAL library"))
 
     sys.exit(main())
