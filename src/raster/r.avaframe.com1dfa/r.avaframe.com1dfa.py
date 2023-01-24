@@ -55,13 +55,15 @@
 
 # %option G_OPT_M_DIR
 # % key: export_directory
+# % required: no
+# % multiple: no
 # % description: Directory where resulting raster maps should be stored as GeoTiff
 # %end
 
 # %option
 # % key: ppr
 # % type: string
-# % required: yes
+# % required: no
 # % multiple: no
 # % description: Name of the output imagery group for ppr
 # %end
@@ -69,7 +71,7 @@
 # %option
 # % key: pft
 # % type: string
-# % required: yes
+# % required: no
 # % multiple: no
 # % description: Name of the output imagery group for pft
 # %end
@@ -77,7 +79,7 @@
 # %option
 # % key: pfv
 # % type: string
-# % required: yes
+# % required: no
 # % multiple: no
 # % description: Name of the output imagery group for pfv
 # %end
@@ -97,6 +99,8 @@
 
 # %rules
 # % excludes: export_directory,pft,pfv,ppr
+# % required: export_directory,pft,pfv,ppr
+# % collective: pft,pfv,ppr
 # %end
 
 import os
