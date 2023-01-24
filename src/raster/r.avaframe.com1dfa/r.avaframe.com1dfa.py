@@ -53,6 +53,11 @@
 # % description: Buffer around release area for area of interest
 # %end
 
+# %option G_OPT_M_DIR
+# % key: export_directory
+# % description: Directory where resulting raster maps should be stored as GeoTiff
+# %end
+
 # %option
 # % key: ppr
 # % type: string
@@ -90,6 +95,7 @@
 # %option G_OPT_M_NPROCS
 # %end
 
+import os
 import sys
 
 from functools import partial
@@ -264,6 +270,16 @@ def main():
 
     buffer = float(options["buffer"])
 
+    if options["export_directory"]:
+        if not Path(options["export_directory"]).exists():
+            gscript.fatal(
+                _("Directory <{}> does not exist".format(options["export_directory"]))
+            )
+        if not os.access(options["export_directory"], os.W_OK):
+            gscript.fatal(
+                _("Directory <{}> is not writable".format(options["export_directory"]))
+            )
+
     # Get release area
     ogr_dataset = gdal.OpenEx(options["release_area"], gdal.OF_VECTOR)
 
@@ -353,9 +369,7 @@ def main():
     # Link or import result ASCII files
     result_files = list((avalanche_dir).rglob("**/Outputs/com1DFA/peakFiles/*.asc"))
     with Pool(min(int(options["nprocs"]), len(result_files))) as pool:
-        if flags["l"]:
-            pool.map(link_result, result_files)
-        if flags["e"]:
+        if options["export_directory"]:
             convert_result_gtiff = partial(
                 convert_result,
                 config=config,
@@ -363,6 +377,8 @@ def main():
                 directory=options["export_directory"],
             )
             pool.map(convert_result_gtiff, result_files)
+        elif flags["l"]:
+            pool.map(link_result, result_files)
         else:
             pool.map(import_result, result_files)
 
