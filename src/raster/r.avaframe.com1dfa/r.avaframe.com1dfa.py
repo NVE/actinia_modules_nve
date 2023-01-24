@@ -95,6 +95,10 @@
 # %option G_OPT_M_NPROCS
 # %end
 
+# %rules
+# % excludes: export_directory,pft,pfv,ppr
+# %end
+
 import os
 import sys
 
