@@ -312,9 +312,10 @@ def main():
 
     # Currently hardcoded settings
     if config["multipleSnowDepth_cm"]:
-        release_thicknesses = list(
-            map(float, config["multipleSnowDepth_cm"].split(","))
-        )
+        release_thicknesses = [
+            float(snow_depth) / 100.0
+            for snow_depth in config["multipleSnowDepth_cm"].split(",")
+        ]
     else:
         release_thicknesses = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
     release_name = f"com1DFA_{config['OBJECTID']}"
