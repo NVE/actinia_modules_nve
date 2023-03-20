@@ -505,7 +505,7 @@ def import_data(import_tuple, metadata_dict=None, modules_dict=None):
     date_pattern = f".*({strftime_to_regex(metadata_dict['time_format'])}).*"
     time_string = re.match(date_pattern, str(file_path)).groups()[0]
     time_stamp = datetime.strptime(time_string, metadata_dict["time_format"])
-    time_stamp_iso = time_stamp.isoformat(sep=' ')
+    time_stamp_iso = time_stamp.isoformat(sep=" ")
     suffix = f"_{import_tuple[2]}" if import_tuple[2] else ""
     output_name = (
         f"map_{file_path.stem}{suffix}"
@@ -567,7 +567,6 @@ def main():
                     "Please make sure it is provided in ISO format (YYYY-MM-DD HH:MM:SS)"
                 )
             )
-
 
     if options["semantic_labels"]:
         semantic_labels = parse_semantic_label_conf(options["semantic_labels"], 8)
