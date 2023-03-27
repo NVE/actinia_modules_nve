@@ -1,0 +1,48 @@
+<h2>DESCRIPTION</h2>
+
+<em>t.rast.stats</em> is a wrapper around the <em>r.stats</em> module
+and computes area statistics for each registered map of a space time
+raster dataset. Most flags of <em>r.stats</em> are supported.
+
+<p>
+    A <em>zone</em> map can be specified to compute statistics for each of the
+zones. The zone map should be of CELL type, otherwise flags for handling of
+floating point data should be specified.
+
+<p>
+    Starting with GRASS GIS version 8.3 the computational region can be used for
+spatially selecting maps in the SpaceTimeRasterDataset to process. To do so,
+operators can be chosen in the <em>region_relation</em> option.
+
+<p>
+    Computational region <em>-R</em>
+
+<h2>NOTES</h2>
+Parallel processing is supported in <em>t.rast.stats</em>. Internally,
+several <em>r.stats</em> modules will be started, depending on the number
+of specified parallel processes (<em>nprocs</em>) and the number of input
+maps to reclassify.
+
+<p>
+<em>region_relation</em> is only supported with GRASS GIS 8.3 or newer.
+
+<h2>EXAMPLES</h2>
+
+<h3>Statistics of monthly data</h3>
+
+<div class="code"><pre>
+t.rast.stats input=tempmean_monthly zone=tempmean_year
+
+
+<h2>SEE ALSO</h2>
+
+<em>
+<a href="r.stats.html">r.stats</a>,
+<a href="t.rast.univar.html">t.rast.univar</a>,
+</em>
+<p>
+<a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath
