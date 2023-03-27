@@ -230,8 +230,6 @@ def main():
     input = options["input"]
     output = options["output"]
     where = options["where"]
-    # base = options["basename"]
-    register_null = flags["n"]
     nprocs = int(options["nprocs"])
 
     # Initialize TGIS
@@ -250,7 +248,8 @@ def main():
 
     if not map_list:
         dbif.close()
-        gs.fatal(_("Space time raster dataset <{}> is empty".format(input)))
+        gs.warning(_("Space time raster dataset <{}> is empty".format(input)))
+        return
 
     # We will create the strds later, but need to check here
     tgis.check_new_stds(output, "strds", dbif, gs.overwrite())
@@ -325,9 +324,6 @@ def main():
             file=register_file_path,
             dbif=dbif,
         )
-
-        # Update the raster metadata table entries with aggregation type
-        output_strds.update_from_registered_maps(dbif=dbif)
 
     else:
         gs.warning(_("No output maps to register"))
