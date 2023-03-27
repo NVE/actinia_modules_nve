@@ -10,7 +10,6 @@ for details.
 import os
 
 import grass.pygrass.modules as pymod
-import grass.temporal as tgis
 from grass.gunittest.case import TestCase
 from grass.gunittest.gmodules import SimpleModule
 
@@ -24,31 +23,19 @@ class TestAggregationAbsolute(TestCase):
         cls.use_temp_region()
         cls.runModule("g.region", s=0, n=80, w=0, e=120, b=0, t=50, res=10, res3=10)
         cls.runModule("r.mapcalc", expression="a1 = 100", overwrite=True)
-        cls.runModule("r.mapcalc", expression="a2 = 200", overwrite=True)
-        cls.runModule("r.mapcalc", expression="a3 = 300", overwrite=True)
-        cls.runModule("r.mapcalc", expression="a4 = 400", overwrite=True)
-        cls.runModule("r.mapcalc", expression="a5 = 500", overwrite=True)
-        cls.runModule("r.mapcalc", expression="a6 = 600", overwrite=True)
-        cls.runModule("r.mapcalc", expression="a7 = null()", overwrite=True)
 
+        # Import testdata
         cls.runModule(
-            "t.create",
-            type="strds",
-            temporaltype="absolute",
-            output="A",
-            title="A test",
-            description="A test",
+            "r.in.gdal",
+            input="data/DTM_10m.tif",
+            output="DTM_10m",
             overwrite=True,
         )
 
         cls.runModule(
-            "t.register",
-            flags="i",
-            type="raster",
-            input="A",
-            maps="a1,a2,a3,a4,a5,a6,a7",
-            start="2001-01-15 12:05:45",
-            increment="14 days",
+            "v.in.ogr",
+            input="./data/releasearea.gpkg",
+            output="releasearea",
             overwrite=True,
         )
 
@@ -65,250 +52,26 @@ class TestAggregationAbsolute(TestCase):
     def test_reclass_with_null_maps(self):
         """Reclassify and register also maps with only NoData"""
         self.assertModule(
-            "t.rast.reclass",
-            flags="n",
-            input="A",
-            output="B",
-            rules="-",
-            title="B",
-            description="B",
-            nprocs=1,
-            stdin_="100 = 1\n200 = 2\n* = NULL",
-            semantic_label="label_a",
+            "r.avaframe.com1DFA",
+            flags="l",
+            release_area="./data/releasearea.gpkg",
+            elevation="DTM_10m",
+            buffer=2000,
+            nprocs=2,
+            ppr="ppr",
+            pft="pft",
+            pfv="pfv",
             overwrite=True,
         )
-        info = SimpleModule(
-            "t.info",
-            flags="g",
-            input="B",
-        ).run()
-        print(info.outputs.stdout)
 
-        list_mod1 = SimpleModule(
-            "g.list",
-            type="raster",
-            pattern="*_label_a",
-        ).run()
+        for result_group in []:
+            info = SimpleModule(
+                "i.group",
+                flags="g",
+                input=result_group,
+            ).run()
+            print(info.outputs.stdout)
 
-    def test_reclass_no_null_maps(self):
-        """Reclassify and not register maps with only NoData"""
-        self.assertModule(
-            "t.rast.reclass",
-            input="A",
-            output="B",
-            rules="-",
-            title="B",
-            description="B",
-            nprocs=1,
-            stdin_="100 = 1\n200 = 2\n* = NULL",
-            overwrite=True,
-            semantic_label="label_b",
-        )
-        info = SimpleModule(
-            "t.info",
-            flags="g",
-            input="B",
-        ).run()
-        print(info.outputs.stdout)
-
-        list_mod2 = SimpleModule(
-            "g.list",
-            type="raster",
-            pattern="*_label_b",
-        ).run()
-
-    def test_reclass_extend_strds(self):
-        """Reclassify and not register maps with only NoData"""
-        self.assertModule(
-            "t.rast.reclass",
-            input="A",
-            output="B",
-            rules="-",
-            title="B",
-            description="B",
-            nprocs=1,
-            stdin_="100 = 1\n200 = 2\n* = NULL",
-            overwrite=True,
-            semantic_label="label_b",
-        )
-        self.assertModule(
-            "t.rast.reclass",
-            flags="e",
-            input="A",
-            output="B",
-            rules="-",
-            nprocs=1,
-            stdin_="300 = 3\n300 = 4\n* = NULL",
-            overwrite=True,
-            semantic_label="label_c",
-        )
-        info = SimpleModule(
-            "t.info",
-            flags="g",
-            input="B",
-        ).run()
-        print(info.outputs.stdout)
-
-        # tinfo_string = """start_time='2001-01-15 00:00:00'
-        # end_time='2001-04-25 00:00:00'
-        # granularity='2 days'
-        # aggregation_type=average
-        # number_of_maps=50
-        # map_time=interval
-        # min_min=100.0
-        # min_max=600.0
-        # max_min=100.0
-        # max_max=600.0"""
-
-        # info = SimpleModule("t.info", flags="g", input="B")
-        # # info.run()
-        # # print info.outputs.stdout
-        # self.assertModuleKeyValue(
-        # module=info, reference=tinfo_string, precision=2, sep="="
-        # )
-
-    # def test_aggregation_1month(self):
-    # """Aggregation one month"""
-    # self.assertModule(
-    # "t.rast.aggregate",
-    # input="A",
-    # output="B",
-    # basename="b",
-    # granularity="1 months",
-    # method="maximum",
-    # sampling=["contains"],
-    # file_limit=0,
-    # nprocs=3,
-    # )
-
-    # tinfo_string = """start_time='2001-01-01 00:00:00'
-    # end_time='2001-04-01 00:00:00'
-    # granularity='1 month'
-    # map_time=interval
-    # aggregation_type=maximum
-    # number_of_maps=3
-    # min_min=100.0
-    # min_max=500.0
-    # max_min=100.0
-    # max_max=500.0"""
-
-    # info = SimpleModule("t.info", flags="g", input="B")
-    # # info.run()
-    # # print info.outputs.stdout
-    # self.assertModuleKeyValue(
-    # module=info, reference=tinfo_string, precision=2, sep="="
-    # )
-
-    # # Check the map names are correct
-    # lister = SimpleModule("t.rast.list", input="B", columns="name", flags="u")
-    # self.runModule(lister)
-    # # print lister.outputs.stdout
-    # maps = (
-    # "b_2001_01"
-    # + os.linesep
-    # + "b_2001_02"
-    # + os.linesep
-    # + "b_2001_03"
-    # + os.linesep
-    # )
-    # self.assertEqual(maps, lister.outputs.stdout)
-
-    # def test_aggregation_1month_time(self):
-    # """Aggregation one month time suffix"""
-    # self.assertModule(
-    # "t.rast.aggregate",
-    # input="A",
-    # output="B",
-    # basename="b",
-    # granularity="1 months",
-    # method="maximum",
-    # sampling=["contains"],
-    # file_limit=0,
-    # nprocs=3,
-    # suffix="time",
-    # )
-    # self.assertRasterExists("b_2001_01_01T00_00_00")
-
-    # def test_aggregation_2months(self):
-    # """Aggregation two month"""
-    # self.assertModule(
-    # "t.rast.aggregate",
-    # input="A",
-    # output="B",
-    # basename="b",
-    # granularity="2 months",
-    # method="minimum",
-    # sampling=["contains"],
-    # nprocs=4,
-    # offset=10,
-    # suffix="num%02",
-    # )
-
-    # tinfo_string = """start_time='2001-01-01 00:00:00'
-    # end_time='2001-05-01 00:00:00'
-    # granularity='2 months'
-    # map_time=interval
-    # aggregation_type=minimum
-    # number_of_maps=2
-    # min_min=100.0
-    # min_max=500.0
-    # max_min=100.0
-    # max_max=500.0"""
-
-    # info = SimpleModule("t.info", flags="g", input="B")
-    # # info.run()
-    # # print info.outputs.stdout
-    # self.assertModuleKeyValue(
-    # module=info, reference=tinfo_string, precision=2, sep="="
-    # )
-
-    # # Check the map names are correct
-    # lister = SimpleModule("t.rast.list", input="B", columns="name", flags="u")
-    # self.runModule(lister)
-    # # print lister.outputs.stdout
-    # maps = "b_11" + os.linesep + "b_12" + os.linesep
-    # self.assertEqual(maps, lister.outputs.stdout)
-
-    # def test_aggregation_3months(self):
-    # """Aggregation three month"""
-    # self.assertModule(
-    # "t.rast.aggregate",
-    # input="A",
-    # output="B",
-    # basename="b",
-    # granularity="3 months",
-    # method="sum",
-    # sampling=["contains"],
-    # file_limit=0,
-    # nprocs=9,
-    # offset=100,
-    # suffix="num%03",
-    # )
-
-    # tinfo_string = """start_time='2001-01-01 00:00:00'
-    # end_time='2001-04-01 00:00:00'
-    # granularity='3 months'
-    # map_time=interval
-    # aggregation_type=sum
-    # number_of_maps=1
-    # min_min=1500.0
-    # min_max=1500.0
-    # max_min=1500.0
-    # max_max=1500.0"""
-
-    # info = SimpleModule("t.info", flags="g", input="B")
-    # # info.run()
-    # # print info.outputs.stdout
-    # self.assertModuleKeyValue(
-    # module=info, reference=tinfo_string, precision=2, sep="="
-    # )
-
-    # # Check the map names are correct
-    # lister = SimpleModule("t.rast.list", input="B", columns="name", flags="u")
-    # self.runModule(lister)
-    # # print lister.outputs.stdout
-    # maps = "b_101" + os.linesep
-    # self.assertEqual(maps, lister.outputs.stdout)
 
 
 if __name__ == "__main__":
