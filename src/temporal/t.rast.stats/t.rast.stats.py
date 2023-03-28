@@ -206,7 +206,9 @@ from grass.pygrass.modules import Module
 
 
 def compute_statistics(
-    stats_module, input_tuple, use_map_region=False,
+    stats_module,
+    input_tuple,
+    use_map_region=False,
 ):
     """Run the pygrass r.stats modules with input and return stdout
     :param stats_module: A PyGRASS Module object with a pre-configured
@@ -214,7 +216,7 @@ def compute_statistics(
     :param input_tuple: A tuple containg the full map name, start-time,
                         end-time and semantic_label of the map
 
-    :return: string with stdout from r.stats 
+    :return: string with stdout from r.stats
     """
 
     if stats_module.inputs.input:
@@ -228,7 +230,9 @@ def compute_statistics(
     if not stats_module.outputs.stdout:
         return None
 
-    return f"\n{input_tuple[1]}{sep}{input_tuple[2]}{sep}".join(stats_module.outputs.stdout.rstrip().split("\n")).lstrip()
+    return f"\n{input_tuple[1]}{sep}{input_tuple[2]}{sep}".join(
+        stats_module.outputs.stdout.rstrip().split("\n")
+    ).lstrip()
 
 
 def compute_statistics_of_temporal_map(
@@ -252,7 +256,7 @@ def compute_statistics_of_temporal_map(
                 compute_statistics,
                 [
                     (
-                    deepcopy(stats_module),
+                        deepcopy(stats_module),
                         (
                             raster_map.get_id(),
                             *raster_map.get_temporal_extent_as_tuple(),
@@ -262,20 +266,20 @@ def compute_statistics_of_temporal_map(
                 ],
             )
     else:
-        output_list =[compute_statistics(
-            deepcopy(stats_module),
+        output_list = [
+            compute_statistics(
+                deepcopy(stats_module),
                 (
                     raster_map.get_id(),
                     *raster_map.get_temporal_extent_as_tuple(),
-                    ),
-                )
-                for raster_map in map_list
-            ]
+                ),
+            )
+            for raster_map in map_list
+        ]
     return output_list
 
 
 def main():
-
     # Get the options
     input = options["input"]
     zone = options["zone"].split(",")
@@ -294,7 +298,7 @@ def main():
             output.write_text("")
         except OSError as e:
             gs.fatal(_("Cannot write output file <{}>").format(str(output)))
- 
+
     # Initialize TGIS
     tgis.init()
 
