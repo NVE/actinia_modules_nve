@@ -104,7 +104,7 @@
 # % description: Default extracts 8 numbers between underscores
 # % type: string
 # % required: no
-# % answer: .*_([0-9]{8})_.*
+# % answer: "%Y%m%d"
 # % multiple: no
 # %end
 
@@ -121,6 +121,15 @@
 # %option
 # % key: start_time
 # % label: Earliest timestamp of files to register
+# % description: Timestamp in ISO format "YYYY-MM-DD HH:MM:SS"
+# % type: string
+# % required: no
+# % multiple: no
+# %end
+
+# %option
+# % key: end_time
+# % label: Latest timestamp of files to register
 # % description: Timestamp in ISO format "YYYY-MM-DD HH:MM:SS"
 # % type: string
 # % required: no
@@ -172,26 +181,9 @@ from copy import deepcopy
 from datetime import datetime
 from functools import partial
 from itertools import chain
+from math import inf
 from multiprocessing import Pool
 from pathlib import Path
-
-################################################
-# For Jupyter
-"""
-import sys
-
-# Ask GRASS GIS where its Python packages are.
-sys.path.append(
-    subprocess.check_output(["/localhome/actiniad/.local/bin/grass", "--config", "python_path"], text=True).strip()
-)
-
-# Import GRASS packages
-
-import grass.jupyter as gj
-# Start GRASS Session
-session = gj.init("/localhome/jupyter-stbl/grassdata", "ETRS_33N", "Sentinel_2_test")
-"""
-################################################
 
 import grass.script as gscript
 import grass.temporal as tgis
@@ -215,7 +207,7 @@ def strftime_to_regex(string):
     """
     Transform a strftime format string to a regex for extracting time from file name
     :param string: strftime format string
-    :return:
+    :return: regex string
     """
     digits = {
         "%Y": "[0-9]{4}",
@@ -223,6 +215,7 @@ def strftime_to_regex(string):
         "%d": "[0-9]{2}",
         "%M": "[0-9]{2}",
         "%H": "[0-9]{2}",
+        "%S": "[0-9]{2}",
     }
     for item, digit in digits.items():
         string = string.replace(item, digit)
@@ -512,7 +505,7 @@ def import_data(import_tuple, metadata_dict=None, modules_dict=None):
     date_pattern = f".*({strftime_to_regex(metadata_dict['time_format'])}).*"
     time_string = re.match(date_pattern, str(file_path)).groups()[0]
     time_stamp = datetime.strptime(time_string, metadata_dict["time_format"])
-    time_stamp_iso = time_stamp.strftime("%Y-%m-%d")
+    time_stamp_iso = time_stamp.isoformat(sep=" ")
     suffix = f"_{import_tuple[2]}" if import_tuple[2] else ""
     output_name = (
         f"map_{file_path.stem}{suffix}"
@@ -562,6 +555,19 @@ def main():
                 )
             )
 
+    # Get maximum start time
+    end_time = options["end_time"]
+    if end_time:
+        try:
+            end_time = datetime.fromisoformat(options["end_time"])
+        except ValueError:
+            gscript.fatal(
+                _(
+                    "Cannot parse timestamp provided in <end_time> option."
+                    "Please make sure it is provided in ISO format (YYYY-MM-DD HH:MM:SS)"
+                )
+            )
+
     if options["semantic_labels"]:
         semantic_labels = parse_semantic_label_conf(options["semantic_labels"], 8)
     else:
@@ -578,11 +584,13 @@ def main():
         raster_files = Path(options["input"]).rglob(
             f"{options['file_pattern']}.{options['suffix']}"
         )
+        end_timestamp = end_time.timestamp() if end_time else inf
+        start_timestamp = start_time.timestamp() if start_time else 0.0
         if start_time:
             raster_files = [
                 nc_file
                 for nc_file in raster_files
-                if datetime.fromtimestamp(nc_file.stat().st_mtime) > start_time
+                if end_timestamp >= nc_file.stat().st_mtime >= start_timestamp
             ]
         else:
             raster_files = list(raster_files)
@@ -661,6 +669,7 @@ def main():
         vrt_dir.mkdir()
 
     print("Files filtered")
+    print(raster_files)
     # Match semantic labels and create VRTs if needed
     with Pool(processes=nprocs) as pool:
         import_tuples = pool.map(match_semantic_labels, raster_files)
@@ -688,7 +697,7 @@ def main():
     print("Maps registered")
 
     # Update metadata of target STRDS from newly imported maps
-    tgis_strds.update_from_registered_maps(dbif=None)
+    # tgis_strds.update_from_registered_maps(dbif=None)
 
 
 if __name__ == "__main__":
