@@ -5,26 +5,24 @@ and computes area statistics for each registered map of a space time
 raster dataset. Most flags of <em>r.stats</em> are supported.
 
 <p>
-    A <em>zone</em> map can be specified to compute statistics for each of the
+A <em>zone</em> map can be specified to compute statistics for each of the
 zones. The zone map should be of CELL type, otherwise flags for handling of
 floating point data should be specified.
 
 <p>
-    Starting with GRASS GIS version 8.3 the computational region can be used for
+Starting with GRASS GIS version 8.3 the computational region can be used for
 spatially selecting maps in the SpaceTimeRasterDataset to process. To do so,
 operators can be chosen in the <em>region_relation</em> option.
+This can be useful for STRDS with maps with varying spatial extent
 
 <p>
-    Computational region <em>-R</em>
+Computational region <em>-R</em>
 
 <h2>NOTES</h2>
 Parallel processing is supported in <em>t.rast.stats</em>. Internally,
 several <em>r.stats</em> modules will be started, depending on the number
 of specified parallel processes (<em>nprocs</em>) and the number of input
 maps to reclassify.
-
-<p>
-<em>region_relation</em> is only supported with GRASS GIS 8.3 or newer.
 
 <h2>EXAMPLES</h2>
 
