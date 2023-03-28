@@ -26,8 +26,12 @@ class TestAggregationAbsolute(TestCase):
         cls.runModule("r.mapcalc", expression="a1 = 100", overwrite=True)
         cls.runModule("r.mapcalc", expression="a2 = 200", overwrite=True)
         cls.runModule("r.mapcalc", expression="a3 = 300", overwrite=True)
-        cls.runModule("r.mapcalc", expression="zone_x = int(col() / 4.0)", overwrite=True)
-        cls.runModule("r.mapcalc", expression="zone_y = int(row() / 4.0)", overwrite=True)
+        cls.runModule(
+            "r.mapcalc", expression="zone_x = int(col() / 4.0)", overwrite=True
+        )
+        cls.runModule(
+            "r.mapcalc", expression="zone_y = int(row() / 4.0)", overwrite=True
+        )
 
         cls.runModule(
             "t.create",
@@ -55,10 +59,6 @@ class TestAggregationAbsolute(TestCase):
         """Remove the temporary region and data"""
         cls.del_temp_region()
         cls.runModule("t.remove", flags="df", type="strds", inputs="A")
-
-    def tearDown(self):
-        """Remove generated data"""
-        self.runModule("t.remove", flags="df", type="strds", inputs="B")
 
     def test_basic_stats(self):
         """Test basic area statistics"""
@@ -96,7 +96,6 @@ class TestAggregationAbsolute(TestCase):
         self.assertModule(stats_module.run())
         self.assertLooksLike(info.outputs.stdout, "")
 
-
     def test_stats_with_zone(self):
         """Test area statistics with one zone map"""
         stats_module = self.SimpleModule(
@@ -104,7 +103,7 @@ class TestAggregationAbsolute(TestCase):
             verbose=True,
             flags="n",
             input="A",
-            zone="zone_x"
+            zone="zone_x",
             nprocs=2,
         )
         self.assertModule(stats_module.run())
@@ -117,7 +116,7 @@ class TestAggregationAbsolute(TestCase):
             verbose=True,
             flags="nl",
             input="A",
-            zone="zone_x"
+            zone="zone_x",
             nprocs=2,
         )
         self.assertModule(stats_module.run())
@@ -130,7 +129,7 @@ class TestAggregationAbsolute(TestCase):
             verbose=True,
             flags="n",
             input="A",
-            zone=["zone_x", "zone_y"]
+            zone="zone_x,zone_y",
             nprocs=2,
         )
         self.assertModule(stats_module.run())
