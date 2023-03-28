@@ -150,17 +150,20 @@ def run_reclassification(
     :return: A string for registering the reclassified map in the output
              SpaceTimeRasterDataset or None
     """
-    output_name = f"{input_tuple[0].split('@')[0]}_{semantic_label or 'rc'}"
+    input_name = input_tuple[0].split("@")[0]
+    output_name = f"{input_name}_{semantic_label or 'rc'}"
 
-    if gs.find_file(name=output_name, mapset=".") and gs.overwrite() is False:
+    if (
+        gs.find_file(name=output_name, mapset=current_mapset, element="cell")
+        and gs.overwrite() is False
+    ):
         gs.fatal(
             _(
                 "Unable to perform reclassification. Output raster "
-                "map <{name}> exists and overwrite flag was "
-                "not set".format(name=output_name)
-            )
+                "map <{name}> exists and overwrite flag was not set"
+            ).format(name=output_name)
         )
-    reclass_module.inputs.input = input_tuple[0]
+    reclass_module.inputs.input = input_name
     reclass_module.outputs.output = output_name
     reclass_module.run()
 
@@ -173,11 +176,14 @@ def run_reclassification(
             gs.run_command("g.remove", flags="f", type="raster", name=output_name)
             return None
 
-    return (
-        f"{output_name}|{input_tuple[1]}|{input_tuple[2]}|{semantic_label}"
-        if semantic_label
-        else f"{output_name}|{input_tuple[1]}|{input_tuple[2]}"
-    )
+    if semantic_label and input_tuple[2]:
+        return f"{output_name}|{input_tuple[1]}|{input_tuple[2]}|{semantic_label}"
+    if semantic_label and not input_tuple[2]:
+        return f"{output_name}|{input_tuple[1]}|{semantic_label}"
+    if not semantic_label and not input_tuple[2]:
+        return f"{output_name}|{input_tuple[1]}"
+    if not semantic_label and input_tuple[2]:
+        return f"{output_name}|{input_tuple[1]}|{input_tuple[2]}"
 
 
 def reclass_temporal_map(
@@ -203,29 +209,44 @@ def reclass_temporal_map(
              SpaceTimeRasterDataset
     """
     current_mapset = gs.gisenv()["MAPSET"]
-    with Pool(min(nprocs, len(map_list))) as p:
-        output_list = p.starmap(
-            run_reclassification,
-            [
-                (
-                    deepcopy(reclass_module),
+    nprocs = min(nprocs, len(map_list))
+    if nprocs > 1:
+        with Pool(nprocs) as p:
+            output_list = p.starmap(
+                run_reclassification,
+                [
                     (
-                        raster_map.get_id(),
-                        *raster_map.get_temporal_extent_as_tuple(),
-                    ),
-                    register_null,
-                    semantic_label,
-                    current_mapset,
-                )
-                for raster_map in map_list
-            ],
-        )
+                        deepcopy(reclass_module),
+                        (
+                            raster_map.get_id(),
+                            *raster_map.get_temporal_extent_as_tuple(),
+                        ),
+                        register_null,
+                        semantic_label,
+                        current_mapset,
+                    )
+                    for raster_map in map_list
+                ],
+            )
+    else:
+        output_list = [
+            run_reclassification(
+                deepcopy(reclass_module),
+                (
+                    raster_map.get_id(),
+                    *raster_map.get_temporal_extent_as_tuple(),
+                ),
+                register_null,
+                semantic_label,
+                current_mapset,
+            )
+            for raster_map in map_list
+        ]
 
     return output_list
 
 
 def main():
-
     # Get the options
     input = options["input"]
     output = options["output"]
@@ -325,9 +346,6 @@ def main():
             file=register_file_path,
             dbif=dbif,
         )
-
-        # Update the raster metadata table entries with aggregation type
-        output_strds.update_from_registered_maps(dbif=dbif)
 
     else:
         gs.warning(_("No output maps to register"))
