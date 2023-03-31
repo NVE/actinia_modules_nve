@@ -1,6 +1,6 @@
 """Test t.rast.reclass
 
-(C) 2022 by the GRASS GIS Development Team
+(C) 2023 by the GRASS GIS Development Team
 This program is free software under the GNU General Public
 License (>=v2). Read the file COPYING that comes with GRASS
 for details.
@@ -15,7 +15,8 @@ from grass.gunittest.case import TestCase
 from grass.gunittest.gmodules import SimpleModule
 
 
-class TestAggregationAbsolute(TestCase):
+class TestAreaStats(TestCase):
+    """Test case for t.rast.stats"""
     @classmethod
     def setUpClass(cls):
         """Initiate the temporal GIS and set the region"""
@@ -70,7 +71,7 @@ class TestAggregationAbsolute(TestCase):
             nprocs=1,
         )
         self.assertModule(stats_module.run())
-        self.assertLooksLike(info.outputs.stdout, "")
+        self.assertLooksLike(stats_module.outputs.stdout, "")
 
     def test_basic_stats_percent(self):
         """Test basic area statistics in procent"""
@@ -82,7 +83,7 @@ class TestAggregationAbsolute(TestCase):
             nprocs=1,
         )
         self.assertModule(stats_module.run())
-        self.assertLooksLike(info.outputs.stdout, "")
+        self.assertLooksLike(stats_module.outputs.stdout, "")
 
     def test_basic_stats_m2(self):
         """Test basic area statistics in m2"""
@@ -94,7 +95,7 @@ class TestAggregationAbsolute(TestCase):
             nprocs=1,
         )
         self.assertModule(stats_module.run())
-        self.assertLooksLike(info.outputs.stdout, "")
+        self.assertLooksLike(stats_module.outputs.stdout, "")
 
     def test_stats_with_zone(self):
         """Test area statistics with one zone map"""
@@ -107,7 +108,7 @@ class TestAggregationAbsolute(TestCase):
             nprocs=2,
         )
         self.assertModule(stats_module.run())
-        self.assertLooksLike(info.outputs.stdout, "")
+        self.assertLooksLike(stats_module.outputs.stdout, "")
 
     def test_stats_with_zone_and_label(self):
         """Test area statistics with one zone map"""
@@ -120,7 +121,7 @@ class TestAggregationAbsolute(TestCase):
             nprocs=2,
         )
         self.assertModule(stats_module.run())
-        self.assertLooksLike(info.outputs.stdout, "")
+        self.assertLooksLike(stats_module.outputs.stdout, "")
 
     def test_stats_with_two_zones(self):
         """Test area statistics with one zone map"""
@@ -133,7 +134,7 @@ class TestAggregationAbsolute(TestCase):
             nprocs=2,
         )
         self.assertModule(stats_module.run())
-        self.assertLooksLike(info.outputs.stdout, "")
+        self.assertLooksLike(stats_module.outputs.stdout, "")
 
 
 if __name__ == "__main__":
