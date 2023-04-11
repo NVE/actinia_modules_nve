@@ -16,6 +16,13 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 
+r.timeseries.locations --v --o  locations="nedboersfelt_flomvarsling" \
+    locations_url= \
+    layer="dbo.coalesced_region_view" \
+    where="parent_id IS NULL AND domain_name = 'FLOMVARSLING'" \
+    continuous_subdivision_map=DTM_250m@DTM \
+    
+
 """
 
 # %module
@@ -30,18 +37,17 @@
 # % keyword: database
 # %end
 
-# %flag
-# % key: p
-# % description: Compute class boundaries from percentiles (default is linear breaks)
+# %option G_OPT_R_OUTPUT
+# % key: locations
+# % key_desc: Map name for the managed locations
+# % description: Map name for the managed locations
 # %end
 
-# %option
-# % key: locations
-# % type: string
+# %option G_OPT_R_OUTPUT
+# % key: locations_subunits
 # % required: no
-# % multiple: no
-# % key_desc: Base name for maps for the managed locations
-# % description: Base name for maps for the managed locations
+# % key_desc: Map name for subunits of the managed locations
+# % description: Map name for subunits of the managed locations
 # %end
 
 # %option
@@ -64,8 +70,9 @@
 # %option G_OPT_DB_WHERE
 # %end
 
-# %option G_OPT_R_INPUT
-# % key: subclass_map
+# %option
+# % key: method
+# % options: percentile,linear,database
 # % required: no
 # % multiple: no
 # %end
@@ -100,17 +107,32 @@
 # % description: Closest unit to round class boundaries to (integer or float)
 # %end
 
+# %option G_OPT_F_INPUT
+# % key: keepass_file
+# % required: no
+# % multiple: no
+# % description: KeePass file containing MS SQL credentials
+# %end
+
+# %option
+# % key: keepass_title
+# % type: string
+# % required: no
+# % multiple: no
+# % description: Title of the KeePass entry to get MS SQL credentials from
+# %end
+
 # %rules
-# % excludes: subclass_map,continuous_subdivision_map,class_number,round_to_closest
-# % required: subclass_map,continuous_subdivision_map
 # % collective: keepass_file,keepass_title
 # %end
 
 import os
 import sys
 
+from functools import partial
 from subprocess import PIPE
 
+import pyodbc
 import numpy as np
 
 import grass.script as gs
@@ -134,15 +156,210 @@ def keepass_to_env(
     return None
 
 
+def create_graph(raster_map, values, min="-Inf", max="Inf", epsilon=0.00000001):
+    """Create a map calculator graph() function from a mapname and a list of range values
+    :param raster_map: Name of the raster map to create the graph function for
+    :type raster_map: str
+    :param values: tuple with break points to build the graph with
+    :type values: tuple
+    :param min: Minimum value of the input raster map
+    :type min: float
+    :param max: Maximum value of the input raster map
+    :type max: float
+    :param epsilon: minimal value to dstigush break boundaries
+    :type epsilon: float
+    :return: A string with a graph() function for r.mapcalc
+    """
+    value_list = []
+    for idx, value in enumerate(values):
+        if idx == 0:
+            value_list.append(f"{min},{value[0]},{value[2] - epsilon},{value[0]}")
+        elif idx == len(values) - 1:
+            value_list.append(f"{value[1]},{value[0]},{max},{value[0]}")
+        else:
+            value_list.append(f"{value[1]},{value[0]},{value[2] - epsilon},{value[0]}")
+
+    return f"graph({raster_map},{','.join(value_list)})"
+
+
+def range_dict_from_db(options):
+    """Get breaks from DB"""
+    # Get data from DB
+    conn = pyodbc.connect(
+        options["locations_url"].replace("MSSQL:", "")
+        + f";UID={os.environ.get('MSSQLSPATIAL_UID')};PWD={os.environ.get('MSSQLSPATIAL_PWD')}"
+    )
+    cursor = conn.cursor()
+    res = cursor.execute(
+        f"""SELECT parent_id, id, minimum_elevation_m, maximum_elevation_m
+  FROM {schema}.{layer}
+  WHERE domain_id = {options["domain_id"]} AND parent_id IS NOT NULL
+  ORDER BY parent_id, minimum_elevation_m, maximum_elevation_m
+;"""
+    )
+    range_table = res.fetchall()
+    conn.close()
+    # Build range dict
+    range_dict = {}
+    for row in range_table:
+        if row[0] in range_dict:
+            range_dict[row[0]].append(row[1:])
+        else:
+            range_dict[row[0]] = [(row[1:])]
+
+    return range_dict
+
+
+def range_dict_from_statistics(options):
+    """Get breaks from statistics"""
+    class_number = int(options["class_number"])
+    # Compute breaks
+    if options["method"] == "percentile":
+        univar_percentile = list(
+            np.round(
+                np.linspace(0, 100, num=class_number + 1, endpoint=True), 0
+            ).astype(int)
+        )
+        univar_flags = "et"
+
+    elif options["method"] == "linear":
+        univar_percentile = None
+        univar_flags = "t"
+
+    stats = Module(
+        "r.univar",
+        map=options["continuous_subdivision_map"],
+        zones=options["locations"],
+        flags=univar_flags,
+        stdout_=PIPE,
+        percentile=univar_percentile,
+    )
+
+    univar_stats = np.genfromtxt(
+        stats.outputs.stdout.split("\n"),
+        delimiter="|",
+        names=True,
+        dtype=None,
+        encoding="UTF8",
+    )
+
+    if options["method"] == "percentile":
+        range_dict = {
+            s["zone"]: round_to_closest(
+                tuple(s[[f"perc_{perc}" for perc in univar_percentile]]),
+                float(options["round_to_closest"]),
+            )
+            for s in univar_stats
+            if not np.isnan(s["max"])
+        }
+    elif options["method"] == "linear":
+        range_dict = {
+            int(s["zone"]): list(
+                round_to_closest(
+                    np.linspace(
+                        s["min"], s["max"], num=class_number + 1, endpoint=True
+                    ),
+                    float(options["round_to_closest"]),
+                )
+            )
+            for s in univar_stats
+            if not np.isnan(s["max"])
+        }
+    return {
+        key: [
+            (key * 10 + idx + 1, v, val[idx + 1])
+            for idx, v in enumerate(val)
+            if idx + 2 < len(val)
+        ]
+        for key, val in range_dict.items()
+    }
+
+
+#     """
+#         # Create reclassified map for breaks per location
+#         for area_class in range(class_number - 1):
+#             # area_class = area_class + 1
+#             rc_rules = "\n".join(
+#                 [
+#                     f"{x} = {int(y[area_class])} {area_class + 1}"
+#                     for x, y in range_dict.items()
+#                 ]
+#             )
+#             Module(
+#                 "r.reclass",
+#                 input=locations,
+#                 output=f"{locations}_rc{area_class + 1}",
+#                 rules="-",
+#                 stdin_=rc_rules,
+#                 verbose=True,
+#                 overwrite=True,
+#             )
+
+#         # Create category map to cross with location map
+#         subclass_map = f"{locations}_rc"
+#         rc_expression = f"{subclass_map}="
+#         for area_class in range(class_number):
+#             if area_class == 0:
+#                 rc_expression += f"if({continuous_subdivision_map} <= {locations}_rc{area_class + 1},{area_class + 1},"
+#             elif area_class == class_number - 1:
+#                 rc_expression += f"if({continuous_subdivision_map} > {locations}_rc{area_class},{area_class + 1},"
+#             else:
+#                 rc_expression += f"if({continuous_subdivision_map} > {locations}_rc{area_class}&&{continuous_subdivision_map} <= {locations}_rc{area_class + 1},{area_class + 1},"
+#         rc_expression += "null()"
+#         rc_expression += ")" * class_number
+
+#         Module(
+#             "r.mapcalc",
+#             expression=rc_expression,
+#             verbose=True,
+#             overwrite=True,
+#         )
+
+#     # Create final map with sub-location
+#     Module(
+#         "r.cross",
+#         input=[locations, subclass_map],
+#         output=f"{locations}_classes",
+#         flags="z",
+#     )
+
+#     if range_dict:
+#         # Update categories in output map
+#         from grass.pygrass.raster.category import Category
+
+#         categories = Category(f"{locations}_classes")
+#         categories.read()
+#         cat_rules = []
+#         for cat in categories:
+#             parent_id = int(cat[0].split(";")[0])
+#             sub_id = int(cat[0].split(";")[1].split("category ")[1]) - 1
+#             if sub_id == 0:
+#                 cat_rules.append(
+#                     f"{cat[1]}:{parent_id} <= {range_dict[parent_id][sub_id]}",
+#                 )
+#             elif sub_id == class_number - 1:
+#                 cat_rules.append(
+#                     f"{cat[1]}:{parent_id} > {range_dict[parent_id][sub_id -1]}",
+#                 )
+#             else:
+#                 cat_rules.append(
+#                     f"{cat[1]}:{parent_id} > {range_dict[parent_id][sub_id -1]} & <= {range_dict[parent_id][sub_id]}",
+#                 )
+#         Module(
+#             "r.category",
+#             rules="-",
+#             stdin="\n".join(cat_rules),
+#             map=f"{locations}_classes",
+#             separator=":",
+#         )
+
+#         """
+
+
 def main():
     locations = options["locations"]
     continuous_subdivision_map = options["continuous_subdivision_map"]
-    subclass_map = options["subclass_map"]
-    class_number = options["class_number"]
-    method = "percentile" if flags["p"] else None
-    round_to_closest_m = options["round_to_closest"]
-    password_var = "MSSQLSPATIAL_PWD"
-    username_var = "MSSQLSPATIAL_UID"
+    schema, layer = options["layer"].split(".")
 
     if options["keepass_file"]:
         if "KEEPASS_PWD" not in os.environ:
@@ -155,23 +372,22 @@ def main():
             options["keepass_file"],
             os.environ["KEEPASS_PWD"],
             options["keepass_title"],
-            username_var,
-            password_var,
+            "MSSQLSPATIAL_UID",
+            "MSSQLSPATIAL_PWD",
             first=True,
         )
 
     # Import locations
     Module(
         "v.in.ogr",
-        input=options["locations"],
-        layer=options["layer"],
+        flags="o",
+        # Until GDAL 3.6 is available UID and PWD have to be provided in the connection string
+        input=options["locations_url"]
+        + f";Tables={schema}.{layer};UID={os.environ.get('MSSQLSPATIAL_UID')};PWD={os.environ.get('MSSQLSPATIAL_PWD')}",  # mssql_db.format(schema=schema, layer=layer),
+        layer=layer if schema == "dbo" else f"{schema}.{layer}",
         where=options["where"],
         output=locations,
     )
-
-    # Check for user-defined breaks
-    # tbd
-    range_dict = None
 
     # Set computational region
     Module(
@@ -192,156 +408,95 @@ def main():
         label_column="name",
         memory=2048,
     )
+    if options["locations_subunits"]:
+        if options["method"] == "database":
+            range_dict = range_dict_from_db(options)
+        elif options["method"] in ["percentile", "linear"]:
+            range_dict = range_dict_from_statistics(options)
 
-    if not subclass_map:
-        if not range_dict:
-            # Compute breaks
-            if method == "percentile":
-                univar_percentile = list(
-                    np.round(
-                        np.linspace(0, 100, num=class_number, endpoint=False)[1:], 0
-                    ).astype(int)
-                )
-                univar_flags = "et"
-
-            else:
-                univar_percentile = None
-                univar_flags = "t"
-
-            stats = Module(
-                "r.univar",
-                map=continuous_subdivision_map,
-                zones=locations,
-                flags=univar_flags,
-                stdout_=PIPE,
-                percentile=univar_percentile,
-            )
-
-            univar_stats = np.genfromtxt(
-                stats.outputs.stdout.split("\n"), delimiter="|", names=True, dtype=None
-            )
-
-            if method == "percentile":
-                range_dict = {
-                    s["zone"]: round_to_closest(
-                        tuple(s[[f"perc_{perc}" for perc in univar_percentile]]),
-                        round_to_closest_m,
-                    )
-                    for s in univar_stats
-                    if not np.isnan(s["max"])
-                }
-            else:
-                range_dict = {
-                    s["zone"]: round_to_closest(
-                        np.linspace(
-                            s["min"], s["max"], num=class_number, endpoint=False
-                        )[1:],
-                        round_to_closest_m,
-                    )
-                    for s in univar_stats
-                    if not np.isnan(s["max"])
-                }
-
-            # Update altitude range per parent_id
-            # tbd
-
-        # Create reclassified map for breaks per location
-        for area_class in range(class_number - 1):
-            # area_class = area_class + 1
-            rc_rules = "\n".join(
-                [
-                    f"{x} = {int(y[area_class])} {area_class + 1}"
-                    for x, y in range_dict.items()
-                ]
-            )
-            Module(
-                "r.reclass",
-                input=locations,
-                output=f"{locations}_rc{area_class + 1}",
-                rules="-",
-                stdin_=rc_rules,
-                verbose=True,
-                overwrite=True,
-            )
-
-        # Create category map to cross with location map
-        subclass_map = f"{locations}_rc"
-        rc_expression = f"{subclass_map}="
-        for area_class in range(class_number):
-            if area_class == 0:
-                rc_expression += f"if({continuous_subdivision_map} <= {locations}_rc{area_class + 1},{area_class + 1},"
-            elif area_class == class_number - 1:
-                rc_expression += f"if({continuous_subdivision_map} > {locations}_rc{area_class},{area_class + 1},"
-            else:
-                rc_expression += f"if({continuous_subdivision_map} > {locations}_rc{area_class}&&{continuous_subdivision_map} <= {locations}_rc{area_class + 1},{area_class + 1},"
-        rc_expression += "null()"
-        rc_expression += ")" * class_number
-
-        Module(
-            "r.mapcalc",
-            expression=rc_expression,
-            verbose=True,
-            overwrite=True,
+        create_sub_graph = partial(
+            create_graph,
+            continuous_subdivision_map,
+            min=-9999,
+            max=9999,
+            epsilon=0.000001,
         )
+        cat_map = locations
+        mc_expression = f"""{options["locations_subunits"]}=int(graph({cat_map},{", ".join(f"{cat}, int({create_sub_graph(values)})" for cat, values in range_dict.items())}))"""
 
-    # Create final map with sub-location
-    Module(
-        "r.cross",
-        input=[locations, subclass_map],
-        output=f"{locations}_classes",
-        flags="z",
-    )
+        if int(options["nprocs"]) > 1:
+            Module(
+                "r.mapcalc.tiled",
+                expression=mc_expression,
+                nprocs=int(options["nprocs"]),
+            )
+        else:
+            Module("r.mapcalc", expression=mc_expression)
 
-    if range_dict:
-        # Update categories in output map
-        from grass.pygrass.raster.category import Category
-
-        categories = Category(f"{locations}_classes")
-        categories.read()
-        cat_rules = []
-        for cat in categories:
-            parent_id = int(cat[0].split(";")[0])
-            sub_id = int(cat[0].split(";")[1].split("category ")[1]) - 1
-            if sub_id == 0:
-                cat_rules.append(
-                    f"{cat[1]}:{parent_id} <= {range_dict[parent_id][sub_id]}",
-                )
-            elif sub_id == class_number - 1:
-                cat_rules.append(
-                    f"{cat[1]}:{parent_id} > {range_dict[parent_id][sub_id -1]}",
-                )
-            else:
-                cat_rules.append(
-                    f"{cat[1]}:{parent_id} > {range_dict[parent_id][sub_id -1]} & <= {range_dict[parent_id][sub_id]}",
-                )
+        # Add category labels
         Module(
             "r.category",
+            map=options["locations_subunits"],
             rules="-",
-            stdin="\n".join(cat_rules),
-            map=f"{locations}_classes",
-            separator=":",
+            separator="tab",
+            stdin_="\n".join(
+                [
+                    "\n".join([f"{row[0]}\t{row[1]} - {row[2]}" for row in val])
+                    for val in range_dict.values()
+                ]
+            ),
         )
 
-    # Create output vector map
-    Module(
-        "r.to.vect",
-        input=f"{locations}_classes",
-        output=f"{locations}_classes",
-        type="area",
-        flags="vs",
-        column="id",
-    )
+        # Create output vector map
+        Module(
+            "r.to.vect",
+            input=options["locations_subunits"],
+            output=options["locations_subunits"],
+            type="area",
+            flags="vs",
+            column="id",
+        )
 
-    # Remove temporary data
-    # tbd
+        # Remove temporary data
+        # tbd
 
-    # Write output vector map to DB, get IDs and reclass map
-    # tbd (either using pyodbc (WKT/WKB geom) or v.out.ogr)
+        # Get geometries as WKT
+        vector_map = VectorTopo(options["locations_subunits"])
+        vector_map.open("r")
+
+        geom_dict = {}
+        for parent_id in range_dict.values():
+            for id in parent_id:
+                geom_dict[id[0]] = ""
+        geom_dict[None] = ""
+
+        for area in vector_map.viter("areas"):
+            geom_dict[area.cat] += area.to_wkt().replace("POLYGON", "")
+
+        vector_map.close()
+
+        # Load geometries of subunits to MS SQL
+        conn = pyodbc.connect(
+            options["locations_url"].replace("MSSQL:", "")
+            + f";UID={os.environ.get('MSSQLSPATIAL_UID')};PWD={os.environ.get('MSSQLSPATIAL_PWD')}"
+        )
+        cursor = conn.cursor()
+        cursor.executemany(
+            f"UPDATE [dbo].[region] SET geom = geometry::STGeomFromText(?, 25833) WHERE id = ?",
+            [
+                (f"MULTIPOLYGON ({polygons.replace(') (', '), (')})", polygon_id)
+                for polygon_id, polygons in geom_dict.items()
+                if polygon_id and polygons
+            ],
+        )
+        cursor.commit()
+        conn.close()
 
 
 if __name__ == "__main__":
     options, flags = gs.parser()
     # lazy imports
     from grass.pygrass.modules.interface import Module
+    from grass.pygrass.vector import VectorTopo
 
     sys.exit(main())
