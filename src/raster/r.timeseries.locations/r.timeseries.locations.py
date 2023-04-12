@@ -16,13 +16,6 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 
-r.timeseries.locations --v --o  locations="nedboersfelt_flomvarsling" \
-    locations_url= \
-    layer="dbo.coalesced_region_view" \
-    where="parent_id IS NULL AND domain_name = 'FLOMVARSLING'" \
-    continuous_subdivision_map=DTM_250m@DTM \
-    
-
 """
 
 # %module
@@ -71,10 +64,20 @@ r.timeseries.locations --v --o  locations="nedboersfelt_flomvarsling" \
 # %end
 
 # %option
+# % key: snap
+# % type: double
+# % required: no
+# % multiple: no
+# % answer: -1
+# % description: Snap vertices in input vector map to this number of map units
+# %end
+
+# %option
 # % key: method
 # % options: percentile,linear,database
 # % required: no
 # % multiple: no
+# % description: Method for generating subunits
 # %end
 
 # %option G_OPT_F_INPUT
@@ -85,10 +88,26 @@ r.timeseries.locations --v --o  locations="nedboersfelt_flomvarsling" \
 # % description: Input KeePass file to get DB credentials from
 # %end
 
+# %option
+# % key: keepass_title
+# % type: string
+# % required: no
+# % multiple: no
+# % description: Title of the KeePass entry to get MS SQL credentials from
+# %end
+
 # %option G_OPT_R_INPUT
 # % key: continuous_subdivision_map
 # % required: no
 # % multiple: no
+# %end
+
+# %option
+# % key: domain_id
+# % type: integer
+# % required: yes
+# % multiple: no
+# % description: Domain ID of locations to import
 # %end
 
 # %option
@@ -107,23 +126,12 @@ r.timeseries.locations --v --o  locations="nedboersfelt_flomvarsling" \
 # % description: Closest unit to round class boundaries to (integer or float)
 # %end
 
-# %option G_OPT_F_INPUT
-# % key: keepass_file
-# % required: no
-# % multiple: no
-# % description: KeePass file containing MS SQL credentials
-# %end
-
-# %option
-# % key: keepass_title
-# % type: string
-# % required: no
-# % multiple: no
-# % description: Title of the KeePass entry to get MS SQL credentials from
+# %option G_OPT_M_NPROCS
 # %end
 
 # %rules
 # % collective: keepass_file,keepass_title
+# % collective: locations_subunits,method,continuous_subdivision_map
 # %end
 
 import os
@@ -192,7 +200,7 @@ def range_dict_from_db(options):
     cursor = conn.cursor()
     res = cursor.execute(
         f"""SELECT parent_id, id, minimum_elevation_m, maximum_elevation_m
-  FROM {schema}.{layer}
+  FROM {options["layer"]}
   WHERE domain_id = {options["domain_id"]} AND parent_id IS NOT NULL
   ORDER BY parent_id, minimum_elevation_m, maximum_elevation_m
 ;"""
@@ -358,6 +366,7 @@ def range_dict_from_statistics(options):
 
 def main():
     locations = options["locations"]
+    where = f"domain_id = {options['domain_id']}"
     continuous_subdivision_map = options["continuous_subdivision_map"]
     schema, layer = options["layer"].split(".")
 
@@ -368,6 +377,9 @@ def main():
                     "The KeePass password needs to be provided through environment variable 'KEEPASS_PWD'"
                 )
             )
+        gs.verbose(
+            _("Trying to get keepass entries from <{}>").format(options["keepass_file"])
+        )
         keepass_to_env(
             options["keepass_file"],
             os.environ["KEEPASS_PWD"],
@@ -383,10 +395,11 @@ def main():
         flags="o",
         # Until GDAL 3.6 is available UID and PWD have to be provided in the connection string
         input=options["locations_url"]
-        + f";Tables={schema}.{layer};UID={os.environ.get('MSSQLSPATIAL_UID')};PWD={os.environ.get('MSSQLSPATIAL_PWD')}",  # mssql_db.format(schema=schema, layer=layer),
+        + f";Tables={schema}.{layer};UID={os.environ.get('MSSQLSPATIAL_UID')};PWD={os.environ.get('MSSQLSPATIAL_PWD')}",
         layer=layer if schema == "dbo" else f"{schema}.{layer}",
-        where=options["where"],
+        where=where + " AND " + options["where"] if options["where"] else where,
         output=locations,
+        snap=options["snap"],
     )
 
     # Set computational region
@@ -421,8 +434,7 @@ def main():
             max=9999,
             epsilon=0.000001,
         )
-        cat_map = locations
-        mc_expression = f"""{options["locations_subunits"]}=int(graph({cat_map},{", ".join(f"{cat}, int({create_sub_graph(values)})" for cat, values in range_dict.items())}))"""
+        mc_expression = f"""{options["locations_subunits"]}=int(graph({locations},{", ".join(f"{cat}, int({create_sub_graph(values)})" for cat, values in range_dict.items())}))"""
 
         if int(options["nprocs"]) > 1:
             Module(
@@ -456,9 +468,6 @@ def main():
             flags="vs",
             column="id",
         )
-
-        # Remove temporary data
-        # tbd
 
         # Get geometries as WKT
         vector_map = VectorTopo(options["locations_subunits"])

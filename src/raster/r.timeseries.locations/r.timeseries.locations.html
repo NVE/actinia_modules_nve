@@ -1,32 +1,29 @@
 <h2>DESCRIPTION</h2>
 
 <em>r.timeseries.locations</em> subdivides locations (geometries) into
-coherent sub-units based on a continuous raster map and thresholds for
+coherent sub-units based on a continuous raster map and break values for
 subdivisions. It is written for locations in NVEs time series database.
-
 
 <h2>EXAMPLES</h2>
 
-<h3>Subdivide watersheds using dynamic altitude bands</h3>
+<h3>Subdivide watersheds using altitude bands and breaks from DB</h3>
 
 <div class="code"><pre>
-r.timeseries.locations input="TBD"
-</pre></div>
-
-<h3>Subdivide watersheds using dynamic altitude bands</h3>
-
-<div class="code"><pre>
-r.timeseries.locations input="TBD"
+r.timeseries.locations locations_url="MSSQL:driver=FreeTDS;server=tst.sql.server.com;port=1433;database=testdatabase" \
+  where="parent_id IS NULL" locations=test continuous_subdivision_map="DTM" \
+  round_to_closest=1 method=database domain_id=60 layer="dbo.region" \
+  locations_subunits="test_subunits" nprocs=20 \
+  keepass_file="/hdata/fjernanalyse3/CopernicusUtviklingOgTest/data/actinia_secrets.kdbx" keepass_title=mssql \
+  --o --v
 </pre></div>
 
 <h2>SEE ALSO</h2>
 
 <em>
-<a href="r.cross.html">r.cross</a>,
-<a href="r.reclass.html">r.reclass</a>,
+<a href="v.in.ogr.html">v.in.ogr</a>,
 <a href="r.to.vect.html">r.to.vect</a>,
+<a href="v.to.rast.html">v.to.rast</a>,
 <a href="r.mapcalc.html">r.mapcalc</a>,
-<a href="t.to.rast.html">t.to.rast</a>,
 </em>
 
 <h2>AUTHOR</h2>
