@@ -1,0 +1,40 @@
+<h2>DESCRIPTION</h2>
+
+<em>i.sentinel1.import</em> pre-processes Sentinel-1 imagery
+accortding to a standard protocol outlined by <> and imports
+the resulting GeoTiff(s) into the current mapset.
+
+<p>
+A textfile for use with <em>t.register</em> can be requested.
+Per default, results are imported into the GRASS GIS database
+and temporary data is deleted after the process finishes, unless
+the user chooses to link the resulting GeoTiffs.
+
+<h2>EXAMPLES</h2>
+
+<h3>Import </h3>
+
+<div class="code"><pre>
+  i.sentinel1.import --v --o  directory=./ \
+  dem=DTM_10m \  # output_directory= /sentinel1
+  specle_filter=revised_lee \
+  nprocs=2
+
+</pre></div>
+
+<h2>REQUIREMENTS</h2>
+The ESA SNAP software needs to be installed and it`s batch processing
+tool <em>gpt</em> needs to be executable and available on <i>PATH</i>.
+
+<h2>SEE ALSO</h2>
+
+<em>
+<a href="r.external.html">r.external</a>,
+<a href="r.in.gdal.html">r.in.gdal</a>,
+<a href="r.import.html">r.import</a>,
+<a href="i.sentinel.html">i.sentinel</a>
+</em>
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath
