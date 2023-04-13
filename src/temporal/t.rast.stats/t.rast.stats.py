@@ -35,6 +35,7 @@
 # %option G_OPT_R_INPUT
 # % key: zone
 # % multiple: yes
+# % required: no
 # %end
 
 # %option G_OPT_T_WHERE
@@ -46,7 +47,7 @@
 # % multiple: no
 # %end
 
-# %option G_OPT_M_SEP
+# %option G_OPT_F_SEP
 # % guisection: Format
 # %end
 
@@ -79,14 +80,22 @@
 # % options: asc,desc
 # % label: Sort output statistics by cell counts
 # % description: Default: sorted by categories or intervals
-# % descriptions: asc;Sort by cell counts in ascending order;desc;Sort by cell c                                                                                                             ounts in descending order
+# % descriptions: asc; Sort by cell counts in ascending order, desc; Sort by cell counts in descending order
 # % guisection: Format
+# %end
+
+# %option
+# % key: region_relation
+# % description: Process only maps with this spatial relation to the current computational region
+# % options: overlaps,contains,is_contained
+# % required: no
+# % multiple: no
 # %end
 
 # %option G_OPT_M_NPROCS
 # % key: nprocs
 # % type: integer
-# % description: Number of r.reclass processes to run in parallel
+# % description: Number of r.stats processes to run in parallel
 # % required: no
 # % multiple: no
 # % answer: 1
@@ -148,19 +157,19 @@
 
 # %flag
 # % key: A
-# % description: Print averaged values instead of intervals (floating-point maps                                                                                                              only)
+# % description: Print averaged values instead of intervals (floating-point mapsonly)
 # % guisection: Format
 # %end
 
 # %flag
 # % key: r
-# % description: Print raw indexes of floating-point ranges (floating-point maps                                                                                                              only)
+# % description: Print raw indexes of floating-point ranges (floating-point mapsonly)
 # % guisection: Format
 # %end
 
 # %flag
 # % key: C
-# % description: Report for cats floating-point ranges (floating-point maps only                                                                                                             )
+# % description: Report for cats floating-point ranges (floating-point maps only)
 # % guisection: Format
 # %end
 
@@ -206,7 +215,7 @@ from grass.pygrass.modules import Module
 
 
 def compute_statistics(
-    stats_module, input_tuple, use_map_region=False,
+    stats_module, input_tuple, use_map_region=False, separator="|",
 ):
     """Run the pygrass r.stats modules with input and return stdout
     :param stats_module: A PyGRASS Module object with a pre-configured
@@ -218,7 +227,7 @@ def compute_statistics(
     """
 
     if stats_module.inputs.input:
-        stats_module.inputs.input = ",".join(stats_module.inputs.input, input_tuple[0])
+        stats_module.inputs.input = ",".join((*stats_module.inputs.input, input_tuple[0]))
     else:
         stats_module.inputs.input = input_tuple[0]
     if use_map_region:
@@ -228,12 +237,16 @@ def compute_statistics(
     if not stats_module.outputs.stdout:
         return None
 
-    return f"\n{input_tuple[1]}{sep}{input_tuple[2]}{sep}".join(stats_module.outputs.stdout.rstrip().split("\n")).lstrip()
+    join_string = f"{input_tuple[1]}{separator}{input_tuple[2]}{separator}"
+
+    return f"{join_string}" + f"\n{join_string}".join(stats_module.outputs.stdout.rstrip().split("\n")).lstrip()
 
 
 def compute_statistics_of_temporal_map(
     map_list,
     stats_module,
+    flags,
+    separator="|",
     nprocs=1,
 ):
     """Compute area statistics for a list of raster input maps with r.stats
@@ -245,11 +258,14 @@ def compute_statistics_of_temporal_map(
     :param nprocs: The number of processes used for parallel computation
     :return: A list of strings with area statistics
     """
+    # Choose statistics mode
+    compute_statistics_partial = partial(compute_statistics, use_map_region=flags["R"], separator=separator)
+
     effective_nprocs = min(nprocs, len(map_list))
     if effective_nprocs > 1:
         with Pool(effective_nprocs) as p:
             output_list = p.starmap(
-                compute_statistics,
+                compute_statistics_partial,
                 [
                     (
                     deepcopy(stats_module),
@@ -280,8 +296,8 @@ def main():
     input = options["input"]
     zone = options["zone"].split(",")
     where = options["where"]
-    sep = options["separator"]
-    output = Path(options["output"])
+    sep = gs.utils.separator(options["separator"])
+    output = Path(options["output"]) if options["output"] else None
     nprocs = int(options["nprocs"])
     region_relation = options["region_relation"]
 
@@ -302,14 +318,13 @@ def main():
     dbif = tgis.SQLDatabaseInterfaceConnection()
     dbif.connect()
 
-    # Choose statistics mode
-    compute_statistics = partial(compute_statistics, use_map_region=flags["R"])
-
     # Open input STRDS
     sp = tgis.open_old_stds(input, "strds", dbif)
 
     # Get a list for selected raster maps from input STRDS
     if region_relation and gs.version():
+        pass
+    else:
         map_list = sp.get_registered_maps_as_objects(
             where=where, order="start_time", dbif=dbif
         )
@@ -320,13 +335,14 @@ def main():
         gs.warning(_("Space time raster dataset <{}> is empty".format(input)))
 
     # Extract flags for r.stats
-    rstats_flags = [flag for flag in flags if flag in "acpl1gxArnNCi"]
+    rstats_flags = [flag for flag in flags if flag in "acpl1gxArnNCi" and flags[flag]]
 
     # Create Module object for r.stats that will be deep copied
     # and put into the process queue
     r_stats_module = Module(
         "r.stats",
         flags=rstats_flags,
+        separator=sep,
         stdout_=PIPE,
         quiet=True,
         run_=False,
@@ -374,6 +390,8 @@ def main():
     output_list = compute_statistics_of_temporal_map(
         map_list,
         r_stats_module,
+        flags,
+        separator=sep,
         nprocs=nprocs,
     )
 
