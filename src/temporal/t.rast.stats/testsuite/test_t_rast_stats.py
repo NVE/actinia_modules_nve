@@ -1,4 +1,4 @@
-"""Test t.rast.reclass
+"""Test t.rast.stats
 
 (C) 2023 by the GRASS GIS Development Team
 This program is free software under the GNU General Public
