@@ -17,6 +17,7 @@ from grass.gunittest.gmodules import SimpleModule
 
 class TestAreaStats(TestCase):
     """Test case for t.rast.stats"""
+
     @classmethod
     def setUpClass(cls):
         """Initiate the temporal GIS and set the region"""
