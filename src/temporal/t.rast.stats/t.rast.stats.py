@@ -215,7 +215,10 @@ from grass.pygrass.modules import Module
 
 
 def compute_statistics(
-    stats_module, input_tuple, use_map_region=False, separator="|",
+    stats_module,
+    input_tuple,
+    use_map_region=False,
+    separator="|",
 ):
     """Run the pygrass r.stats modules with input and return stdout
     :param stats_module: A PyGRASS Module object with a pre-configured
@@ -223,11 +226,13 @@ def compute_statistics(
     :param input_tuple: A tuple containg the full map name, start-time,
                         end-time and semantic_label of the map
 
-    :return: string with stdout from r.stats 
+    :return: string with stdout from r.stats
     """
 
     if stats_module.inputs.input:
-        stats_module.inputs.input = ",".join((*stats_module.inputs.input, input_tuple[0]))
+        stats_module.inputs.input = ",".join(
+            (*stats_module.inputs.input, input_tuple[0])
+        )
     else:
         stats_module.inputs.input = input_tuple[0]
     if use_map_region:
@@ -239,7 +244,12 @@ def compute_statistics(
 
     join_string = f"{input_tuple[1]}{separator}{input_tuple[2]}{separator}"
 
-    return f"{join_string}" + f"\n{join_string}".join(stats_module.outputs.stdout.rstrip().split("\n")).lstrip()
+    return (
+        f"{join_string}"
+        + f"\n{join_string}".join(
+            stats_module.outputs.stdout.rstrip().split("\n")
+        ).lstrip()
+    )
 
 
 def compute_statistics_of_temporal_map(
@@ -259,7 +269,9 @@ def compute_statistics_of_temporal_map(
     :return: A list of strings with area statistics
     """
     # Choose statistics mode
-    compute_statistics_partial = partial(compute_statistics, use_map_region=flags["R"], separator=separator)
+    compute_statistics_partial = partial(
+        compute_statistics, use_map_region=flags["R"], separator=separator
+    )
 
     effective_nprocs = min(nprocs, len(map_list))
     if effective_nprocs > 1:
@@ -268,7 +280,7 @@ def compute_statistics_of_temporal_map(
                 compute_statistics_partial,
                 [
                     (
-                    deepcopy(stats_module),
+                        deepcopy(stats_module),
                         (
                             raster_map.get_id(),
                             *raster_map.get_temporal_extent_as_tuple(),
@@ -278,20 +290,20 @@ def compute_statistics_of_temporal_map(
                 ],
             )
     else:
-        output_list =[compute_statistics(
-            deepcopy(stats_module),
+        output_list = [
+            compute_statistics(
+                deepcopy(stats_module),
                 (
                     raster_map.get_id(),
                     *raster_map.get_temporal_extent_as_tuple(),
-                    ),
-                )
-                for raster_map in map_list
-            ]
+                ),
+            )
+            for raster_map in map_list
+        ]
     return output_list
 
 
 def main():
-
     # Get the options
     input = options["input"]
     zone = options["zone"].split(",")
@@ -310,7 +322,7 @@ def main():
             output.write_text("")
         except OSError as e:
             gs.fatal(_("Cannot write output file <{}>").format(str(output)))
- 
+
     # Initialize TGIS
     tgis.init()
 
