@@ -1,6 +1,6 @@
 """Test t.rast.reclass
 
-(C) 2022 by the GRASS GIS Development Team
+(C) 2023 by the GRASS GIS Development Team
 This program is free software under the GNU General Public
 License (>=v2). Read the file COPYING that comes with GRASS
 for details.
@@ -15,7 +15,8 @@ from grass.gunittest.case import TestCase
 from grass.gunittest.gmodules import SimpleModule
 
 
-class TestAggregationAbsolute(TestCase):
+class TestAreaStats(TestCase):
+    """Test case for t.rast.stats"""
     @classmethod
     def setUpClass(cls):
         """Initiate the temporal GIS and set the region"""
@@ -26,8 +27,12 @@ class TestAggregationAbsolute(TestCase):
         cls.runModule("r.mapcalc", expression="a1 = 100", overwrite=True)
         cls.runModule("r.mapcalc", expression="a2 = 200", overwrite=True)
         cls.runModule("r.mapcalc", expression="a3 = 300", overwrite=True)
-        cls.runModule("r.mapcalc", expression="zone_x = int(col() / 4.0)", overwrite=True)
-        cls.runModule("r.mapcalc", expression="zone_y = int(row() / 4.0)", overwrite=True)
+        cls.runModule(
+            "r.mapcalc", expression="zone_x = int(col() / 4.0)", overwrite=True
+        )
+        cls.runModule(
+            "r.mapcalc", expression="zone_y = int(row() / 4.0)", overwrite=True
+        )
 
         cls.runModule(
             "t.create",
@@ -56,10 +61,6 @@ class TestAggregationAbsolute(TestCase):
         cls.del_temp_region()
         cls.runModule("t.remove", flags="df", type="strds", inputs="A")
 
-    def tearDown(self):
-        """Remove generated data"""
-        self.runModule("t.remove", flags="df", type="strds", inputs="B")
-
     def test_basic_stats(self):
         """Test basic area statistics"""
         stats_module = self.SimpleModule(
@@ -70,7 +71,7 @@ class TestAggregationAbsolute(TestCase):
             nprocs=1,
         )
         self.assertModule(stats_module.run())
-        self.assertLooksLike(info.outputs.stdout, "")
+        self.assertLooksLike(stats_module.outputs.stdout, "")
 
     def test_basic_stats_percent(self):
         """Test basic area statistics in procent"""
@@ -82,7 +83,7 @@ class TestAggregationAbsolute(TestCase):
             nprocs=1,
         )
         self.assertModule(stats_module.run())
-        self.assertLooksLike(info.outputs.stdout, "")
+        self.assertLooksLike(stats_module.outputs.stdout, "")
 
     def test_basic_stats_m2(self):
         """Test basic area statistics in m2"""
@@ -94,8 +95,7 @@ class TestAggregationAbsolute(TestCase):
             nprocs=1,
         )
         self.assertModule(stats_module.run())
-        self.assertLooksLike(info.outputs.stdout, "")
-
+        self.assertLooksLike(stats_module.outputs.stdout, "")
 
     def test_stats_with_zone(self):
         """Test area statistics with one zone map"""
@@ -104,11 +104,11 @@ class TestAggregationAbsolute(TestCase):
             verbose=True,
             flags="n",
             input="A",
-            zone="zone_x"
+            zone="zone_x",
             nprocs=2,
         )
         self.assertModule(stats_module.run())
-        self.assertLooksLike(info.outputs.stdout, "")
+        self.assertLooksLike(stats_module.outputs.stdout, "")
 
     def test_stats_with_zone_and_label(self):
         """Test area statistics with one zone map"""
@@ -117,11 +117,11 @@ class TestAggregationAbsolute(TestCase):
             verbose=True,
             flags="nl",
             input="A",
-            zone="zone_x"
+            zone="zone_x",
             nprocs=2,
         )
         self.assertModule(stats_module.run())
-        self.assertLooksLike(info.outputs.stdout, "")
+        self.assertLooksLike(stats_module.outputs.stdout, "")
 
     def test_stats_with_two_zones(self):
         """Test area statistics with one zone map"""
@@ -130,11 +130,11 @@ class TestAggregationAbsolute(TestCase):
             verbose=True,
             flags="n",
             input="A",
-            zone=["zone_x", "zone_y"]
+            zone="zone_x,zone_y",
             nprocs=2,
         )
         self.assertModule(stats_module.run())
-        self.assertLooksLike(info.outputs.stdout, "")
+        self.assertLooksLike(stats_module.outputs.stdout, "")
 
 
 if __name__ == "__main__":
