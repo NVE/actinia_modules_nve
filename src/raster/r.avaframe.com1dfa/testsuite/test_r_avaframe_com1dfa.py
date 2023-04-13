@@ -73,7 +73,6 @@ class TestAggregationAbsolute(TestCase):
             print(info.outputs.stdout)
 
 
-
 if __name__ == "__main__":
     from grass.gunittest.main import test
 
