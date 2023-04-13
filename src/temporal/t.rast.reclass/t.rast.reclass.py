@@ -251,8 +251,6 @@ def main():
     input = options["input"]
     output = options["output"]
     where = options["where"]
-    # base = options["basename"]
-    register_null = flags["n"]
     nprocs = int(options["nprocs"])
 
     # Initialize TGIS
@@ -271,7 +269,8 @@ def main():
 
     if not map_list:
         dbif.close()
-        gs.fatal(_("Space time raster dataset <{}> is empty".format(input)))
+        gs.warning(_("Space time raster dataset <{}> is empty".format(input)))
+        return
 
     # We will create the strds later, but need to check here
     tgis.check_new_stds(output, "strds", dbif, gs.overwrite())

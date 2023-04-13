@@ -52,25 +52,11 @@ class TestAggregationAbsolute(TestCase):
     def test_reclass_with_null_maps(self):
         """Reclassify and register also maps with only NoData"""
         self.assertModule(
-            "r.avaframe.com1DFA",
-            flags="l",
-            release_area="./data/releasearea.gpkg",
-            elevation="DTM_10m",
-            buffer=2000,
-            nprocs=2,
-            ppr="ppr",
-            pft="pft",
-            pfv="pfv",
+            "r.timeseries.locations",
+            input="",
+            elevation="",
             overwrite=True,
         )
-
-        for result_group in []:
-            info = SimpleModule(
-                "i.group",
-                flags="g",
-                input=result_group,
-            ).run()
-            print(info.outputs.stdout)
 
 
 if __name__ == "__main__":
