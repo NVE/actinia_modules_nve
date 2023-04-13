@@ -191,7 +191,11 @@ def create_graph(raster_map, values, min="-Inf", max="Inf", epsilon=0.00000001):
 
 
 def range_dict_from_db(options):
-    """Get breaks from DB"""
+    """Read user defined breaks for each ID from DB
+    :param options: The GRASS GIS options dict from g.parser
+    :type options: dict
+    :return: A dict with class breaks per ID
+    """
     # Get data from DB
     conn = pyodbc.connect(
         options["locations_url"].replace("MSSQL:", "")
@@ -219,7 +223,12 @@ def range_dict_from_db(options):
 
 
 def range_dict_from_statistics(options):
-    """Get breaks from statistics"""
+    """Compute breaks from statistics of the continuous_subdivision_map
+    according to user given method, class_number and rounding precision
+    :param options: The GRASS GIS options dict from g.parser
+    :type options: dict
+    :return: A dict with class breaks per ID
+    """
     class_number = int(options["class_number"])
     # Compute breaks
     if options["method"] == "percentile":
@@ -283,90 +292,9 @@ def range_dict_from_statistics(options):
     }
 
 
-#     """
-#         # Create reclassified map for breaks per location
-#         for area_class in range(class_number - 1):
-#             # area_class = area_class + 1
-#             rc_rules = "\n".join(
-#                 [
-#                     f"{x} = {int(y[area_class])} {area_class + 1}"
-#                     for x, y in range_dict.items()
-#                 ]
-#             )
-#             Module(
-#                 "r.reclass",
-#                 input=locations,
-#                 output=f"{locations}_rc{area_class + 1}",
-#                 rules="-",
-#                 stdin_=rc_rules,
-#                 verbose=True,
-#                 overwrite=True,
-#             )
-
-#         # Create category map to cross with location map
-#         subclass_map = f"{locations}_rc"
-#         rc_expression = f"{subclass_map}="
-#         for area_class in range(class_number):
-#             if area_class == 0:
-#                 rc_expression += f"if({continuous_subdivision_map} <= {locations}_rc{area_class + 1},{area_class + 1},"
-#             elif area_class == class_number - 1:
-#                 rc_expression += f"if({continuous_subdivision_map} > {locations}_rc{area_class},{area_class + 1},"
-#             else:
-#                 rc_expression += f"if({continuous_subdivision_map} > {locations}_rc{area_class}&&{continuous_subdivision_map} <= {locations}_rc{area_class + 1},{area_class + 1},"
-#         rc_expression += "null()"
-#         rc_expression += ")" * class_number
-
-#         Module(
-#             "r.mapcalc",
-#             expression=rc_expression,
-#             verbose=True,
-#             overwrite=True,
-#         )
-
-#     # Create final map with sub-location
-#     Module(
-#         "r.cross",
-#         input=[locations, subclass_map],
-#         output=f"{locations}_classes",
-#         flags="z",
-#     )
-
-#     if range_dict:
-#         # Update categories in output map
-#         from grass.pygrass.raster.category import Category
-
-#         categories = Category(f"{locations}_classes")
-#         categories.read()
-#         cat_rules = []
-#         for cat in categories:
-#             parent_id = int(cat[0].split(";")[0])
-#             sub_id = int(cat[0].split(";")[1].split("category ")[1]) - 1
-#             if sub_id == 0:
-#                 cat_rules.append(
-#                     f"{cat[1]}:{parent_id} <= {range_dict[parent_id][sub_id]}",
-#                 )
-#             elif sub_id == class_number - 1:
-#                 cat_rules.append(
-#                     f"{cat[1]}:{parent_id} > {range_dict[parent_id][sub_id -1]}",
-#                 )
-#             else:
-#                 cat_rules.append(
-#                     f"{cat[1]}:{parent_id} > {range_dict[parent_id][sub_id -1]} & <= {range_dict[parent_id][sub_id]}",
-#                 )
-#         Module(
-#             "r.category",
-#             rules="-",
-#             stdin="\n".join(cat_rules),
-#             map=f"{locations}_classes",
-#             separator=":",
-#         )
-
-#         """
-
-
 def main():
     locations = options["locations"]
-    where = f"domain_id = {options['domain_id']}"
+    where = f"domain_id = {options['domain_id']} AND parent_id IS NULL"
     continuous_subdivision_map = options["continuous_subdivision_map"]
     schema, layer = options["layer"].split(".")
 
@@ -491,7 +419,7 @@ def main():
         )
         cursor = conn.cursor()
         cursor.executemany(
-            f"UPDATE [dbo].[region] SET geom = geometry::STGeomFromText(?, 25833) WHERE id = ?",
+            "UPDATE [dbo].[region] SET geom = geometry::STGeomFromText(?, 25833) WHERE id = ?",
             [
                 (f"MULTIPOLYGON ({polygons.replace(') (', '), (')})", polygon_id)
                 for polygon_id, polygons in geom_dict.items()
