@@ -303,7 +303,7 @@ def main():
     output_list = reclass_temporal_map(
         map_list,
         reclass_module,
-        register_null,
+        flags["n"],
         options["semantic_label"],
         nprocs=nprocs,
         overwrite=gs.overwrite(),
