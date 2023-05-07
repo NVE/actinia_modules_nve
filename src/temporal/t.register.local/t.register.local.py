@@ -55,6 +55,11 @@
 # % description: Create fast link without data range
 # %end
 
+# %flag
+# % key: f
+# % description: Filter files using modification time (default is logical time stamp in file name)
+# %end
+
 # %option G_OPT_M_DIR
 # % required: yes
 # % multiple: no
@@ -174,7 +179,6 @@
 
 import os
 import re
-import subprocess
 import sys
 
 from copy import deepcopy
@@ -185,7 +189,7 @@ from math import inf
 from multiprocessing import Pool
 from pathlib import Path
 
-import grass.script as gscript
+import grass.script as gs
 import grass.temporal as tgis
 
 from grass.pygrass.gis import Mapset
@@ -220,7 +224,7 @@ def strftime_to_regex(string):
     for item, digit in digits.items():
         string = string.replace(item, digit)
     if "%" in string:
-        gscript.warning(_("Unmatched format item in input string"))
+        gs.warning(_("Unmatched format item in input string"))
     return string
 
 
@@ -238,12 +242,10 @@ def parse_semantic_label_conf(conf_file, grass_major_version):
         return None
 
     if grass_major_version < 8:
-        gscript.warning(
+        gs.warning(
             _(
                 "The semantic labels concept requires GRASS GIS version 8.0 or later.\n"
-                "Semantic labels will not be written but used for filtering input data.".format(
-                    conf_file=conf_file
-                )
+                "Semantic labels will not be written but used for filtering input data."
             )
         )
     else:
@@ -252,7 +254,7 @@ def parse_semantic_label_conf(conf_file, grass_major_version):
 
     semantic_label = {}
     if not os.access(conf_file, os.R_OK):
-        gscript.fatal(
+        gs.fatal(
             _(
                 "Cannot read configuration file <{conf_file}>".format(
                     conf_file=conf_file
@@ -271,7 +273,7 @@ def parse_semantic_label_conf(conf_file, grass_major_version):
                 if grass_major_version < 8 or Rast_legal_semantic_label(line[1]) == 1:
                     semantic_label[line[0]] = line[1]
                 else:
-                    gscript.fatal(
+                    gs.fatal(
                         _(
                             "Line {line_nr} in configuration file <{conf_file}> "
                             "contains an illegal band name".format(
@@ -280,7 +282,7 @@ def parse_semantic_label_conf(conf_file, grass_major_version):
                         )
                     )
             else:
-                gscript.fatal(
+                gs.fatal(
                     _(
                         "Invalid format of semantic label configuration in file <{}>".format(
                             conf_file
@@ -317,9 +319,9 @@ def map_semantic_labels(
     raster_dataset = str(raster_dataset)
     ds = gdal.Open(raster_dataset)
     if not ds:
-        gscript.warning(_("Cannot open dataset <{}>".format(raster_dataset)))
-        print("Invalid input")
+        gs.warning(_("Cannot open dataset <{}>".format(raster_dataset)))
         return []
+
     # Map subdatasets if present
     subdatasets = ds.GetSubDatasets()
     nc_metadata = ds.GetMetadata()
@@ -333,9 +335,9 @@ def map_semantic_labels(
                 for reference in subdatasets
             ]
         ):
-            gscript.warning(_("No subdatasets to import."))
+            gs.warning(_("No subdatasets to import."))
             return []
-        elif semantic_label_dict:
+        if semantic_label_dict:
             import_tuple = []
             for subdataset in subdatasets:
                 # This is a hack for netCDF data at NVE with invalid GeoTranfsorm information
@@ -428,6 +430,7 @@ def map_semantic_labels(
                 )
                 for band in range(1, ds.RasterCount + 1)
             ]
+
     # Map bands
     else:
         if semantic_label_dict:
@@ -461,7 +464,7 @@ def create_vrt(subdataset, gisenv, nodata, geotransform, recreate=False):
     sds = subdataset.split(":")
     if len(sds) >= 3:
         sds_path = sds[1]
-        sds_name = sds[2]
+        # sds_name = sds[2]
         vrt = vrt_dir.joinpath(
             "gdal_{}.vrt".format(
                 legalize_name_string(f"{Path(sds_path).stem}_{sds[2]}")
@@ -490,6 +493,20 @@ def create_vrt(subdataset, gisenv, nodata, geotransform, recreate=False):
     return vrt
 
 
+def timestamp_from_filename(file_path, pattern):
+    """Extracts a timestamp as a datetime object from a file name using
+    a pattern
+    :param file_path: a pathlib Path object
+    :param pattern: strftime formated sting describing the pattern of the
+                    timestamp in the file name
+    :return: datetime object of the time stamp extracted from file name
+    :rtype: datetime
+    """
+    date_pattern = f".*({strftime_to_regex(pattern)}).*"
+    time_string = re.match(date_pattern, str(file_path)).groups()[0]
+    return datetime.strptime(time_string, pattern)
+
+
 def import_data(import_tuple, metadata_dict=None, modules_dict=None):
     """
     Link (import) external raster data and set relevant metadata
@@ -502,9 +519,7 @@ def import_data(import_tuple, metadata_dict=None, modules_dict=None):
     :rtype: str
     """
     file_path = Path(import_tuple[0])
-    date_pattern = f".*({strftime_to_regex(metadata_dict['time_format'])}).*"
-    time_string = re.match(date_pattern, str(file_path)).groups()[0]
-    time_stamp = datetime.strptime(time_string, metadata_dict["time_format"])
+    time_stamp = timestamp_from_filename(file_path, metadata_dict["time_format"])
     time_stamp_iso = time_stamp.isoformat(sep=" ")
     suffix = f"_{import_tuple[2]}" if import_tuple[2] else ""
     output_name = (
@@ -525,7 +540,7 @@ def import_data(import_tuple, metadata_dict=None, modules_dict=None):
     try:
         MultiModule(list(mods.values())).run()
     except:
-        gscript.warning(_("Cannot register file <{}>".format(import_tuple[0])))
+        gs.warning(_("Cannot register file <{}>".format(import_tuple[0])))
         return None
 
     return f"{output_name},{time_stamp_iso},{time_stamp_iso},{import_tuple[2]}"
@@ -540,7 +555,7 @@ def main():
     nprocs = int(options["nprocs"])
 
     # Add gisenv to options
-    options.update(gscript.gisenv())
+    options.update(gs.gisenv())
 
     # Get minimum start time
     start_time = options["start_time"]
@@ -548,7 +563,7 @@ def main():
         try:
             start_time = datetime.fromisoformat(options["start_time"])
         except ValueError:
-            gscript.fatal(
+            gs.fatal(
                 _(
                     "Cannot parse timestamp provided in <start_time> option."
                     "Please make sure it is provided in ISO format (YYYY-MM-DD HH:MM:SS)"
@@ -561,7 +576,7 @@ def main():
         try:
             end_time = datetime.fromisoformat(options["end_time"])
         except ValueError:
-            gscript.fatal(
+            gs.fatal(
                 _(
                     "Cannot parse timestamp provided in <end_time> option."
                     "Please make sure it is provided in ISO format (YYYY-MM-DD HH:MM:SS)"
@@ -587,17 +602,29 @@ def main():
         end_timestamp = end_time.timestamp() if end_time else inf
         start_timestamp = start_time.timestamp() if start_time else 0.0
         if start_time:
-            raster_files = [
-                nc_file
-                for nc_file in raster_files
-                if end_timestamp >= nc_file.stat().st_mtime >= start_timestamp
-            ]
+            if flags["f"]:
+                raster_files = [
+                    nc_file
+                    for nc_file in raster_files
+                    if end_timestamp >= nc_file.stat().st_mtime >= start_timestamp
+                ]
+            else:
+                raster_files = [
+                    nc_file
+                    for nc_file in raster_files
+                    if end_timestamp
+                    >= timestamp_from_filename(
+                        str(nc_file), options["time_format"]
+                    ).timestamp()
+                    >= start_timestamp
+                ]
+
         else:
             raster_files = list(raster_files)
 
     # Abort if no files to import are found
     if not raster_files:
-        gscript.fatal(_("No files found to import."))
+        gs.fatal(_("No files found to import."))
 
     # Initialize TGIS
     tgis.init()
@@ -607,14 +634,14 @@ def main():
     tgis_strds = tgis.SpaceTimeRasterDataset(strds_long_name)
 
     # Check if target STRDS exists and create it if not or abort if overwriting is not allowed
-    if tgis_strds.is_in_db() and not gscript.overwrite():
-        gscript.fatal(
+    if tgis_strds.is_in_db() and not gs.overwrite():
+        gs.fatal(
             _(
                 "Output STRDS <{}> exists."
                 "Use --overwrite with or without -e to modify the existing STRDS."
             ).format(options["output"])
         )
-    if not tgis_strds.is_in_db() or (gscript.overwrite() and not flags["e"]):
+    if not tgis_strds.is_in_db() or (gs.overwrite() and not flags["e"]):
         Module(
             "t.create",
             output=options["output"],
@@ -659,7 +686,7 @@ def main():
     run_import = partial(import_data, metadata_dict=options, modules_dict=modules)
 
     # Get GRASS GIS environment info
-    options.update(dict(gscript.gisenv()))
+    options.update(dict(gs.gisenv()))
 
     # Create directory for vrt files if needed
     vrt_dir = Path(options["GISDBASE"]).joinpath(
@@ -667,25 +694,23 @@ def main():
     )
     if not vrt_dir.is_dir():
         vrt_dir.mkdir()
+    gs.verbose(_("Files filtered"))
 
-    print("Files filtered")
-    print(raster_files)
     # Match semantic labels and create VRTs if needed
     with Pool(processes=nprocs) as pool:
         import_tuples = pool.map(match_semantic_labels, raster_files)
+    gs.verbose(_("Semantic labels matched"))
 
-    print("Semantic labels matched")
     # Import / Link raster maps into mapset
     with Pool(processes=nprocs) as pool:
         register_string = pool.map(run_import, chain(*import_tuples))
+    gs.verbose(_("Maps imported"))
 
-    print("Maps imported")
     # Register imported maps in STRDS using register file
-    map_file = gscript.tempfile()
+    map_file = gs.tempfile()
     with open(map_file, "w") as m_f:
-        m_f.write("\n".join(set([r_s for r_s in register_string if r_s is not None])))
-    print(len(register_string))
-    print(len(set([r_s for r_s in register_string if r_s is not None])))
+        m_f.write("\n".join({r_s for r_s in register_string if r_s is not None}))
+
     register_maps_in_space_time_dataset(
         "raster",
         strds_long_name,
@@ -694,20 +719,20 @@ def main():
         fs=",",
     )
 
-    print("Maps registered")
+    gs.verbose(_("Maps registered"))
 
     # Update metadata of target STRDS from newly imported maps
     # tgis_strds.update_from_registered_maps(dbif=None)
 
 
 if __name__ == "__main__":
-    options, flags = gscript.parser()
+    options, flags = gs.parser()
 
     # lazy imports
     try:
         from osgeo import gdal
     except ImportError:
-        gscript.fatal(
+        gs.fatal(
             _(
                 "Unable to load GDAL Python bindings (requires "
                 "package 'python-gdal' or Python library GDAL "
