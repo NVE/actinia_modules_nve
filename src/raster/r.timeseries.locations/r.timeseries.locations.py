@@ -147,6 +147,7 @@ import grass.script as gs
 
 
 def round_to_closest(x, y):
+    """Round value x to closest y"""
     if not y:
         return x
     return tuple(np.round(np.array(x).astype(float) / y, 0).astype(type(y)) * y)
@@ -155,16 +156,16 @@ def round_to_closest(x, y):
 def keepass_to_env(
     keepass_file, keepass_pwd, title, username_var, password_var, first=True
 ):
+    """Write KeePass entries into environment variables"""
     from pykeepass import PyKeePass
 
     kp = PyKeePass(keepass_file, password=keepass_pwd)
     entry = kp.find_entries(title=title, first=first)
     os.environ[username_var] = entry.username
     os.environ[password_var] = entry.password
-    return None
 
 
-def create_graph(raster_map, values, min="-Inf", max="Inf", epsilon=0.00000001):
+def create_graph(raster_map, values, min_value="-Inf", max_value="Inf", epsilon=0.00000001):
     """Create a map calculator graph() function from a mapname and a list of range values
     :param raster_map: Name of the raster map to create the graph function for
     :type raster_map: str
@@ -181,16 +182,16 @@ def create_graph(raster_map, values, min="-Inf", max="Inf", epsilon=0.00000001):
     value_list = []
     for idx, value in enumerate(values):
         if idx == 0:
-            value_list.append(f"{min},{value[0]},{value[2] - epsilon},{value[0]}")
+            value_list.append(f"{min_value},{value[0]},{value[2] - epsilon},{value[0]}")
         elif idx == len(values) - 1:
-            value_list.append(f"{value[1]},{value[0]},{max},{value[0]}")
+            value_list.append(f"{value[1]},{value[0]},{max_value},{value[0]}")
         else:
             value_list.append(f"{value[1]},{value[0]},{value[2] - epsilon},{value[0]}")
 
     return f"graph({raster_map},{','.join(value_list)})"
 
 
-def range_dict_from_db(options):
+def range_dict_from_db(grass_options):
     """Read user defined breaks for each ID from DB
     :param options: The GRASS GIS options dict from g.parser
     :type options: dict
@@ -198,14 +199,14 @@ def range_dict_from_db(options):
     """
     # Get data from DB
     conn = pyodbc.connect(
-        options["locations_url"].replace("MSSQL:", "")
+        grass_options["locations_url"].replace("MSSQL:", "")
         + f";UID={os.environ.get('MSSQLSPATIAL_UID')};PWD={os.environ.get('MSSQLSPATIAL_PWD')}"
     )
     cursor = conn.cursor()
     res = cursor.execute(
         f"""SELECT parent_id, id, minimum_elevation_m, maximum_elevation_m
-  FROM {options["layer"]}
-  WHERE domain_id = {options["domain_id"]} AND parent_id IS NOT NULL
+  FROM {grass_options["layer"]}
+  WHERE domain_id = {grass_options["domain_id"]} AND parent_id IS NOT NULL
   ORDER BY parent_id, minimum_elevation_m, maximum_elevation_m
 ;"""
     )
@@ -222,16 +223,16 @@ def range_dict_from_db(options):
     return range_dict
 
 
-def range_dict_from_statistics(options):
+def range_dict_from_statistics(grass_options):
     """Compute breaks from statistics of the continuous_subdivision_map
     according to user given method, class_number and rounding precision
     :param options: The GRASS GIS options dict from g.parser
     :type options: dict
     :return: A dict with class breaks per ID
     """
-    class_number = int(options["class_number"])
+    class_number = int(grass_options["class_number"])
     # Compute breaks
-    if options["method"] == "percentile":
+    if grass_options["method"] == "percentile":
         univar_percentile = list(
             np.round(
                 np.linspace(0, 100, num=class_number + 1, endpoint=True), 0
@@ -239,14 +240,14 @@ def range_dict_from_statistics(options):
         )
         univar_flags = "et"
 
-    elif options["method"] == "linear":
+    elif grass_options["method"] == "linear":
         univar_percentile = None
         univar_flags = "t"
 
     stats = Module(
         "r.univar",
-        map=options["continuous_subdivision_map"],
-        zones=options["locations"],
+        map=grass_options["continuous_subdivision_map"],
+        zones=grass_options["locations"],
         flags=univar_flags,
         stdout_=PIPE,
         percentile=univar_percentile,
@@ -260,23 +261,23 @@ def range_dict_from_statistics(options):
         encoding="UTF8",
     )
 
-    if options["method"] == "percentile":
+    if grass_options["method"] == "percentile":
         range_dict = {
             s["zone"]: round_to_closest(
                 tuple(s[[f"perc_{perc}" for perc in univar_percentile]]),
-                float(options["round_to_closest"]),
+                float(grass_options["round_to_closest"]),
             )
             for s in univar_stats
             if not np.isnan(s["max"])
         }
-    elif options["method"] == "linear":
+    elif grass_options["method"] == "linear":
         range_dict = {
             int(s["zone"]): list(
                 round_to_closest(
                     np.linspace(
                         s["min"], s["max"], num=class_number + 1, endpoint=True
                     ),
-                    float(options["round_to_closest"]),
+                    float(grass_options["round_to_closest"]),
                 )
             )
             for s in univar_stats
@@ -293,6 +294,7 @@ def range_dict_from_statistics(options):
 
 
 def main():
+    """Do the main work"""
     locations = options["locations"]
     where = f"domain_id = {options['domain_id']} AND parent_id IS NULL"
     continuous_subdivision_map = options["continuous_subdivision_map"]
@@ -329,6 +331,7 @@ def main():
         output=locations,
         snap=options["snap"],
     )
+    gs.vector.vector_history(locations, replace=True)
 
     # Set computational region
     Module(
@@ -349,6 +352,8 @@ def main():
         label_column="name",
         memory=2048,
     )
+    gs.raster.raster_history(locations, overwrite=True)
+
     if options["locations_subunits"]:
         if options["method"] == "database":
             range_dict = range_dict_from_db(options)
@@ -386,6 +391,7 @@ def main():
                 ]
             ),
         )
+        gs.raster.raster_history(options["locations_subunits"], overwrite=True)
 
         # Create output vector map
         Module(
@@ -396,6 +402,7 @@ def main():
             flags="vs",
             column="id",
         )
+        gs.vector.vector_history(options["locations_subunits"], replace=True)
 
         # Get geometries as WKT
         vector_map = VectorTopo(options["locations_subunits"])
@@ -403,8 +410,8 @@ def main():
 
         geom_dict = {}
         for parent_id in range_dict.values():
-            for id in parent_id:
-                geom_dict[id[0]] = ""
+            for area_id in parent_id:
+                geom_dict[area_id[0]] = ""
         geom_dict[None] = ""
 
         for area in vector_map.viter("areas"):
