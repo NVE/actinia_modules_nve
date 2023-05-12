@@ -363,8 +363,8 @@ def main():
         create_sub_graph = partial(
             create_graph,
             continuous_subdivision_map,
-            min=-9999,
-            max=9999,
+            min_value=-9999,
+            max_value=9999,
             epsilon=0.000001,
         )
         mc_expression = f"""{options["locations_subunits"]}=int(graph({locations},{", ".join(f"{cat}, int({create_sub_graph(values)})" for cat, values in range_dict.items())}))"""
