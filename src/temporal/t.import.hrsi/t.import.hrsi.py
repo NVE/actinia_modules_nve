@@ -446,8 +446,8 @@ class CLCCryoDownloader:
         using a credtis_file (see .cryo_land.example) or by defining
         environment variables:
 
-        :envvar:`CRYOLAND_USER`
-        :envvar:`CRYOLAND_PASSWORD`
+        :envvar:`HRSI_USERNAME`
+        :envvar:`HRSI_PASSWORD`
 
         The user's :envvar:`HOME` directoy is allways searched for a .cryo_land
         credits file.
@@ -456,8 +456,8 @@ class CLCCryoDownloader:
         :type credits_file: str
         """
         # Get authentication
-        user = os.environ.get("CRYOLAND_USER")
-        password = os.environ.get("CRYOLAND_PASSWORD")
+        user = os.environ.get("HRSI_USERNAME")
+        password = os.environ.get("HRSI_PASSWORD")
 
         credits_file = credits_file or os.path.expanduser("~/.cryo_land")
         if os.path.exists(credits_file):
