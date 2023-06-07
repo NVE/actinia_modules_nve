@@ -1,96 +1,289 @@
 <h2>DESCRIPTION</h2>
 
-<em>t.rast.reclass</em> is a wrapper around the <em>r.reclass</em> module
-that creates a reclassified map for each registered map of a space time
-raster dataset and registers it in an output space time raster dataset.
-Metadata of the input space time raster dataset are transfered to the
-output space time raster dataset as far as possible. A new <em>title</em>
-and <em>description</em> can be assigned to the <em>output</em> space
-time raster dataset, if it does not exist. The reclassified maps can also
-be registered into an existing space time raster dataset if the
-<em>e-flag</em> is set.
+<em>t.import.hrsi</em> downloads High Resolution Snow & Ice (HRSI) data
+from Copernicus Land Monitoring Services API (available online at: 
+<a href="https://cryo.land.copernicus.eu/finder/">https://cryo.land.copernicus.eu/finder/</a> 
+and imports the files into an <em>output</em>-SpaceTimeRasterDataset.
 
 <p>
-This module is not sensitive to the current region and mask settings.
+Users can filter what data to download according to query parameters of 
+the underlying REST API. The following filter parameters are supported:
 
-<h2>NOTES</h2>
-Parallel processing is supported. Internally, several <em>r.reclass</em>
-modules will be started, depending on the number of specified parallel
-processes (<em>nprocs</em>) and the number of input maps to reclassify.
+<h3>Product types</h3>
+In the <em>productType</em> option, users can choose which product types 
+to download.
+
+<ul>
+<li><b>PersistentSnowArea</b></li>
+<li><b>PersistentSnowArea_LAEA</b></li>
+<li><b>RiverandLakeIceExtent_S1</b></li>
+<li><b>RiverandLakeIceExtent_S2</b></li>
+<li><b>RiverandLakeIceExtent_S1_S2</b></li>
+<li><b>AggregatedRiverandLakeIceExtent</b> (vector data, currently not supported for import)</li>
+<li><b>SARWetSnow</b></li>
+<li><b>WetDrySnow</b></li>
+
+
+<li><b>FractionalSnowCover</b> - Sentinel-2 Fractional Snow Cover (FSC) 20m<br>
+	The Fractional Snow Cover (FSC) product is generated in NRT for the entire EEA38+UK based 
+	on optical satellite data from the S2 constellation. The product provides the fraction of the 
+	surface covered by snow at the top of canopy and on ground per pixel as a percentage (0% - 
+	100%) with a spatial resolution of 20 m x 20 m.<br>
+	mission S2<br>
+	resolution: 20m<br>
+	subdatasets:
+<ul>
+	<li><i>CLD</i>: (Presence of clouds and cloud shadows)</li>
+	<li><i>FSCOG</i>: On-ground fractional snow cover</li>
+	<li><i>FSCTOC</i>: Top of canopy fractional snow cover</li>
+	<li><i>NDSI</i>: Normalised difference snow index (NDSI)</li>
+	<li><i>QCFLAGS</i>: Expert flags providing quality information obtained during the processing of FSCTOC and FSCOG</li>
+	<li><i>QCOG</i>:  Confidence level of the FSCOG layer</li>
+	<li><i>QCTOC</i>: Confidence level of the FSCTOC layer</li>
+</ul>
+</li>
+<li><b>GapfilledFractionalSnowCover</b> - Sentinel-1 + Sentinel-2 Daily cumulative Gap-filled Fractional Snow Cover (GFSC) 60m<br>
+	The daily cumulative Gap-filled Fractional Snow Cover (GFSC) product is generated in NRT for 
+	the entire EEA38+UK domain based on SAR data from the S1 constellation and optical data 
+	from the S2 constellation. The product merges the latest observations available to form a 
+	spatially complete overview of snow conditions. The product provides the extent of the snow 
+	cover per pixel as a percentage (0% - 100%) with a spatial resolution of 60 m x 60 m. The 
+	product uses FSC, WDS and SWS products as input to form a spatially complete composite of 
+	snow conditions, to reduce observational gaps due to clouds and lack of sensor coverage on a 
+	daily basis. The product applies the on-ground FSC (FSCOG) and SWS and 
+	presents the combined information as FSC.<br>
+	mission: S1-S2<br>
+	resolution: 60m<br>
+	subdatasets:
+<ul>
+	<li><i>AT</i>: Sensing start date, seconds from Unix time</li>
+	<li><i>GF</i>: Fractional snow cover (%) and associated information</li>
+	<li><i>QC</i>: Quality layer providing basic assessment of FSC, WDS or SWS quality</li>
+	<li><i>QCFLAGS</i>i: Expert quality flags related to GFSC product quality</li>
+</ul>
+</li>
+<li><b>PersistentSnowArea</b>: - Sentinel-2 Persistent Snow Area (PSA) 20m<br>
+	The PSA product is an annual product that is derived from the top of canopy Fractional Snow 
+	Cover (FSCTOC) product for the entire EEA38+UK. We refer users to section 2 regarding the 
+	description of the algorithm and the content of FSC products. Each PSA product gives access to 
+	the persistent snow cover during a particular hydrological year at the resolution of 20 m x 20 m.
+	mission: S2<br>
+	resolution": 20m<br>
+	subdatasets:
+	<ul>
+		<li><i>PSA</i>: Persistent snow area</li>
+		<li><i>QC</i>: Confidence level of the PSA layer</li>
+	</ul>
+	</li>
+	<li><b>PersistentSnowArea_LAEA"</b>: - Sentinel-2 Persistent Snow Area (PSA) 20m<br>
+	The PSA product is an annual product that is derived from the top of canopy Fractional Snow 
+	Cover (FSCTOC) product for the entire EEA38+UK. We refer users to section 2 regarding the 
+	description of the algorithm and the content of FSC products. Each PSA product gives access to 
+	the persistent snow cover during a particular hydrological year at the resolution of 20 m x 20 m.<br>
+	mission: S2<br>
+	resolution: 20m<br>
+	subdatasets:
+	<ul>
+		<li><i>PSA</i>: Persistent snow area</li>
+		<li><i>QC</i>: Confidence level of the PSA layer</li>
+	</ul>
+	</li>
+	<li><b>RiverandLakeIceExtent_S1</b> - Sentinel-1 River and Lake Ice Extent S1 (RLIE S1) 20m<br>
+	The S1 River and Lake Ice Extent (RLIE S1) product is generated in NRT for the entire 
+	EEA38+UK based on synthetic aperture radar data from the S1 constellation. The product 
+	focuses on the surface water areas defined by the EU-Hydro database and provides 
+	information about river and lake areas covered by snow-covered or snow-free ice, at a spatial 
+	resolution of 20 m x 20 m. For the sake of consistency across RLIE products, the RLIE S1 
+	product is delivered on the S2 Level-1C tiling grid, with a pixel size of 20 m x 20 m.<br>
+	mission: S1<br>
+	resolution: 20n<br>
+	subdatasets:
+	<ul>
+		<li><i>RLIE</i>: Sentinel-1 River and Lake Ice Extent (RLIE S1)</li>
+		<li><i>QC</i>Quality layer providing basic assessment of RLIE S1 quality</li>
+		<li><i>QCFLAGS</i>: Quality flags related to RLIE product quality</li>
+	</ul>
+	</li>
+	<li><b>RiverandLakeIceExtent_S2</b> - Sentinel-2 River and Lake Ice Extent (RLIE S2) 20m<br>
+	The S2 River and Lake Ice Extent (RLIE S2) product is generated in NRT for the entire 
+	EEA38+UK based on optical satellite data from the S2 constellation. The product focuses on 
+	the surface water areas defined by the EU-Hydro database and provides the river and 
+	lake area covered by snow-covered or snow-free ice, at a spatial resolution of 20 m x 20 m.<br>
+	mission: S2<br>
+	resolution: 20m<br>
+	subdatasets:
+	<ul>
+		<li><i>RLIE</i>: Sentinel-2 River and Lake Ice Extent (RLIE S2)</li>
+		<li><i>QC</i>: Quality layer providing basic assessment of RLIE S2 quality</li>
+		<li><i>QCFLAGS</i>: Quality flags related to RLIE product quality</li>
+	</ul>
+	</li>
+	<li><b>RiverandLakeIceExtent_S1_S2</b>: - Sentinel-1 + Sentinel-2 River and Lake Ice Extent S1+S2 (RLIE S1+S2) 20m<br>
+	S1 and S2 River and Lake Ice Extent (RLIE S1+S2) is a product generated in delayed-time for 
+	the entire EEA38+UK according to RLIE S1 and RLIE S2 overlap. The RLIE S1+S2 is computed 
+	as a combination of RLIE S1 and RLIE S2 products acquired on the same date. The product 
+	focuses on the surface water areas defined by the EU-Hydro database and provides 
+	river and lake areas covered by ice, at a spatial resolution of 20 m x 20 m on the S2 tiling grid.<br>
+	resolution: 20m<br>
+	mission: S1-S2<br>
+	subdatasets:
+	<ul>
+		<li><i>RLIE</i>: Sentinel-1 + Sentinel-2 River and Lake Ice Extent (RLIE S1+S2)</li>
+		<li><i>QC</i>: Quality layer providing basic assessment of RLIE S1+S2 quality</li>
+		<li><i>QCFLAGS</i>: Quality flags related to RLIE product quality</li>
+	</ul>
+	</li>
+	<li><b>AggregatedRiverandLakeIceExtent</b> - Vector data, currently not implemented</li>
+	<li><b>SARWetSnow</b> - Sentinel-1 + Sentinel-2 SAR Wet Snow in high mountains (SWS) 60m<br>
+	The S1 based SAR Wet Snow (SWS) classification is applicable for high-mountain areas within
+	selected S2 tiles of the EEA38+UK domain. For the SWS product generation, 'high mountains' 
+	means areas above a certain elevation where no human activities such as tilling agricultural 
+	areas are affecting the SAR signal. The SWS product is generated in NRT based on C-band SAR 
+	satellite data from the S1 constellation. The product provides binary information on the wet 
+	snow extent and the snow free or patchy snow or dry snow extent in high mountain areas. 
+	The SWS product is provided with a grid spacing of 60 m by 60 m.<br>
+	mission: S1<br>
+	resolution: 60m<br>
+	subdatasets:
+	<ul>
+		<li><i>WSM</i>: Wet Snow classification in high Mountains areas (WSM)</li>
+		<li><i>QCWSM</i>: Quality layer providing basic assessment of WSM quality</li>
+	</ul>
+	</li>
+	<li><b>WetDrySnow</b> - Sentine-1 + Sentinel-2 Wet/Dry Snow (WDS) 60m<br>
+	The Wet / Dry Snow (WDS) product provides information on the snow state (wet or dry) by 
+	combining S1 based wet snow maps within the snow cover extent observed by means of S2 
+	data (cf. Section 2). The WDS product is provided for each S2 tile with a grid spacing of 
+	60 m by 60 m.<br>
+	mission: S1<br>
+	resolution: 60m<br>
+	subdatasets:
+	<ul>
+		<li><i>SSC</i>: Snow State Classification (SSC)</li>
+		<li><i>QCSSC</i>: Quality layer providing basic assessment of the wet snow state classification</li>
+	</ul>
+    </li>
+</li>
+</ul>
+ 
+<h3>Data quality</h3>
+Product types that are based on Sentinel-2 data can be further filtered 
+using the <em>cloudCover</em> parameter, that limits download of data to
+scenes that have cloud cover percent less or equal to the given number 
+in percent (0-100).
+
+<h3>Temporal filter</h3>
+Data download can be limited using the <em>start_time</em> and 
+<em>end_time</em> time stamp in ISO format
 <p>
+With the <em>m-flag</em>, the temporal filter parameters <em>start</em> and 
+<em>end</em> refer to modification (publication) time.
+
+<h3>Spatial filter</h3>
+The data download can be spatially filtered either using the bounding box
+of the <i>computational region</i> or using an input GeoJSON file with 
+one geometry given in the <em>aoi</em> option.
+
+<p>
+Downloaded data is stored in the <em>output_directory</em> and either 
+linked to the GRASS GIS database (with the <em>f-flag</em> or <em>f-flag</em>, 
+using <i>r.external</i>) or imported using <i>r.in.gdal</i>. 
+
+<h3>Output</h3>
+
+Metadata for the downloaded data is - as far as possibel - stored in the 
+resulting <em>output</em> SpaceTimeRasterDataset as well as in the individual 
+maps. Here, especially the <i>title</i>, <i>description</i>, and if relevant 
+<i>categories</i> are assigned according to the chosen product type.
+
+The module can also be used to update and extend an existing SpaceTimeRasterDataset
+with newly downloaded data if the <em>e-flag</em> is set.
+
+<p>
+This module is not sensitive to a possibly existing mask.
+Parallel processing is supported, depending on the number of specified
+parallel processes (<em>nprocs</em>) and the number of input products to
+download register.
+<p>
+
+THe download API requires login information which can be either provided with a 
+<em>credits_file</em>, <i>.cryo_land</i> with the same content in the users
+HOME directory or using environment variebles <em>CRYO_USER</em> and 
+<em>CRYO_PASSWORD</em>.
 
 <h2>EXAMPLES</h2>
 
-<h3>Reclassification of monthly data into yearly data</h3>
+<h3>Download fractional snow cover data</h3>
 
 <div class="code"><pre>
-t.rast.reclass input=tempmean_monthly output=tempmean_yearly \
-                 basename=tempmean_year \
-                 granularity="1 years" method=average
+t.import.hrsi product_type=SARWetSnow aoi=/c/data/aoi.geojson start_time="2023-04-05T00:00:00" \
+  end_time="2023-04-05T23:59:59" nprocs=7 memory=2048 output=SARWetSnow --o --v
 
-t.support input=tempmean_yearly \
-          title="Yearly precipitation" \
-          description="Aggregated precipitation dataset with yearly resolution"
-
-t.info tempmean_yearly
- +-------------------- Space Time Raster Dataset -----------------------------+
- |                                                                            |
- +-------------------- Basic information -------------------------------------+
- | Id: ........................ tempmean_yearly@climate_2000_2012
- | Name: ...................... tempmean_yearly
- | Mapset: .................... climate_2000_2012
- | Creator: ................... lucadelu
- | Temporal type: ............. absolute
- | Creation time: ............. 2014-11-27 10:25:21.243319
- | Modification time:.......... 2014-11-27 10:25:21.862136
- | Semantic type:.............. mean
- +-------------------- Absolute time -----------------------------------------+
- | Start time:................. 2009-01-01 00:00:00
- | End time:................... 2013-01-01 00:00:00
- | Granularity:................ 1 year
- | Temporal type of maps:...... interval
- +-------------------- Spatial extent ----------------------------------------+
- | North:...................... 320000.0
- | South:...................... 10000.0
- | East:.. .................... 935000.0
- | West:....................... 120000.0
- | Top:........................ 0.0
- | Bottom:..................... 0.0
- +-------------------- Metadata information ----------------------------------+
- | Raster register table:...... raster_map_register_514082e62e864522a13c8123d1949dea
- | North-South resolution min:. 500.0
- | North-South resolution max:. 500.0
- | East-west resolution min:... 500.0
- | East-west resolution max:... 500.0
- | Minimum value min:.......... 7.370747
- | Minimum value max:.......... 8.81603
- | Maximum value min:.......... 17.111387
- | Maximum value max:.......... 17.915511
- | Aggregation type:........... average
- | Number of registered maps:.. 4
- |
- | Title: Yearly precipitation
- | Monthly precipitation
- | Description: Aggregated precipitation dataset with yearly resolution
- | Dataset with monthly precipitation
- | Command history:
- | # 2014-11-27 10:25:21
- | t.rast.aggregate input="tempmean_monthly"
- |     output="tempmean_yearly" basename="tempmean_year" granularity="1 years"
- |     method="average"
- |
- | # 2014-11-27 10:26:21
- | t.support input=tempmean_yearly \
- |        title="Yearly precipitation" \
- |        description="Aggregated precipitation dataset with yearly resolution"
- +----------------------------------------------------------------------------+
+t.info SARWetSnow
++-------------------- Space Time Raster Dataset -----------------------------+
+|                                                                            |
++-------------------- Basic information -------------------------------------+
+| Id: ........................ SARWetSnow@PERMANENT
+| Name: ...................... SARWetSnow
+| Mapset: .................... PERMANENT
+| Creator: ................... stbl
+| Temporal type: ............. absolute
+| Creation time: ............. 2023-06-07 14:19:46.661012
+| Modification time:.......... 2023-06-07 14:19:47.197596
+| Semantic type:.............. mean
++-------------------- Absolute time -----------------------------------------+
+| Start time:................. 2023-04-05 05:55:46
+| End time:................... 2023-04-05 17:11:27
+| Granularity:................ 40541 seconds
+| Temporal type of maps:...... point
++-------------------- Spatial extent ----------------------------------------+
+| North:...................... 6933060.0
+| South:...................... 6804060.0
+| East:.. .................... 198180.0
+| West:....................... -21300.0
+| Top:........................ 0.0
+| Bottom:..................... 0.0
++-------------------- Metadata information ----------------------------------+
+| Raster register table:...... raster_map_register_d38496b143274cf58e7c53fd1f408146
+| North-South resolution min:. 60.0
+| North-South resolution max:. 60.0
+| East-west resolution min:... 60.0
+| East-west resolution max:... 60.0
+| Minimum value min:.......... 1.0
+| Minimum value max:.......... 110.0
+| Maximum value min:.......... 240.0
+| Maximum value max:.......... 255.0
+| Aggregation type:........... None
+| Number of semantic labels:.. 2
+| Semantic labels:............ wet_snow_classes_quality,wet_snow_classes
+| Number of registered maps:.. 8
+|
+| Title:
+| Sentinel-1 + Sentinel-2 SAR Wet Snow in high mountains (SWS) 60m
+| Description:
+| The S1 based SAR Wet Snow (SWS) classification is applicable for high-mountain areas withinselected S2 tiles of the EEA38+UK domain. For the SWS product generation, "high mountains" means areas above a certain elevation where no human activities such as tilling agricultural areas are affecting the SAR signal. The SWS product is generated in NRT based on C-band SAR satellite data from the S1 constellation. The product provides binary information on the wet snow extent and the snow free or patchy snow or dry snow extent in high mountain areas. The SWS product is provided with a grid spacing of 60 m by 60 m.
+| Command history:
+| # 2023-06-07 14:19:46
+| t.create type="strds" temporaltype="absolute"
+|     semantictype="mean"
+|     title="Sentinel-1 + Sentinel-2 SAR Wet Snow in high mountains (SWS) 60m"
+|     description="The S1 based SAR Wet Snow (SWS) classification is applicable for high-mountain areas withinselected S2 tiles of the EEA38+UK domain. For the SWS product generation,  high mountains  means areas above a certain elevation where no human activities such as tilling agricultural areas are affecting the SAR signal. The SWS product is generated in NRT based on C-band SAR satellite data from the S1 constellation. The product provides binary information on the wet snow extent and the snow free or patchy snow or dry snow extent in high mountain areas. The SWS product is provided with a grid spacing of 60 m by 60 m."
+|     output="SARWetSnow" --v
+|
++----------------------------------------------------------------------------+
 </pre></div>
+
+<h2>REFERENCES</h2>
+
+<a href="https://land.copernicus.eu/user-corner/technical-library/hrsi-ice-pum">r.reclass</a>
+<a href="https://land.copernicus.eu/user-corner/technical-library/hrsi-snow-pum">r.reclass</a>
 
 <h2>SEE ALSO</h2>
 
 <em>
-<a href="r.reclass.html">r.reclass</a>,
-<a href="t.info.html">t.info</a>,
+<a href="r.external.html">r.external</a>,
+<a href="t.create.html">t.create</a>,
+<a href="t.register.html">t.register</a>,
 </em>
 <p>
 <a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
