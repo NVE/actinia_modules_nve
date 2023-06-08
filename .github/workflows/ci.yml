@@ -95,8 +95,8 @@ jobs:
           grass-addons/.github/workflows/install_r_packages.R
       - name: Run tests
         env:
-          CRYO_PASSWORD: ${{ secrets.HRSI_PASSWORD }}
-          CRYO_USER: "stbl@nve.no"
+          HRSI_USERNAME: "stbl@nve.no"
+          HRSI_PASSWORD: ${{ secrets.HRSI_PASSWORD }}
         run: |
           cd grass-addons/src
           ../.github/workflows/test.sh

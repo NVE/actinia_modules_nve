@@ -6,3 +6,5 @@ pygbif
 cf_units
 pykeepass
 pyodbc
+owslib
+lxml
