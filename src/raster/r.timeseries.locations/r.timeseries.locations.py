@@ -165,7 +165,9 @@ def keepass_to_env(
     os.environ[password_var] = entry.password
 
 
-def create_graph(raster_map, values, min_value="-Inf", max_value="Inf", epsilon=0.00000001):
+def create_graph(
+    raster_map, values, min_value="-Inf", max_value="Inf", epsilon=0.00000001
+):
     """Create a map calculator graph() function from a mapname and a list of range values
     :param raster_map: Name of the raster map to create the graph function for
     :type raster_map: str
