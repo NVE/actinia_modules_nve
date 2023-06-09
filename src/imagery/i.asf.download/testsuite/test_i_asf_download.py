@@ -68,12 +68,6 @@ class TestAggregationAbsolute(TestCase):
                 aoi="./roi.geojson",
                 output_directory=self.tempdir,
             )
-            info = SimpleModule(
-                "t.info",
-                flags="g",
-                input=test_product,
-            ).run()
-            print(info.outputs.stdout)
 
 
 if __name__ == "__main__":
