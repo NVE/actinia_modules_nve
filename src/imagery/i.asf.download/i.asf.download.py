@@ -205,6 +205,12 @@ def main():
 
 if __name__ == "__main__":
     options, flags = grass.parser()
+
+    try:
+        import asf_search as asf
+   except ImportError:
+       gs.fatal(_("Can not import asf_search. Please install it with 'pip install asf_search'"))
+
     main()
     
 
