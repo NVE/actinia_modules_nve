@@ -36,7 +36,7 @@ class TestAggregationAbsolute(TestCase):
             processinglevel="GRD_HD",
             start="2023-03-15T00:00:00Z",
             end="2023-03-16T00:00:00Z",
-            aoi="testsuite/roi.geojson",
+            aoi="./data/roi.geojson",
             output_directory=self.tempdir,
             verbose=True,
         )
@@ -52,7 +52,7 @@ class TestAggregationAbsolute(TestCase):
             processinglevel="GRD_HD",
             start="2023-03-15T00:00:00Z",
             end="2023-03-16T00:00:00Z",
-            aoi="testsuite/roi.geojson",
+            aoi="./data/roi.geojson",
             output_directory=self.tempdir,
             verbose=True,
         )
@@ -67,7 +67,7 @@ class TestAggregationAbsolute(TestCase):
             processinglevel="GRD_HD",
             start="2023-03-15T00:00:00Z",
             end="2023-03-16T00:00:00Z",
-            aoi="testsuite/roi.geojson",
+            aoi="./data/roi.geojson",
             verbose=True,
         )
 
