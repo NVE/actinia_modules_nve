@@ -135,7 +135,7 @@ import grass.script as gs
 
 def checksum_test(checksum, expected_checksum, _dfile):
     if checksum != expected_checksum:
-        gs.verbose(f'Checksum test failed for {os.path.split(_dfile)[1]}')
+        gs.verbose(_("Checksum test failed for {}').format(os.path.split(_dfile)[1]))
         os.remove(_dfile)
         gs.verbose(f'{os.path.split(_dfile)[1]} is deleted')
         return False
