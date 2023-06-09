@@ -2,9 +2,9 @@
 
 ############################################################################
 #
-# MODULE:       i.sentinel_1.download_asf
+# MODULE:       i.asf.download
 #
-# AUTHOR(S):    Guido Riembauer
+# AUTHOR(S):    Yngve Antonsen
 #
 # PURPOSE:      Searches and Downloads SAR data from the Alaska Satellite Facility
 #
