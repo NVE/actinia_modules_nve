@@ -150,7 +150,7 @@ def main():
 
     opts = {
             'platform': options["platform"],
-            'beamMode': options["beamMode"],
+            'beamMode': options["beam_mode"],
             'processingLevel': options["processinglevel"],
             'start': options["start"],
             'end': options["end"],
