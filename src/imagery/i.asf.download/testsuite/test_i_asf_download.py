@@ -41,24 +41,18 @@ class TestAggregationAbsolute(TestCase):
         )
 
     def test_asf_download_flag_c(self):
-        """Test download and import of Sentinel-1 with flag c - checksum-test"""
-        aoi = shapely.wkt.dumps(gpd.read_file('./roi.geojson').iloc[0].geometry)
-        test_product = "ASF_S1_download_flag_c"
+        """Test download and import of Sentinel-1 with flag c - checksum-test
+        Tests also if already downloaded files are skipped"""
         self.assertModule(
             "i.asf.download",
             flags="c",
-            product_type="Sentinel-1",
-            beamMode="IW",
-            processingLevel="GRD_HD",
+            platform="Sentinel-1",
+            beam_mode="IW",
+            processinglevel="GRD_HD",
             start="2023-03-15T00:00:00Z",
             end="2023-03-16T00:00:00Z",
-            intersectsWith=aoi,
-            nprocs=2,
-            memory=2048,
-            token="./token.txt", #Må skrive om til å bruke github-secrets
+            aoi="./roi.geojson",
             output_directory=self.tempdir,
-            output=test_product,
-
         )
         info = SimpleModule(
             "t.info",
