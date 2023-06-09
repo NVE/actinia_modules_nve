@@ -24,17 +24,7 @@ class TestAggregationAbsolute(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        """Remove the temporary region and data"""
-        products = [
-            "ASF_S1_download",
-            "ASF_S1_download_flag_c",
-            "ASF_S1_download_flag_l",
-        ]
-        for product in products:
-            try:
-                cls.runModule("t.remove", flags="df", type="strds", inputs=product)
-            except Exception:
-                pass
+        """Remove the temporary data"""
         gs.utils.try_rmdir(cls.tempdir)
 
     def test_asf_download(self):
