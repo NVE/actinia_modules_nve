@@ -117,7 +117,6 @@
 # %rules
 # % required: output_directory,-l
 # % required: start
-# % collective: start,end
 # %end
 
 import zipfile
