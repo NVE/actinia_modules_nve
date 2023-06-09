@@ -97,6 +97,7 @@ jobs:
         env:
           HRSI_USERNAME: "stbl@nve.no"
           HRSI_PASSWORD: ${{ secrets.HRSI_PASSWORD }}
+          ASF_TOKEN: ${{ secrets.ASF_TOKEN }}
         run: |
           cd grass-addons/src
           ../.github/workflows/test.sh
