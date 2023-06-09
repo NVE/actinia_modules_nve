@@ -134,6 +134,24 @@ import geopandas as gpd
 
 import grass.script as gs
 
+def get_aoi_wkt(geojson_file):
+    """Extract the Area of Interest AOI from a GeoJSON file and
+    return it as a WellKnownText (WKT) polygon
+    The input GeoJSON should contain only one geometry"""
+    ogr_dataset = ogr.Open(geojson_file)
+    if ogr_dataset.GetLayerCount() > 1:
+        gs.warning(_("Input file contains more than one layer"))
+    ogr_layer = ogr_dataset.GetLayerByIndex(0)
+    if ogr_layer.GetGeomType() != 3:
+        gs.warning(_("GeoJSON does not contain polygons"))
+    if ogr_layer.GetFeatureCount() > 1:
+        gs.warning(
+            _("GeoJSON contains more than one geometry. Using only the first one.")
+        )
+    ogr_feature = ogr_layer.GetFeature(0)
+    return ogr_feature.geometry().ExportToIsoWkt()
+
+
 def checksum_test(checksum, expected_checksum, _dfile):
     if checksum != expected_checksum:
         gs.verbose(_("Checksum test failed for {}').format(os.path.split(_dfile)[1]))
