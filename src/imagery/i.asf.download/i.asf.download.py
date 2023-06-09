@@ -204,9 +204,9 @@ def main():
         
     token_session = asf.ASFSession().auth_with_token(token)
 
-    download_dir = Path(options["output_directory"]).mkdir(exist_ok=True, parents=True)
     download_dir = Path(options["output_directory"])
-    gs.verbose(f'Downloading to {download_dir}')
+    download_dir.mkdir(exist_ok=True, parents=True)
+    gs.verbose(_('Downloading to {}').format(str(download_dir)))
     
     for count, r in enumerate(results, start=1):
         _dfile = download_dir / r.properties['fileName']
