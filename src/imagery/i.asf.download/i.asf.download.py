@@ -85,7 +85,7 @@
 # %end
 
 # %option
-# % key: beamMode
+# % key: beam_mode
 # % required: yes
 # % type: string
 # % description: Satellite beam mode
