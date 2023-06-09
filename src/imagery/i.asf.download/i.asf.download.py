@@ -146,7 +146,7 @@ def checksum_test(checksum, expected_checksum, _dfile):
     
 
 def main():
-    aoi = shapely.wkt.dumps(gpd.read_file(options["aoi"]).iloc[0].geometry)
+    aoi = get_aoi_wkt(options["aoi"])
 
     opts = {
             'platform': options["platform"],
