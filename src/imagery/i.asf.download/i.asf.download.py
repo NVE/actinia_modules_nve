@@ -45,8 +45,8 @@
 # % type: string
 # % required: yes
 # % multiple: no
-# % description: Path to aoi GeoJSON file
-# % label: Path to aoi GeoJSON file
+# % description: Path to GeoJSON file with the Area Of Interest (aoi)
+# % label: Path to GeoJSON file with the Area Of Interest (aoi)
 # %end
 
 # %option
