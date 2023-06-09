@@ -117,6 +117,7 @@
 # %rules
 # % required: output_directory,-l
 # % required: start
+# % excludes: -l,-c,output_directory
 # %end
 
 import zipfile
