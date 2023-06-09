@@ -40,11 +40,8 @@
 # % label: Directory where to store downloaded data
 # %end
 
-# %option
+# %option G_OPT_F_INPUT
 # % key: aoi
-# % type: string
-# % required: yes
-# % multiple: no
 # % description: Path to GeoJSON file with the Area Of Interest (aoi)
 # % label: Path to GeoJSON file with the Area Of Interest (aoi)
 # %end
