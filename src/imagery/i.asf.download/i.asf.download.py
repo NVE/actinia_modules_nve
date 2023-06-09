@@ -9,7 +9,7 @@
 # PURPOSE:      Searches and Downloads SAR data from the Alaska Satellite Facility
 #
 #
-# COPYRIGHT:	(C) 2020-2022 by mundialis GmbH & Co. KG and the GRASS Development Team
+# COPYRIGHT:	(C) 2023 by NVE, Yngve Antonsen
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
