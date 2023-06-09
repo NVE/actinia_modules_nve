@@ -18,7 +18,7 @@ from grass.gunittest.gmodules import SimpleModule
 class TestAggregationAbsolute(TestCase):
     @classmethod
     def setUpClass(cls):
-        """Initiate the temporal GIS and set the region"""
+        """Initiate the working environment"""
         os.putenv("GRASS_OVERWRITE", "1")
         cls.tempdir = gs.tempdir()
 
