@@ -54,12 +54,6 @@ class TestAggregationAbsolute(TestCase):
             aoi="./roi.geojson",
             output_directory=self.tempdir,
         )
-        info = SimpleModule(
-            "t.info",
-            flags="g",
-            input=test_product,
-        ).run()
-        print(info.outputs.stdout)
         
     def test_asf_download_flag_c(self):
             """Test download and import of Sentinel-1 with flag l - list only"""
