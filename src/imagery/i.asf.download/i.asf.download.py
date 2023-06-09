@@ -144,6 +144,38 @@ def checksum_test(checksum, expected_checksum, _dfile):
         gs.verbose(f'Checksum test OK for {os.path.split(_dfile)[1]}')
         return True
     
+    
+def get_asf_token(token_file=None):
+    """
+    Method to get the ASF token for authentication to ASF.
+    Credentials for authentication to ASF can be either given
+    using a token_file (default is ~/.asf_token) or by defining
+    environment variables:
+    :envvar:`ASF_TOKEN`
+    The user's :envvar:`HOME` directoy is allways searched for a .asf_token
+    token file.
+
+    :param token_file: Path to token file to read
+    :type token_file: str
+    """
+    # Get authentication
+    asf_token = os.environ.get("ASF_TOKEN")
+
+    token_file = token_file or os.path.expanduser("~/.asf_token")
+    if os.path.exists(token_file):
+        try:
+            with open(token_file, "r", encoding="UTF8") as asf_token_file:
+                asf_token = asf_token_file.read()
+        except OSError as error:
+            raise error
+    if not asf_token:
+        gs.warning(
+            _(
+                "No token for authentication provided. Downloading data is thus not possible.\n"
+                "Please provide an authentication token"
+            )
+        )
+    return asf_token
 
 def main():
     aoi = get_aoi_wkt(options["aoi"])
