@@ -5,7 +5,7 @@ This program is free software under the GNU General Public
 License (>=v2). Read the file COPYING that comes with GRASS
 for details.
 
-:authors: 
+:authors: Yngve Antonsen
 """
 import os
 
@@ -36,8 +36,9 @@ class TestAggregationAbsolute(TestCase):
             processinglevel="GRD_HD",
             start="2023-03-15T00:00:00Z",
             end="2023-03-16T00:00:00Z",
-            aoi=./roi.geojson,
+            aoi="./roi.geojson",
             output_directory=self.tempdir,
+            verbose=True,
         )
 
     def test_asf_download_flag_c(self):
@@ -53,21 +54,22 @@ class TestAggregationAbsolute(TestCase):
             end="2023-03-16T00:00:00Z",
             aoi="./roi.geojson",
             output_directory=self.tempdir,
+            verbose=True,
         )
-        
+
     def test_asf_download_flag_l(self):
-            """Test download and import of Sentinel-1 with flag l - list only"""
-            self.assertModule(
-                "i.asf.download",
-                flags="l",
-                platform="Sentinel-1",
-                beam_mode="IW",
-                processinglevel="GRD_HD",
-                start="2023-03-15T00:00:00Z",
-                end="2023-03-16T00:00:00Z",
-                aoi="./roi.geojson",
-                output_directory=self.tempdir,
-            )
+        """Test download and import of Sentinel-1 with flag l - list only"""
+        self.assertModule(
+            "i.asf.download",
+            flags="l",
+            platform="Sentinel-1",
+            beam_mode="IW",
+            processinglevel="GRD_HD",
+            start="2023-03-15T00:00:00Z",
+            end="2023-03-16T00:00:00Z",
+            aoi="./roi.geojson",
+            verbose=True,
+        )
 
 
 if __name__ == "__main__":

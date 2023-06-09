@@ -52,7 +52,7 @@
 # %option
 # % key: token
 # % type: string
-# % required: yes
+# % required: no
 # % multiple: no
 # % description: Path to ASF token file
 # % label: File has to contain ASF token
@@ -116,20 +116,18 @@
 
 # %rules
 # % required: output_directory,-l
-# % required: start
-# % excludes: -l,-c,output_directory
+# % excludes: -l,-c
 # %end
 
-import zipfile
 import os
-import json
 import hashlib
-import concurrent.futures
+import sys
 
 from pathlib import Path
 
 
 import grass.script as gs
+
 
 def get_aoi_wkt(geojson_file):
     """Extract the Area of Interest AOI from a GeoJSON file and
@@ -150,16 +148,16 @@ def get_aoi_wkt(geojson_file):
 
 
 def checksum_test(checksum, expected_checksum, _dfile):
+    """ """
     if checksum != expected_checksum:
-        gs.verbose(_("Checksum test failed for {}').format(os.path.split(_dfile)[1]))
+        gs.verbose(_("Checksum test failed for {}").format(os.path.split(_dfile)[1]))
         os.remove(_dfile)
-        gs.verbose(f'{os.path.split(_dfile)[1]} is deleted')
+        gs.verbose(f"{os.path.split(_dfile)[1]} is deleted")
         return False
-    else:
-        gs.verbose(f'Checksum test OK for {os.path.split(_dfile)[1]}')
-        return True
-    
-    
+    gs.verbose(f"Checksum test OK for {os.path.split(_dfile)[1]}")
+    return True
+
+
 def get_asf_token(token_file=None):
     """
     Method to get the ASF token for authentication to ASF.
@@ -184,7 +182,7 @@ def get_asf_token(token_file=None):
         except OSError as error:
             raise error
     if not asf_token:
-        gs.warning(
+        gs.fatal(
             _(
                 "No token for authentication provided. Downloading data is thus not possible.\n"
                 "Please provide an authentication token"
@@ -192,80 +190,77 @@ def get_asf_token(token_file=None):
         )
     return asf_token
 
+
 def main():
+    """ """
     aoi = get_aoi_wkt(options["aoi"])
 
     opts = {
-            'platform': options["platform"],
-            'beamMode': options["beam_mode"],
-            'processingLevel': options["processinglevel"],
-            'start': options["start"],
-            'end': options["end"],
-            'intersectsWith': aoi
-        }
+        "platform": options["platform"],
+        "beamMode": options["beam_mode"],
+        "processingLevel": options["processinglevel"],
+        "start": options["start"],
+        "end": options["end"],
+        "intersectsWith": aoi,
+    }
 
     results = asf.geo_search(**opts)
-    gs.verbose(f'{len(results)} results found')
-    
-    gs.verbose(f'Listing all scenes found:')
-    for count, r in enumerate(results, start=1):
-        gs.verbose(f'{r.properties['fileName']}')
-    
+    gs.verbose(f"{len(results)} results found")
+
     if flags["l"]:
-        gs.verbose(f'All available scenes are listed.')
+        gs.verbose("Listing all scenes found:")
+        print("\n".join([str(r.properties["fileName"]) for r in results]))
+        gs.verbose("All available scenes are listed.")
         sys.exit()
-    
+
     token = get_asf_token(options["token"])
-        
+
     token_session = asf.ASFSession().auth_with_token(token)
 
     download_dir = Path(options["output_directory"])
     download_dir.mkdir(exist_ok=True, parents=True)
-    gs.verbose(_('Downloading to {}').format(str(download_dir)))
-    
-    for count, r in enumerate(results, start=1):
-        _dfile = download_dir / r.properties['fileName']
-        
-        r.download(path=download_dir, session=token_session)  
-        gs.verbose(f'{r.properties['fileName']} is downloaded')
-        
-        if flags['c']:
+    gs.verbose(_("Downloading to {}").format(str(download_dir)))
+
+    for r in results:
+        _dfile = download_dir / r.properties["fileName"]
+
+        r.download(path=download_dir, session=token_session)
+        gs.verbose(f"{r.properties['fileName']} is downloaded")
+
+        if flags["c"]:
             i = 0
-            while  i < 3:
-                expected_checksum = r.properties['md5sum']
+            while i < 3:
+                expected_checksum = r.properties["md5sum"]
                 checksum = hashlib.md5(_dfile.read_bytes()).hexdigest()
-                
+
                 if not checksum_test(checksum, expected_checksum, _dfile):
-                    gs.verbose(f'Trying to download {os.path.split(_dfile)[1]} again')
+                    gs.verbose(f"Trying to download {os.path.split(_dfile)[1]} again")
                     r.download(path=download_dir, session=token_session)
-                    gs.verbose(f'{r.properties['fileName']} is downloaded again')
+                    gs.verbose(f"{r.properties['fileName']} is downloaded again")
                     i += 1
                 else:
                     i = 3
-           
-                
+
 
 if __name__ == "__main__":
-    options, flags = grass.parser()
+    options, flags = gs.parser()
 
     try:
         import asf_search as asf
-   except ImportError:
-       gs.fatal(_("Can not import asf_search. Please install it with 'pip install asf_search'"))
+    except ImportError:
+        gs.fatal(
+            _(
+                "Can not import asf_search. Please install it with 'pip install asf_search'"
+            )
+        )
 
     try:
-        import shapely.wkt
-   except ImportError:
-       gs.fatal(_("Can not import shapely. Please install it with 'pip install shapely'"))
+        from osgeo import ogr
+    except ImportError:
+        gs.fatal(
+            _(
+                "Can not import GDAL python bindings. Please install it with 'pip install GDAL==$GDAL_VERSION'"
+            )
+        )
 
-    try:
-        import geopandas as gpd
-   except ImportError:
-       gs.fatal(_("Can not import geopandas. Please install it with 'pip install geopandas'"))
-
-        main()
-    
-
-
-
-
+    main()
