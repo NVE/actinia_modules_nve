@@ -211,7 +211,17 @@ if __name__ == "__main__":
    except ImportError:
        gs.fatal(_("Can not import asf_search. Please install it with 'pip install asf_search'"))
 
-    main()
+    try:
+        import shapely.wkt
+   except ImportError:
+       gs.fatal(_("Can not import shapely. Please install it with 'pip install shapely'"))
+
+    try:
+        import geopandas as gpd
+   except ImportError:
+       gs.fatal(_("Can not import geopandas. Please install it with 'pip install geopandas'"))
+
+        main()
     
 
 
