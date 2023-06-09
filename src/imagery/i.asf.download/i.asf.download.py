@@ -167,12 +167,7 @@ def main():
         gs.verbose(f'All available scenes are listed.')
         sys.exit()
     
-    token_file = Path(options["token"])
-
-    with open(token_file, 'r') as f:
-        token = f.read()
-        print(token)
-        f.close()
+    token = get_asf_token(options["token"])
         
     token_session = asf.ASFSession().auth_with_token(token)
 
