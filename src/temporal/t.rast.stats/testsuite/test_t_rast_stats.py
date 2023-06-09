@@ -64,7 +64,7 @@ class TestAreaStats(TestCase):
 
     def test_basic_stats(self):
         """Test basic area statistics"""
-        stats_module = self.SimpleModule(
+        stats_module = SimpleModule(
             "t.rast.stats",
             verbose=True,
             flags="n",
@@ -76,7 +76,7 @@ class TestAreaStats(TestCase):
 
     def test_basic_stats_percent(self):
         """Test basic area statistics in procent"""
-        stats_module = self.SimpleModule(
+        stats_module = SimpleModule(
             "t.rast.stats",
             verbose=True,
             flags="p",
@@ -88,7 +88,7 @@ class TestAreaStats(TestCase):
 
     def test_basic_stats_m2(self):
         """Test basic area statistics in m2"""
-        stats_module = self.SimpleModule(
+        stats_module = SimpleModule(
             "t.rast.stats",
             verbose=True,
             flags="p",
@@ -100,7 +100,7 @@ class TestAreaStats(TestCase):
 
     def test_stats_with_zone(self):
         """Test area statistics with one zone map"""
-        stats_module = self.SimpleModule(
+        stats_module = SimpleModule(
             "t.rast.stats",
             verbose=True,
             flags="n",
@@ -113,7 +113,7 @@ class TestAreaStats(TestCase):
 
     def test_stats_with_zone_and_label(self):
         """Test area statistics with one zone map"""
-        stats_module = self.SimpleModule(
+        stats_module = SimpleModule(
             "t.rast.stats",
             verbose=True,
             flags="nl",
@@ -126,7 +126,7 @@ class TestAreaStats(TestCase):
 
     def test_stats_with_two_zones(self):
         """Test area statistics with one zone map"""
-        stats_module = self.SimpleModule(
+        stats_module = SimpleModule(
             "t.rast.stats",
             verbose=True,
             flags="n",
