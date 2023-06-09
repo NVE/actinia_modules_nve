@@ -1,6 +1,6 @@
 """Test i.asf.download for Sentinel-1
 
-(C) 2023 by the GRASS GIS Development Team
+(C) 2023 by NVE, Yngve Antonsen and the GRASS GIS Development Team
 This program is free software under the GNU General Public
 License (>=v2). Read the file COPYING that comes with GRASS
 for details.
