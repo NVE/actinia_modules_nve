@@ -128,9 +128,6 @@ import concurrent.futures
 
 from pathlib import Path
 
-import shapely.wkt
-import asf_search as asf
-import geopandas as gpd
 
 import grass.script as gs
 
