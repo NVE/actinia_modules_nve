@@ -60,7 +60,7 @@
 
 # %option
 # % key: start
-# % required: no
+# % required: yes
 # % type: string
 # % description: Start date ('YYYY-MM-DD')
 # % guisection: Filter
