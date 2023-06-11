@@ -364,7 +364,7 @@ def main():
 
     # Generate header if needed
     if flags["h"]:
-        header = ['map']
+        header = ["map"]
         if "g" in flags:
             header.append("east")
             header.append("north")
