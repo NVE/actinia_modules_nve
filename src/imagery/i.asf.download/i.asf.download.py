@@ -130,6 +130,9 @@ def get_aoi_wkt(geojson_file):
     """Extract the Area of Interest AOI from a GeoJSON file and
     return it as a WellKnownText (WKT) polygon
     The input GeoJSON should contain only one geometry"""
+    if not Path(geojson_file).exists():
+        gs.fatal(_("AOI file <{}> not found").format(geojson_file))
+
     ogr_dataset = ogr.Open(geojson_file)
     if ogr_dataset.GetLayerCount() > 1:
         gs.warning(_("Input file contains more than one layer"))
