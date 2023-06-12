@@ -40,11 +40,8 @@
 # % label: Directory where to store downloaded data
 # %end
 
-# %option
+# %option G_OPT_F_INPUT
 # % key: aoi
-# % type: string
-# % required: yes
-# % multiple: no
 # % description: Path to GeoJSON file with the Area Of Interest (aoi)
 # % label: Path to GeoJSON file with the Area Of Interest (aoi)
 # %end
@@ -133,6 +130,9 @@ def get_aoi_wkt(geojson_file):
     """Extract the Area of Interest AOI from a GeoJSON file and
     return it as a WellKnownText (WKT) polygon
     The input GeoJSON should contain only one geometry"""
+    if not Path(geojson_file).exists():
+        gs.fatal(_("AOI file <{}> not found").format(geojson_file))
+
     ogr_dataset = ogr.Open(geojson_file)
     if ogr_dataset.GetLayerCount() > 1:
         gs.warning(_("Input file contains more than one layer"))

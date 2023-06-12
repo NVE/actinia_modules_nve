@@ -242,7 +242,7 @@ def compute_statistics(
     if not stats_module.outputs.stdout:
         return None
 
-    join_string = f"{input_tuple[1]}{separator}{input_tuple[2]}{separator}"
+    join_string = f"{input_tuple[0]}{separator}{input_tuple[1]}{separator}{input_tuple[2]}{separator}"
 
     return (
         f"{join_string}"
@@ -364,7 +364,7 @@ def main():
 
     # Generate header if needed
     if flags["h"]:
-        header = []
+        header = ["map"]
         if "g" in flags:
             header.append("east")
             header.append("north")
