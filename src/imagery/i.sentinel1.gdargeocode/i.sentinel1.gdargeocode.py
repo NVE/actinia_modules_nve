@@ -107,11 +107,36 @@ def grass2gdar(map_name):
     )
 
 
+def get_aoi_geometry(geojson_file):
+    """Extract the Area of Interest AOI from a GeoJSON file and
+    return it as an OGR Geometry object.
+    The input GeoJSON should contain only one polygon geometry"""
+
+    ogr_dataset = ogr.Open(
+        f"/vsicurl/{geojson_file}" if geojson_file.startswith("http") else geojson_file
+    )
+
+    if not ogr_dataset:
+        gs.fatal(_("Could not open AOI file <{}>").format(geojson_file))
+    if ogr_dataset.GetLayerCount() > 1:
+        gs.warning(_("Input file contains more than one layer"))
+    ogr_layer = ogr_dataset.GetLayerByIndex(0)
+    if ogr_layer.GetGeomType() != 3:
+        gs.warning(_("GeoJSON does not contain polygons"))
+    if ogr_layer.GetFeatureCount() > 1:
+        gs.warning(
+            _("GeoJSON contains more than one geometry. Using only the first one.")
+        )
+    ogr_feature = ogr_layer.GetFeature(0)
+    return ogr_feature.geometry()
+
+
 def get_target_geometry(bpol, aoi=None, crs_wkt=None):
     """Intersect a bounding polygon represented aS an array of vertices
     or an ogr.Geometry with an area of interest if given and projects
     the relevant bounding geometry (target geometry) to the target CRS
     given in WKT format."""
+    aoi = get_aoi_geometry(aoi)
     s_srs = osr.SpatialReference()
     s_srs.ImportFromEPSG(4326)
     t_srs = osr.SpatialReference()
