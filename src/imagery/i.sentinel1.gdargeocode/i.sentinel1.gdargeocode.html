@@ -5,7 +5,7 @@
 reference systems (CRS) different from the current LOCATION will be projected to the CRS of the LOCATION
 and results will be aligned with and resampled to the pixels in the input DEM.
 
-If the <p>a-flag</b> is set, a precise orbit file is fetched from ESAs web service if available (recommended).
+If the <b>a-flag</b> is set, a precise orbit file is fetched from ESAs web service if available (recommended).
 Note that there is usually a several days time lag after sensing time before these files are made available. If
 precise orbit files for the given scene are not available, the process will proceeed without and give a warning.
 
@@ -25,9 +25,22 @@ In the <b>nprocs</b> option, users can specify the number of parallel process to
 Currently, only geocoding of Sentinel-1 imagery in IW <b>mode</b> and VV or VH <b>polarization</b> is
 supported.
 
+<h2>EXAMPLES</h2>
+  
 <div class="code"><pre>
-i.sentinel1.gdargeocode -a input= output_directory= elevation= Todo
+i.sentinel1.gdargeocode -a input=S1A_IW_GRDH_1SDV_20200304T161544_20200304T161609_031528_03A1CB_4A98.SAFE output_directory=./ elevation=elevation
 </pre></div>
+
+<h2>REQUIREMENTS</h2>
+<em>i.sentinel1.gdargeocode</em> uses the following non-standard Python libraries:
+<ul>
+  <li>The proprietary <em>GDAR</em> Python library developed by NORCE (coming with own dependencies)</li>
+  <li>Python bindings for <a href="https://pypi.org/project/GDAL/">GDAL</a></li>
+  <li>the <a href="https://pypi.org/project/rasterio/">rasterio</a> Python library</li>
+</ul>
+
+In order to make GRASS GIS Raster maps directly available to rasterio, the
+<a href="https://github.com/OSGeo/gdal-grass">GDAL-GRASS plugin</a> is required to.
 
 <h2>REFERENCES</h2>
 
