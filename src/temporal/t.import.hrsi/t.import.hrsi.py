@@ -393,43 +393,43 @@ class CLCCryoDownloader:
         self.requested_hrsi_product = product_metadata
         next_batch = True
         url = self.search_url
-        with open(self.tempfile, "w", encoding="UTF8") as g_tempfile:
-            while next_batch:
-                with request.urlopen(url) as req:
-                    resp = req.read()
-                    resp_dict = json.loads(resp)
-                download_urls = [
-                    f["properties"]["services"]["download"]["url"]
-                    for f in resp_dict["features"]
-                ]
+        while next_batch:
+            with request.urlopen(url) as req:
+                resp = req.read()
+                resp_dict = json.loads(resp)
+            download_urls = [
+                f["properties"]["services"]["download"]["url"]
+                for f in resp_dict["features"]
+            ]
 
-                files_n = len(download_urls)
-                active_cores = min(files_n, self.cores)
-                if active_cores == 1:
-                    result_dicts = [self._download_and_import_data(download_urls)]
-                elif active_cores > 1:
-                    with Pool(active_cores) as pool:
-                        result_dicts = pool.map(
-                            self._download_and_import_data,
-                            [
-                                download_urls[worker :: self.cores]
-                                for worker in range(self.cores)
-                            ],
-                        )
-                else:
-                    gs.warning(_("Nothing to download in current datasets"))
-                    sys.exit()
+            files_n = len(download_urls)
+            active_cores = min(files_n, self.cores)
+            if active_cores == 1:
+                result_dicts = [self._download_and_import_data(download_urls)]
+            elif active_cores > 1:
+                with Pool(active_cores) as pool:
+                    result_dicts = pool.map(
+                        self._download_and_import_data,
+                        [
+                            download_urls[worker :: self.cores]
+                            for worker in range(self.cores)
+                        ],
+                    )
+            else:
+                gs.warning(_("Nothing to download in current datasets"))
+                sys.exit()
 
-                next_page = [
-                    link
-                    for link in resp_dict["properties"]["links"]
-                    if "rel" in link and link["rel"] == "next"
-                ]
-                if next_page:
-                    url = next_page[0]["href"]
-                else:
-                    next_batch = False
+            next_page = [
+                link
+                for link in resp_dict["properties"]["links"]
+                if "rel" in link and link["rel"] == "next"
+            ]
+            if next_page:
+                url = next_page[0]["href"]
+            else:
+                next_batch = False
 
+            with open(self.tempfile, "a", encoding="UTF8") as g_tempfile:
                 g_tempfile.write(
                     "".join(
                         [
@@ -565,22 +565,28 @@ class CLCCryoDownloader:
                             end = None
                     if not equal_projection:
                         # Create VRT
-                        input_path = create_vrt(
-                            hrsi_file_path,
-                            gdal_dataset,
-                            self.gisenv,
-                            equal_projection,
-                            transform,
-                            self.requested_hrsi_product[sub_product]["resample"],
-                            self.requested_hrsi_product[sub_product]["data_type"],
-                            data_range=self.requested_hrsi_product[sub_product][
-                                "valid_range"
-                            ]
-                            if self.import_module.flags.get("m")
-                            else None,
-                            nodata=self.requested_hrsi_product[sub_product]["nodata"],
-                            recreate=self.recreate,
-                        )
+                        try:
+                            input_path = create_vrt(
+                                hrsi_file_path,
+                                gdal_dataset,
+                                self.gisenv,
+                                equal_projection,
+                                transform,
+                                self.requested_hrsi_product[sub_product]["resample"],
+                                self.requested_hrsi_product[sub_product]["data_type"],
+                                data_range=self.requested_hrsi_product[sub_product][
+                                    "valid_range"
+                                ]
+                                if self.import_module.flags.get("m")
+                                else None,
+                                nodata=self.requested_hrsi_product[sub_product][
+                                    "nodata"
+                                ],
+                                recreate=self.recreate,
+                            )
+                        except Exception:
+                            gdal_dataset = None
+                            continue
                     else:
                         input_path = hrsi_file_path
                     gdal_dataset = None
@@ -592,11 +598,7 @@ class CLCCryoDownloader:
                         "title"
                     ]
                     import_mod.outputs.output = map_name
-                    try:
-                        import_mod.run()
-                    except Exception:
-                        Path(input_path).unlink()
-                        continue
+                    import_mod.run()
 
                     # Add categories if relevant
                     if self.requested_hrsi_product[sub_product]["categories"]:
