@@ -386,6 +386,8 @@ class CLCCryoDownloader:
     def fetch_data(self, query_params, product_metadata):
         """Wrapper method to execute download in batches"""
         check_permissions(self.output_directory, "Download")
+        # Minimize pageing
+        query_params["maxRecords"] = "2000"
         self.__construct_search_url(query_params)
         self.__get_token()
         self.requested_hrsi_product = product_metadata
@@ -590,7 +592,11 @@ class CLCCryoDownloader:
                         "title"
                     ]
                     import_mod.outputs.output = map_name
-                    import_mod.run()
+                    try:
+                        import_mod.run()
+                    except Exception:
+                        Path(input_path).unlink()
+                        continue
 
                     # Add categories if relevant
                     if self.requested_hrsi_product[sub_product]["categories"]:
@@ -1547,6 +1553,15 @@ def main():
             description=hrsi_products[options["product_type"]]["description"],
             verbose=True,
         )
+
+    # Remove potential duplicates
+    with open(clc_downloader.tempfile, encoding="UTF8") as reg_file:
+        reg_lines = set(reg_file.read().splitlines())
+
+    # Write registration file with unique lines
+    with open(clc_downloader.tempfile, "w", encoding="UTF8") as reg_file:
+        reg_file.write("\n".join(reg_lines) + "\n")
+
     # Register downloaded maps in STRDS
     register_maps_in_space_time_dataset(
         "raster",
