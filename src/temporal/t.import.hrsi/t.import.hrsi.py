@@ -219,7 +219,7 @@ class CLCCryoDownloader:
         self,
         description_url="https://cryo.land.copernicus.eu/resto/api/collections/HRSI/describe.xml",
         token_url="https://cryo.land.copernicus.eu/auth/realms/cryo/protocol/openid-connect/token",
-        output_directory=Path("./"),
+        output_directory="./",
         gisenv=None,
         credits_file=None,
         import_module=None,
@@ -268,10 +268,12 @@ class CLCCryoDownloader:
         #: Attribute containing the projection information of the GRASS GIS location
         self.reference_crs = gs.read_command("g.proj", flags="wf").strip()
         #: Attribute containing the path to the directory where VRT files are stored
-        self.vrt_dir = Path(self.gisenv["GISDBASE"]).joinpath(
-            self.gisenv["LOCATION_NAME"], self.gisenv["MAPSET"], "gdal"
+        self.vrt_dir = str(
+            Path(self.gisenv["GISDBASE"]).joinpath(
+                self.gisenv["LOCATION_NAME"], self.gisenv["MAPSET"], "gdal"
+            )
         )
-        self.vrt_dir.mkdir(parents=True, exist_ok=True)
+        Path(self.vrt_dir).mkdir(parents=True, exist_ok=True)
         #: Attribute defining if existing data should be overwritten
         self.recreate = gs.overwrite()
 
@@ -513,6 +515,7 @@ class CLCCryoDownloader:
                     retries += 1
             if not success:
                 gs.warning(_("Error when downloading {}").format(download_url))
+                failed_downloads.append(download_url)
 
             # Extract metadata
             with zipfile.ZipFile(data) as zip_file:
@@ -522,7 +525,7 @@ class CLCCryoDownloader:
                     if hrsi_file.endswith("xml")
                 ][0]
                 zip_data = zip_file.read(hrsi_file_xml)
-                hrsi_file_path = self.output_directory / Path(hrsi_file_xml).name
+                hrsi_file_path = Path(self.output_directory) / Path(hrsi_file_xml).name
                 hrsi_file_path.write_bytes(zip_data)
 
                 # temporal extend is not consistently represented in the
@@ -546,7 +549,7 @@ class CLCCryoDownloader:
                         continue
 
                     zip_data = zip_file.read(hrsi_file)
-                    hrsi_file_path = self.output_directory / Path(hrsi_file).name
+                    hrsi_file_path = Path(self.output_directory) / Path(hrsi_file).name
                     hrsi_file_path.write_bytes(zip_data)
                     map_name = legalize_name_string(hrsi_file_path.stem)
                     full_map_name = f"{map_name}@{self.gisenv['MAPSET']}"
@@ -598,8 +601,14 @@ class CLCCryoDownloader:
                         "title"
                     ]
                     import_mod.outputs.output = map_name
-                    import_mod.run()
-
+                    try:
+                        import_mod.run()
+                    except Exception:
+                        gs.warning(
+                            _("Could not import map {}").format(str(hrsi_file_path))
+                        )
+                        hrsi_file_path.unlink()
+                        continue
                     # Add categories if relevant
                     if self.requested_hrsi_product[sub_product]["categories"]:
                         Module(
@@ -1524,7 +1533,7 @@ def main():
 
     # Create download object
     clc_downloader = CLCCryoDownloader(
-        output_directory=Path(options["output_directory"]),
+        output_directory=options["output_directory"],
         credits_file=options["credits_file"],
         import_module=import_module,
         category_module=category_module,
