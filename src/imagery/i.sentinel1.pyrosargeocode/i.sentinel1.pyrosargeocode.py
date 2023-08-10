@@ -29,9 +29,10 @@
 # % description: Pre-process and import Sentinel-1 imagery using pyroSAR / ESA SNAP
 # % keyword: import
 # % keyword: raster
+# % keyword: imagery
 # % keyword: copernicus
 # % keyword: sentinel
-# % keyword: sattelite
+# % keyword: satellite
 # % keyword: radar
 # %end
 
@@ -306,7 +307,7 @@ def process_image_file(
             semantic_label = f"S1_{orbit_direction}_{polarization}"
             output_tif = output_dir / f"{s1_file_id.outname_base()}_{polarization}.tif"
         else:
-            geocoding = "rct" if import_flags["n"] else "elp"
+            geocoding = "rtc" if import_flags["n"] else "elp"
             scale = "_db" if import_flags["d"] else ""
             semantic_label = f"S1_{orbit_direction}_{polarization}_{kwargs['refarea']}_{geocoding}{scale}"
             # e.g.: S1A__IW___D_20230602T043121_VV_gamma0-elp_db.tif
@@ -485,7 +486,7 @@ def main():
         "standardGridOriginY": float(dem_info["north"]),
         "clean_edges": True,
         "polarizations": options["polarizations"].split(","),
-        "scaling": "dB" if flags["f"] else "linear",
+        "scaling": "dB" if flags["d"] else "linear",
         "groupsize": 1 if flags["s"] else 999,  # 1 = execute each node separately
         "gpt_args": gpt_options[1],
         "tmpdir": options["temporary_directory"] or tempfile.gettempdir(),
