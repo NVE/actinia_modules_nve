@@ -51,6 +51,7 @@
 
 # %option G_OPT_F_INPUT
 # %key: aoi
+# % required: no
 # % description: Path to GeoJSON file with the Area Of Interest (aoi)
 # % label: Path to GeoJSON file with the Area Of Interest (aoi)
 # %end
@@ -101,6 +102,12 @@
 # % label: Performance can benefit from putting temporary data on a fast storage area
 # %end
 
+# %option G_OPT_F_OUTPUT
+# %key: register_file
+# % required: no
+# % description: File to be used to register results in a Space Time Raster Dataset
+# %end
+
 # %flag
 # % key: s
 # % description: Execute each node in graph seperately (can circumvent memory limits but takes more time)
@@ -144,6 +151,7 @@ import tempfile
 from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
+from subprocess import PIPE
 
 import grass.script as gs
 
@@ -261,7 +269,7 @@ def process_image_file(
         gs.warning(_("Scene {} is already processed").format(s1_file.name))
         if not gs.overwrite():
             return None
-        # Remove results i overwrite is requested
+        # Remove results if overwrite is requested
         gs.warning(_("Removing results from prior processes as overwrite is requested"))
         for existing_file in Path(kwargs["outdir"]).glob(
             f"{s1_file_id.outname_base()}*"
@@ -273,7 +281,7 @@ def process_image_file(
         s1_file_id.meta["acquisition_time"]["start"].replace("T", " ").split(".")[0]
     )
     end_time = (
-        s1_file_id.meta["acquisition_time"]["start"].replace("T", " ").split(".")[0]
+        s1_file_id.meta["acquisition_time"]["stop"].replace("T", " ").split(".")[0]
     )
 
     if import_flags["f"]:
@@ -333,9 +341,11 @@ def process_image_file(
             import_kwargs["flags"] = "r" if import_flags["r"] else ""
             import_kwargs.pop("memory")
 
-        Module(module, **import_kwargs)
+        gs.verbose(_("Importing file {}").format(str(output_tif)))
+        Module(module, stderr_=PIPE, **import_kwargs)
         Module(
             "r.support",
+            stderr_=PIPE,
             map=output_map,
             semantic_label=semantic_label,
         )
@@ -444,7 +454,7 @@ def main():
     dem_info["GDAL_path"] = get_raster_gdalpath(options["elevation"])
 
     nprocs = int(options["nprocs"])
-    nprocs_outer = min(nprocs, len(file_input)) if len(file_input) == 1 else 1
+    nprocs_outer = min(nprocs, len(file_input))
     nprocs_inner = nprocs if len(file_input) == 1 else 1
 
     speckle_filter_dict = {
@@ -511,10 +521,18 @@ def main():
         for s1_file in file_input:
             geocoded_files.append(_geocode_snap(s1_file))
 
-    # Write registration files
-    Path(options["register_file"]).write_text(
-        "\n".join(geocoded_files), encoding="UTF8"
-    )
+    geocoded_files = [
+        geocoded_file for geocoded_file in geocoded_files if geocoded_file
+    ]
+
+    if geocoded_files:
+        if options["register_file"]:
+            # Write registration files
+            Path(options["register_file"]).write_text(
+                "\n".join(geocoded_files), encoding="UTF8"
+            )
+        else:
+            print("\n".join(geocoded_files))
 
 
 if __name__ == "__main__":
