@@ -302,7 +302,14 @@ def process_image_file(
 
     # Apply processing graph
     gs.verbose(_("Start geocoding scene {}").format(s1_file.name))
-    snap.geocode(infile=s1_file_id, **kwargs)
+    try:
+        snap.geocode(infile=s1_file_id, **kwargs)
+    except RuntimeError as runtime_error:
+        gs.fatal(
+            (
+                "Geocoding failed with the following error: {}\nPlease check the log files"
+            ).format(runtime_error)
+        )
 
     register_strings = []
     output_dir = Path(kwargs["outdir"])
