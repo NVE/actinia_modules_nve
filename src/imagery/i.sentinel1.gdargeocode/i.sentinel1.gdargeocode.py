@@ -178,7 +178,12 @@ def gdar_geocode(
     """Perform actual geocding"""
 
     # Read Sentinel-1 file
-    s1_file = reader(str(s1_file_path))
+    try:
+        s1_file = reader(str(s1_file_path))
+    except Exception:
+        gs.warning(_("Cannot open file {}").format(str(s1_file_path)))
+        return None
+
     if use_precision_orbit:
         gs.debug(_("Accessing precision orbits from remote..."))
         try:

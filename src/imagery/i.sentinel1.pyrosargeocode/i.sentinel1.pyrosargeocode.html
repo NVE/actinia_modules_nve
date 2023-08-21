@@ -1,0 +1,62 @@
+<h2>DESCRIPTION</h2>
+
+<em>i.sentinel1.pyrosargeocode</em> geocodes Sentinel-1 imagery on a user defined Digital Elevation Model (DEM)
+<b>elevation</b> using ESA SNAP Sentinel-1 Tool Box (S1TBX) through the pyrosar library developed by (XXXXXXXXXXX).
+Sentinel-1 images will be projected to the Coordinate reference systems (CRS) of the input DEM, wich is assumed to
+match the CRS of the current LOCATION. In that process, results will be aligned with and resampled to the pixels
+in the input DEM.
+
+If the <b>f-flag</b> is set, a precise orbit file is fetched from ESAs web service if available (recommended).
+Note that there is usually a several days time lag after sensing time before these files are made available. If
+precise orbit files for the given scene are not available, the process will proceeed and give a warning.
+
+<p>
+<b>input</b> can be a single Sentinel-1 SAFE file (also in zipped format), a comma separated list of Sentinel-1
+files or a text file with a list of Sentinel-1 files to geocode. Geocoded images are stored in GeoTIFF format
+in the <b>output_directory</b> with file names following the naming convention in pyroSAR. Resulting files are
+then either imported into the GRASS GIS database <em>r.in.gdal</em> or linked  using <em>r.external</em>, if
+the <b>l-flag</b>, <b>m-flag</b>, or <b>r-flag</b> are given.
+
+<p>
+If only a specifc extent of the Sentinel-1 images is supposed to be geocoded, the user can define
+the Area of Interest <b>aoi</b> in form of a GeoJSON with a single geometry.
+
+<p>
+In the <b>nprocs</b> option, users can specify the number of parallel process to run. If more than one
+Sentinel-1 scene is given in the <b>input</n> option, <b>nprocs</b> number of scenes will be processed in
+parallel. Otherwise, <b>nprocs</b> defines the number of cores available to the graph processing tool (gpt)
+in ESA SNAP. As geocoding is quite memory demanding, the user has to account for the amount of memory made
+available to ESA SNAP / gpt when activating parallel processing with <b>nprocs</b> > 1.
+
+<p>
+Currently, only geocoding of Sentinel-1 GRD imagery in IW <b>mode</b> and with VV or VH <b>polarization</b>
+is supported.
+
+For more information on the pyroSAR processing chain, lease consult the pyroSAR manual, especially the
+documentation for processing with ESA SNAP.
+
+<h2>EXAMPLES</h2>
+
+<div class="code"><pre>
+i.sentinel1.pyroargeocode -dfmn input=S1A_IW_GRDH_1SDV_20200304T161544_20200304T161609_031528_03A1CB_4A98.zip \
+  output_directory=./ elevation=elevation temporary_directory=/tmp speckle_filter=refined_lee \
+  aoi=aoi.geojson
+</pre></div>
+
+<h2>REQUIREMENTS</h2>
+<em>i.sentinel1.pyrosargeocode</em> requires ESA SNAP to be installed with the Graph Processing tool
+(gpt) available on PATH. In addition, the pyroSAR Python libraries is required which can be installed
+from pypi with: pip install pyroSAR
+
+<h2>SEE ALSO</h2>
+<a href="i.sentinel1.gdargeocode.html">i.sentinel1.gdargeocode</a>
+
+<h2>REFERENCES</h2>
+
+<a href="https://docs.asf.alaska.edu/asf_search/basics/">pyroSAR</a>
+<a href="https://docs.asf.alaska.edu/asf_search/basics/">pyroSAR paper</a>
+<a href="https://docs.asf.alaska.edu/asf_search/basics/">pyroSAR ARD paper</a>
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath
