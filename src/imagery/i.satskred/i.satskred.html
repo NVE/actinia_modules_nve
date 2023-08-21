@@ -1,0 +1,49 @@
+<h2>DESCRIPTION</h2>
+
+<em>i.satkred</em> runs avalanche detection from Sentinel-1 imagery using the
+<a href=https://github.com/NVE/satskred_dev>satskred</a> library. Main <b>input</b> is a directory
+containing a tme series of Sentinel-1 GRD imagery. In addition, a Digital Elevation Model (DEM)
+is required in the <b>elevation</b> option.
+
+<p>
+<em>i.satkred</em> creates configuration files for satskred, initializes the area to process and
+executes the satskred command line utility to run avalance detection. All results (geocoded Sentinel-1
+images, RGB-change images, shape files of detected avalanches) are stored in the <b>output_directory</b>.
+
+<p>
+Further required input are a directory containing runout masks given in the <b>mask_directory</b> option,
+together with mask settings like <b>mask_suffix</b>, describing the suffix used for files with runout masks,
+a comma separated list of category values in the masks to exclude from avalanche detection given in the
+<b>mask_exclude</b> option and finally the minimum valid category value in the mask files <b>mask_min_valid</b>
+(values >= mask_min_valid are incuded in avalanche detection). Default settings for the mask options are
+chosen to match current settings for satskred production at NVE.
+
+<p>
+The user can choose to process only a specific time span defined by the <b>start</b> and <b>stop</b> option.
+The extent to process is taken from the computational region (set with <em>g.region</em>), and relevant
+images in the <b>input</b> directory are selected according to the user-provided spatial and temporal
+extent to process.
+
+<h2>NOTES</h2>
+Currently, the module expects the input Digital Elevation Model to be in UTM 33N Coordinate
+Reference System, and all output is generated in that CRS (EPSG:25833) as well.
+
+<h2>EXAMPLES</h2>
+
+<div class="code"><pre>
+i.satskred input="./Sentinel_1_raw" elevation="./dtm20m.tif" mask_directory="./runoutmasks/" \
+  start="2019-11-24" end="2020-06-06" output_directory="./satskred_results"
+</pre></div>
+
+<h2>REQUIREMENTS</h2>
+<em>i.satskred</em> uses the following non-standard Python libraries:
+<ul>
+  <li>The non-open <em>satskred</em> Python library</li>
+  <li>The proprietary <em>GDAR</em> Python library developed by NORCE (coming with own dependencies)</li>
+  <li>Python bindings for <a href="https://pypi.org/project/GDAL/">GDAL</a></li>
+</ul>
+
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath
