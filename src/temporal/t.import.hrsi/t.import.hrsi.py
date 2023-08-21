@@ -1639,7 +1639,7 @@ def main():
     # Write log
     if flags["w"]:
         with open(
-            clc_downloader.output_directory
+            Path(clc_downloader.output_directory)
             / f"hrsi_import_{run_time.strftime('%Y%m%dT%H%M%S')}.log",
             "w",
             encoding="UTF8",
