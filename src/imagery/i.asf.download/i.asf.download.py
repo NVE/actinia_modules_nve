@@ -178,7 +178,7 @@ def get_asf_token(token_file=None):
     if os.path.exists(token_file):
         try:
             with open(token_file, "r", encoding="UTF8") as asf_token_file:
-                asf_token = asf_token_file.read()
+                asf_token = asf_token_file.read().rstrip()
         except OSError as error:
             raise error
     if not asf_token:
