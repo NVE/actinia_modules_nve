@@ -85,8 +85,7 @@ time satskred run \
 # % type: string
 # % required: no
 # % answer: tif
-# % description: Name for output directory where masks for avalanche detection are stored
-# % label: Directory where masks for avalanche detection are stored
+# % description: Suffix used for files with runout masks
 # %end
 
 # %option
@@ -109,16 +108,16 @@ time satskred run \
 # % key: start
 # % type: string
 # % required: no
-# % description: Name for output directory where masks for avalanche detection are stored
-# % label: Directory where masks for avalanche detection are stored
+# % description: Start date of time frame to compute (required format: YYYY-MM-DD)
+# % label: Start date of time frame to compute (required format: YYYY-MM-DD)
 # %end
 
 # %option
 # % key: end
 # % type: string
 # % required: no
-# % description: Name for output directory where masks for avalanche detection are stored
-# % label: Directory where masks for avalanche detection are stored
+# % description: End date of time frame to compute (required format: YYYY-MM-DD)
+# % label: End date of time frame to compute (required format: YYYY-MM-DD)
 # %end
 
 
@@ -127,9 +126,11 @@ import shutil
 import sys
 
 from datetime import datetime
-from multiprocessing import Pool
+
+# from multiprocessing import Pool
 from pathlib import Path
-from subprocess import PIPE
+
+# from subprocess import PIPE
 
 import grass.script as gs
 
@@ -146,8 +147,10 @@ def write_config(
     masks=None,
     mask_name=None,
     mask_hard=True,
-    mask_excluded_values=[0, 3],
+    mask_excluded_values=(0, 3),
 ):
+    """Write configuration files for satskred
+    according to user input"""
     config = {
         "satskredconf": directory / ".satskredconf.json",
         "woodpeckerconf": directory / ".woodpeckerconf.json",
@@ -268,9 +271,7 @@ def main():
         directory=temp_dir,
         logfile=log_file,
         loglevel=log_level,
-        sar=str(input_directory / "*.zip")
-        if flags["z"]
-        else str(input_directory / "*.SAFE"),
+        sar=str(input_directory / "*.SAFE"),
         reporting=str(temp_dir),
         dem=dem,
         reference_height="geoid",
@@ -317,15 +318,14 @@ def main():
 if __name__ == "__main__":
     options, flags = gs.parser()
     # lazy imports
-    from grass.pygrass.modules.interface import Module
 
-    try:
-        from osgeo import gdal, ogr, osr
-    except ImportError:
-        gs.fatal(
-            _(
-                "Can not import GDAL python bindings. Please install it with 'pip install GDAL==${GDAL_VERSION}'"
-            )
-        )
+    # try:
+    #     from osgeo import gdal, ogr, osr
+    # except ImportError:
+    #     gs.fatal(
+    #         _(
+    #             "Can not import GDAL python bindings. Please install it with 'pip install GDAL==${GDAL_VERSION}'"
+    #         )
+    #     )
 
     sys.exit(main())
