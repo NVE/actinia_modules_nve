@@ -33,7 +33,7 @@ jobs:
           | bash' \;
       - name: Copy the page as index.html
         run: |
-          cp build/docs/html/* build/docs/html/
+          echo "test" build/docs/html/index.html
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v2.1.0
         env:
