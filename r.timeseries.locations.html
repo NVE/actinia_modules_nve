@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>r.timeseries.locations - GRASS GIS manual</title>
+ <meta name="description" content="r.timeseries.locations: Manage locations for time series in NVE time series DB">
+ <meta name="keywords" content="NVE, import, export, raster, vector, category, reclass, database">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass82/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#subdivide-watersheds-using-altitude-bands-and-breaks-from-db">Subdivide watersheds using altitude bands and breaks from DB</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>r.timeseries.locations</b></em>  - Manage locations for time series in NVE time series DB
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass82/docs/html/NVE.html">NVE</a>, <a href="file:///usr/lib/grass82/docs/html/topic_import.html">import</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#export">export</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#raster">raster</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#vector">vector</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#category">category</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#reclass">reclass</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#database">database</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>r.timeseries.locations</b><br></div>
+<b>r.timeseries.locations --help</b><br>
+<div id="synopsis"><b>r.timeseries.locations</b> <b>locations</b>=<em>Map name for the managed locations</em>  [<b>locations_subunits</b>=<em>Map name for subunits of the managed locations</em>]  <b>locations_url</b>=<em>string</em>  [<b>layer</b>=<em>string</em>]   [<b>where</b>=<em>sql_query</em>]   [<b>snap</b>=<em>float</em>]   [<b>method</b>=<em>string</em>]   [<b>keepass_file</b>=<em>Input KeePass file to get DB credentials from</em>]   [<b>keepass_title</b>=<em>string</em>]   [<b>continuous_subdivision_map</b>=<em>name</em>]  <b>domain_id</b>=<em>integer</em>  [<b>class_number</b>=<em>integer</em>]   [<b>round_to_closest</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>locations</b>=<em>Map name for the managed locations</em>&nbsp;<b>[required]</b></dt>
+<dd>Map name for the managed locations</dd>
+
+<dt><b>locations_subunits</b>=<em>Map name for subunits of the managed locations</em></dt>
+<dd>Map name for subunits of the managed locations</dd>
+
+<dt><b>locations_url</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>URL to the OGR data source to import</dd>
+<dd>Default: <em></em></dd>
+
+<dt><b>layer</b>=<em>string</em></dt>
+<dd>Layer name of the OGR data source to import</dd>
+
+<dt><b>where</b>=<em>sql_query</em></dt>
+<dd>WHERE conditions of SQL statement without 'where' keyword</dd>
+<dd>Example: income &lt; 1000 and population &gt;= 10000</dd>
+
+<dt><b>snap</b>=<em>float</em></dt>
+<dd>Snap vertices in input vector map to this number of map units</dd>
+<dd>Default: <em>-1</em></dd>
+
+<dt><b>method</b>=<em>string</em></dt>
+<dd>Method for generating subunits</dd>
+<dd>Options: <em>percentile, linear, database</em></dd>
+
+<dt><b>keepass_file</b>=<em>Input KeePass file to get DB credentials from</em></dt>
+<dd>Input KeePass file to get DB credentials from</dd>
+
+<dt><b>keepass_title</b>=<em>string</em></dt>
+<dd>Title of the KeePass entry to get MS SQL credentials from</dd>
+
+<dt><b>continuous_subdivision_map</b>=<em>name</em></dt>
+<dd>Name of input raster map</dd>
+
+<dt><b>domain_id</b>=<em>integer</em>&nbsp;<b>[required]</b></dt>
+<dd>Domain ID of locations to import</dd>
+
+<dt><b>class_number</b>=<em>integer</em></dt>
+<dd>Number of classes for subdividing locations</dd>
+
+<dt><b>round_to_closest</b>=<em>string</em></dt>
+<dd>Closest unit to round class boundaries to (integer or float)</dd>
+
+<dt><b>nprocs</b>=<em>integer</em></dt>
+<dd>Number of threads for parallel computing</dd>
+<dd>Default: <em>1</em></dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a>
+    <ul class="toc">
+        <li class="toc"><a href="#subdivide-watersheds-using-altitude-bands-and-breaks-from-db" class="toc">Subdivide watersheds using altitude bands and breaks from DB</a></li>
+    </ul></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>r.timeseries.locations</em> subdivides locations (geometries) into
+coherent sub-units based on a continuous raster map and break values for
+subdivisions. It is written for locations in NVEs time series database.
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<h3><a name="subdivide-watersheds-using-altitude-bands-and-breaks-from-db">Subdivide watersheds using altitude bands and breaks from DB</a></h3>
+
+<div class="code"><pre>
+r.timeseries.locations locations_url="MSSQL:driver=FreeTDS;server=tst.sql.server.com;port=1433;database=testdatabase" \
+  where="parent_id IS NULL" locations=test continuous_subdivision_map="DTM" \
+  round_to_closest=1 method=database domain_id=60 layer="dbo.region" \
+  locations_subunits="test_subunits" nprocs=20 \
+  keepass_file="/hdata/fjernanalyse3/CopernicusUtviklingOgTest/data/actinia_secrets.kdbx" keepass_title=mssql \
+  --o --v
+</pre></div>
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+<a href="file:///usr/lib/grass82/docs/html/v.in.ogr.html">v.in.ogr</a>,
+<a href="file:///usr/lib/grass82/docs/html/r.to.vect.html">r.to.vect</a>,
+<a href="file:///usr/lib/grass82/docs/html/v.to.rast.html">v.to.rast</a>,
+<a href="file:///usr/lib/grass82/docs/html/r.mapcalc.html">r.mapcalc</a>,
+</em>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">r.timeseries.locations source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Wednesday Aug 30 09:03:15 2023
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass82/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass82/docs/html/raster.html">Raster index</a> |
+<a href="file:///usr/lib/grass82/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass82/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass82/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass82/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2023
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.2.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>t.rast.stats - GRASS GIS manual</title>
+ <meta name="description" content="t.rast.stats: Compute area statistics of maps in a SpaceTimeRasterDataset">
+ <meta name="keywords" content="temporal, statistics, raster, time">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass82/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#notes">NOTES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#statistics-of-monthly-data">Statistics of monthly data</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>t.rast.stats</b></em>  - Compute area statistics of maps in a SpaceTimeRasterDataset
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass82/docs/html/temporal.html">temporal</a>, <a href="file:///usr/lib/grass82/docs/html/topic_statistics.html">statistics</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#raster">raster</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#time">time</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>t.rast.stats</b><br></div>
+<b>t.rast.stats --help</b><br>
+<div id="synopsis"><b>t.rast.stats</b> [-<b>Rhacpl1gxArCinN</b>] <b>input</b>=<em>name</em>  [<b>zone</b>=<em>name</em>[,<i>name</i>,...]]   [<b>where</b>=<em>sql_query</em>]   [<b>output</b>=<em>name</em>]   [<b>separator</b>=<em>character</em>]   [<b>null_value</b>=<em>string</em>]   [<b>nsteps</b>=<em>integer</em>]   [<b>sort</b>=<em>string</em>]   [<b>region_relation</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-R</b></dt>
+<dd>Use the raster map regions for univar statistical calculation instead of the current region</dd>
+
+<dt><b>-h</b></dt>
+<dd>Print header</dd>
+
+<dt><b>-a</b></dt>
+<dd>Print area totals in square meters</dd>
+
+<dt><b>-c</b></dt>
+<dd>Print cell counts (sortable)</dd>
+
+<dt><b>-p</b></dt>
+<dd>Print approximate (total percent may not be 100%) percents</dd>
+
+<dt><b>-l</b></dt>
+<dd>Print category labels</dd>
+
+<dt><b>-1</b></dt>
+<dd>One cell (range) per line</dd>
+
+<dt><b>-g</b></dt>
+<dd>Print grid coordinates (east and north)</dd>
+
+<dt><b>-x</b></dt>
+<dd>Print x and y (column and row)</dd>
+<dd>Indexing starts with 1: first column and row are 1</dd>
+
+<dt><b>-A</b></dt>
+<dd>Print averaged values instead of intervals (floating-point mapsonly)</dd>
+
+<dt><b>-r</b></dt>
+<dd>Print raw indexes of floating-point ranges (floating-point mapsonly)</dd>
+
+<dt><b>-C</b></dt>
+<dd>Report for cats floating-point ranges (floating-point maps only)</dd>
+
+<dt><b>-i</b></dt>
+<dd>Read floating-point map as integer (use map's quant rules)</dd>
+
+<dt><b>-n</b></dt>
+<dd>Do not report no data value</dd>
+
+<dt><b>-N</b></dt>
+<dd>Do not report cells where all maps have no data</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the input space time raster dataset</dd>
+
+<dt><b>zone</b>=<em>name[,<i>name</i>,...]</em></dt>
+<dd>Name of input raster map</dd>
+
+<dt><b>where</b>=<em>sql_query</em></dt>
+<dd>WHERE conditions of SQL statement without 'where' keyword used in the temporal GIS framework</dd>
+<dd>Example: start_time &gt; '2001-01-01 12:30:00'</dd>
+
+<dt><b>output</b>=<em>name</em></dt>
+<dd>Name for output file</dd>
+
+<dt><b>separator</b>=<em>character</em></dt>
+<dd>Field separator</dd>
+<dd>Special characters: pipe, comma, space, tab, newline</dd>
+<dd>Default: <em>pipe</em></dd>
+
+<dt><b>null_value</b>=<em>string</em></dt>
+<dd>String representing NULL value</dd>
+<dd>Default: <em>*</em></dd>
+
+<dt><b>nsteps</b>=<em>integer</em></dt>
+<dd>Number of floating-point subranges to collect stats from</dd>
+<dd>Default: <em>255</em></dd>
+
+<dt><b>sort</b>=<em>string</em></dt>
+<dd>Sort output statistics by cell counts</dd>
+<dd>Default: sorted by categories or intervals</dd>
+<dd>Options: <em>asc, desc</em></dd>
+<dd><b>asc</b>:  Sort by cell counts in ascending order, desc</dd>
+
+<dt><b>region_relation</b>=<em>string</em></dt>
+<dd>Process only maps with this spatial relation to the current computational region</dd>
+<dd>Options: <em>overlaps, contains, is_contained</em></dd>
+
+<dt><b>nprocs</b>=<em>integer</em></dt>
+<dd>Number of r.stats processes to run in parallel</dd>
+<dd>Default: <em>1</em></dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#notes" class="toc">NOTES</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a>
+    <ul class="toc">
+        <li class="toc"><a href="#statistics-of-monthly-data" class="toc">Statistics of monthly data</a></li>
+    </ul></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>t.rast.stats</em> is a wrapper around the <em>r.stats</em> module
+and computes area statistics for each registered map of a space time
+raster dataset. Most flags of <em>r.stats</em> are supported.
+
+<p>
+A <em>zone</em> map can be specified to compute statistics for each of the
+zones. The zone map should be of CELL type, otherwise flags for handling of
+floating point data should be specified.
+
+<p>
+Starting with GRASS GIS version 8.3 the computational region can be used for
+spatially selecting maps in the SpaceTimeRasterDataset to process. To do so,
+operators can be chosen in the <em>region_relation</em> option.
+This can be useful for STRDS with maps with varying spatial extent
+
+<p>
+Computational region <em>-R</em>
+
+<h2><a name="notes">NOTES</a></h2>
+Parallel processing is supported in <em>t.rast.stats</em>. Internally,
+several <em>r.stats</em> modules will be started, depending on the number
+of specified parallel processes (<em>nprocs</em>) and the number of input
+maps to reclassify.
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<h3><a name="statistics-of-monthly-data">Statistics of monthly data</a></h3>
+
+<div class="code"><pre>
+t.rast.stats input=tempmean_monthly zone=tempmean_year
+
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+<a href="file:///usr/lib/grass82/docs/html/r.stats.html">r.stats</a>,
+<a href="file:///usr/lib/grass82/docs/html/t.rast.univar.html">t.rast.univar</a>,
+</em>
+<p>
+<a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">t.rast.stats source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Wednesday Aug 30 09:03:13 2023
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass82/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass82/docs/html/temporal.html">Temporal index</a> |
+<a href="file:///usr/lib/grass82/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass82/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass82/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass82/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2023
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.2.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

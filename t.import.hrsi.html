@@ -1,0 +1,492 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>t.import.hrsi - GRASS GIS manual</title>
+ <meta name="description" content="t.import.hrsi: Download and import Copernicus High Resolution Snow and Ice Monitoring data as a Space Time Raster Dataset">
+ <meta name="keywords" content="temporal, download, import, raster, time, copernicus, cryosphere, snow, ice">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass82/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#product-types">Product types</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#data-quality">Data quality</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#temporal-filter">Temporal filter</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#spatial-filter">Spatial filter</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#output">Output</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#download-fractional-snow-cover-data">Download fractional snow cover data</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#references">REFERENCES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>t.import.hrsi</b></em>  - Download and import Copernicus High Resolution Snow and Ice Monitoring data as a Space Time Raster Dataset
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass82/docs/html/temporal.html">temporal</a>, <a href="file:///usr/lib/grass82/docs/html/topic_download.html">download</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#import">import</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#raster">raster</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#time">time</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#copernicus">copernicus</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#cryosphere">cryosphere</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#snow">snow</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#ice">ice</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>t.import.hrsi</b><br></div>
+<b>t.import.hrsi --help</b><br>
+<div id="synopsis"><b>t.import.hrsi</b> [-<b>elfpgmow</b>]  [<b>output</b>=<em>name</em>]   [<b>output_directory</b>=<em>string</em>]  <b>product_type</b>=<em>Product type to search and download</em>  [<b>cloud_cover</b>=<em>memory in MB</em>]   [<b>aoi</b>=<em>Input GeoJSON file with area of interest (AOI)</em>]   [<b>start_time</b>=<em>string</em>]   [<b>end_time</b>=<em>string</em>]   [<b>batch_size</b>=<em>integer</em>]   [<b>credits_file</b>=<em>Input file with user credits for HRSI (can also be provided as environment variables)</em>]   [<b>memory</b>=<em>memory in MB</em>]   [<b>nprocs</b>=<em>Number of cores</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-e</b></dt>
+<dd>Extend existing STRDS (requires overwrite flag)</dd>
+
+<dt><b>-l</b></dt>
+<dd>Link the raster files using r.external</dd>
+
+<dt><b>-f</b></dt>
+<dd>Link the raster files in a fast way, without reading metadata using r.external</dd>
+
+<dt><b>-p</b></dt>
+<dd>Print info on search results (no download)</dd>
+
+<dt><b>-g</b></dt>
+<dd>Print info on search results in shell script style (no download)</dd>
+
+<dt><b>-m</b></dt>
+<dd>Start and end time are publication time (modification)</dd>
+
+<dt><b>-o</b></dt>
+<dd>Override projection check</dd>
+
+<dt><b>-w</b></dt>
+<dd>Write a log-file to the output directory</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>output</b>=<em>name</em></dt>
+<dd>Name of the output space time raster dataset</dd>
+
+<dt><b>output_directory</b>=<em>string</em></dt>
+<dd>Path to the output directory where downloaded raw data are stored (default is the current directory)</dd>
+<dd>Default: <em>./</em></dd>
+
+<dt><b>product_type</b>=<em>Product type to search and download</em>&nbsp;<b>[required]</b></dt>
+<dd>Product type to search and download</dd>
+<dd>Options: <em>FractionalSnowCover, GapfilledFractionalSnowCover, PersistentSnowArea, PersistentSnowArea_LAEA, RiverandLakeIceExtent_S1, RiverandLakeIceExtent_S2, RiverandLakeIceExtent_S1_S2, AggregatedRiverandLakeIceExtent, SARWetSnow, WetDrySnow</em></dd>
+
+<dt><b>cloud_cover</b>=<em>memory in MB</em></dt>
+<dd>Maximum cloud cover in products to download</dd>
+<dd>Maximum cloud cover in products to download</dd>
+
+<dt><b>aoi</b>=<em>Input GeoJSON file with area of interest (AOI)</em></dt>
+<dd>Input GeoJSON file with area of interest (AOI)</dd>
+
+<dt><b>start_time</b>=<em>string</em></dt>
+<dd>Earliest timestamp of temporal extent to include in the output</dd>
+<dd>Timestamp in ISO format: "YYYY-MM-DD HH:MM:SS"</dd>
+
+<dt><b>end_time</b>=<em>string</em></dt>
+<dd>Latest timestamp of temporal extent to include in the output</dd>
+<dd>Timestamp in ISO format: "YYYY-MM-DDTHH:MM:SS"</dd>
+
+<dt><b>batch_size</b>=<em>integer</em></dt>
+<dd>Size of batches of files to download</dd>
+<dd>Default: <em>500</em></dd>
+
+<dt><b>credits_file</b>=<em>Input file with user credits for HRSI (can also be provided as environment variables)</em></dt>
+<dd>Input file with user credits for HRSI (can also be provided as environment variables)</dd>
+
+<dt><b>memory</b>=<em>memory in MB</em></dt>
+<dd>Maximum memory to be used (in MB)</dd>
+<dd>Cache size for raster rows</dd>
+<dd>Default: <em>300</em></dd>
+
+<dt><b>nprocs</b>=<em>Number of cores</em></dt>
+<dd>Number of cores to use during import</dd>
+<dd>Default: <em>1</em></dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a>
+    <ul class="toc">
+        <li class="toc"><a href="#product-types" class="toc">Product types</a></li>
+        <li class="toc"><a href="#data-quality" class="toc">Data quality</a></li>
+        <li class="toc"><a href="#temporal-filter" class="toc">Temporal filter</a></li>
+        <li class="toc"><a href="#spatial-filter" class="toc">Spatial filter</a></li>
+        <li class="toc"><a href="#output" class="toc">Output</a></li>
+    </ul></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a>
+    <ul class="toc">
+        <li class="toc"><a href="#download-fractional-snow-cover-data" class="toc">Download fractional snow cover data</a></li>
+    </ul></li>
+    <li class="toc"><a href="#references" class="toc">REFERENCES</a></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>t.import.hrsi</em> downloads High Resolution Snow & Ice (HRSI) data
+from Copernicus Land Monitoring Services API (available online at: 
+<a href="https://cryo.land.copernicus.eu/finder/">https://cryo.land.copernicus.eu/finder/</a> 
+and imports the files into an <em>output</em>-SpaceTimeRasterDataset.
+
+<p>
+Users can filter what data to download according to query parameters of 
+the underlying REST API. The following filter parameters are supported:
+
+<h3><a name="product-types">Product types</a></h3>
+In the <em>productType</em> option, users can choose which product types 
+to download.
+
+<ul>
+<li><b>PersistentSnowArea</b></li>
+<li><b>PersistentSnowArea_LAEA</b></li>
+<li><b>RiverandLakeIceExtent_S1</b></li>
+<li><b>RiverandLakeIceExtent_S2</b></li>
+<li><b>RiverandLakeIceExtent_S1_S2</b></li>
+<li><b>AggregatedRiverandLakeIceExtent</b> (vector data, currently not supported for import)</li>
+<li><b>SARWetSnow</b></li>
+<li><b>WetDrySnow</b></li>
+
+
+<li><b>FractionalSnowCover</b> - Sentinel-2 Fractional Snow Cover (FSC) 20m<br>
+	The Fractional Snow Cover (FSC) product is generated in NRT for the entire EEA38+UK based 
+	on optical satellite data from the S2 constellation. The product provides the fraction of the 
+	surface covered by snow at the top of canopy and on ground per pixel as a percentage (0% - 
+	100%) with a spatial resolution of 20 m x 20 m.<br>
+	mission S2<br>
+	resolution: 20m<br>
+	subdatasets:
+<ul>
+	<li><i>CLD</i>: (Presence of clouds and cloud shadows)</li>
+	<li><i>FSCOG</i>: On-ground fractional snow cover</li>
+	<li><i>FSCTOC</i>: Top of canopy fractional snow cover</li>
+	<li><i>NDSI</i>: Normalised difference snow index (NDSI)</li>
+	<li><i>QCFLAGS</i>: Expert flags providing quality information obtained during the processing of FSCTOC and FSCOG</li>
+	<li><i>QCOG</i>:  Confidence level of the FSCOG layer</li>
+	<li><i>QCTOC</i>: Confidence level of the FSCTOC layer</li>
+</ul>
+</li>
+<li><b>GapfilledFractionalSnowCover</b> - Sentinel-1 + Sentinel-2 Daily cumulative Gap-filled Fractional Snow Cover (GFSC) 60m<br>
+	The daily cumulative Gap-filled Fractional Snow Cover (GFSC) product is generated in NRT for 
+	the entire EEA38+UK domain based on SAR data from the S1 constellation and optical data 
+	from the S2 constellation. The product merges the latest observations available to form a 
+	spatially complete overview of snow conditions. The product provides the extent of the snow 
+	cover per pixel as a percentage (0% - 100%) with a spatial resolution of 60 m x 60 m. The 
+	product uses FSC, WDS and SWS products as input to form a spatially complete composite of 
+	snow conditions, to reduce observational gaps due to clouds and lack of sensor coverage on a 
+	daily basis. The product applies the on-ground FSC (FSCOG) and SWS and 
+	presents the combined information as FSC.<br>
+	mission: S1-S2<br>
+	resolution: 60m<br>
+	subdatasets:
+<ul>
+	<li><i>AT</i>: Sensing start date, seconds from Unix time</li>
+	<li><i>GF</i>: Fractional snow cover (%) and associated information</li>
+	<li><i>QC</i>: Quality layer providing basic assessment of FSC, WDS or SWS quality</li>
+	<li><i>QCFLAGS</i>i: Expert quality flags related to GFSC product quality</li>
+</ul>
+</li>
+<li><b>PersistentSnowArea</b>: - Sentinel-2 Persistent Snow Area (PSA) 20m<br>
+	The PSA product is an annual product that is derived from the top of canopy Fractional Snow 
+	Cover (FSCTOC) product for the entire EEA38+UK. We refer users to section 2 regarding the 
+	description of the algorithm and the content of FSC products. Each PSA product gives access to 
+	the persistent snow cover during a particular hydrological year at the resolution of 20 m x 20 m.
+	mission: S2<br>
+	resolution": 20m<br>
+	subdatasets:
+	<ul>
+		<li><i>PSA</i>: Persistent snow area</li>
+		<li><i>QC</i>: Confidence level of the PSA layer</li>
+	</ul>
+	</li>
+	<li><b>PersistentSnowArea_LAEA"</b>: - Sentinel-2 Persistent Snow Area (PSA) 20m<br>
+	The PSA product is an annual product that is derived from the top of canopy Fractional Snow 
+	Cover (FSCTOC) product for the entire EEA38+UK. We refer users to section 2 regarding the 
+	description of the algorithm and the content of FSC products. Each PSA product gives access to 
+	the persistent snow cover during a particular hydrological year at the resolution of 20 m x 20 m.<br>
+	mission: S2<br>
+	resolution: 20m<br>
+	subdatasets:
+	<ul>
+		<li><i>PSA</i>: Persistent snow area</li>
+		<li><i>QC</i>: Confidence level of the PSA layer</li>
+	</ul>
+	</li>
+	<li><b>RiverandLakeIceExtent_S1</b> - Sentinel-1 River and Lake Ice Extent S1 (RLIE S1) 20m<br>
+	The S1 River and Lake Ice Extent (RLIE S1) product is generated in NRT for the entire 
+	EEA38+UK based on synthetic aperture radar data from the S1 constellation. The product 
+	focuses on the surface water areas defined by the EU-Hydro database and provides 
+	information about river and lake areas covered by snow-covered or snow-free ice, at a spatial 
+	resolution of 20 m x 20 m. For the sake of consistency across RLIE products, the RLIE S1 
+	product is delivered on the S2 Level-1C tiling grid, with a pixel size of 20 m x 20 m.<br>
+	mission: S1<br>
+	resolution: 20n<br>
+	subdatasets:
+	<ul>
+		<li><i>RLIE</i>: Sentinel-1 River and Lake Ice Extent (RLIE S1)</li>
+		<li><i>QC</i>Quality layer providing basic assessment of RLIE S1 quality</li>
+		<li><i>QCFLAGS</i>: Quality flags related to RLIE product quality</li>
+	</ul>
+	</li>
+	<li><b>RiverandLakeIceExtent_S2</b> - Sentinel-2 River and Lake Ice Extent (RLIE S2) 20m<br>
+	The S2 River and Lake Ice Extent (RLIE S2) product is generated in NRT for the entire 
+	EEA38+UK based on optical satellite data from the S2 constellation. The product focuses on 
+	the surface water areas defined by the EU-Hydro database and provides the river and 
+	lake area covered by snow-covered or snow-free ice, at a spatial resolution of 20 m x 20 m.<br>
+	mission: S2<br>
+	resolution: 20m<br>
+	subdatasets:
+	<ul>
+		<li><i>RLIE</i>: Sentinel-2 River and Lake Ice Extent (RLIE S2)</li>
+		<li><i>QC</i>: Quality layer providing basic assessment of RLIE S2 quality</li>
+		<li><i>QCFLAGS</i>: Quality flags related to RLIE product quality</li>
+	</ul>
+	</li>
+	<li><b>RiverandLakeIceExtent_S1_S2</b>: - Sentinel-1 + Sentinel-2 River and Lake Ice Extent S1+S2 (RLIE S1+S2) 20m<br>
+	S1 and S2 River and Lake Ice Extent (RLIE S1+S2) is a product generated in delayed-time for 
+	the entire EEA38+UK according to RLIE S1 and RLIE S2 overlap. The RLIE S1+S2 is computed 
+	as a combination of RLIE S1 and RLIE S2 products acquired on the same date. The product 
+	focuses on the surface water areas defined by the EU-Hydro database and provides 
+	river and lake areas covered by ice, at a spatial resolution of 20 m x 20 m on the S2 tiling grid.<br>
+	resolution: 20m<br>
+	mission: S1-S2<br>
+	subdatasets:
+	<ul>
+		<li><i>RLIE</i>: Sentinel-1 + Sentinel-2 River and Lake Ice Extent (RLIE S1+S2)</li>
+		<li><i>QC</i>: Quality layer providing basic assessment of RLIE S1+S2 quality</li>
+		<li><i>QCFLAGS</i>: Quality flags related to RLIE product quality</li>
+	</ul>
+	</li>
+	<li><b>AggregatedRiverandLakeIceExtent</b> - Vector data, currently not implemented</li>
+	<li><b>SARWetSnow</b> - Sentinel-1 + Sentinel-2 SAR Wet Snow in high mountains (SWS) 60m<br>
+	The S1 based SAR Wet Snow (SWS) classification is applicable for high-mountain areas within
+	selected S2 tiles of the EEA38+UK domain. For the SWS product generation, 'high mountains' 
+	means areas above a certain elevation where no human activities such as tilling agricultural 
+	areas are affecting the SAR signal. The SWS product is generated in NRT based on C-band SAR 
+	satellite data from the S1 constellation. The product provides binary information on the wet 
+	snow extent and the snow free or patchy snow or dry snow extent in high mountain areas. 
+	The SWS product is provided with a grid spacing of 60 m by 60 m.<br>
+	mission: S1<br>
+	resolution: 60m<br>
+	subdatasets:
+	<ul>
+		<li><i>WSM</i>: Wet Snow classification in high Mountains areas (WSM)</li>
+		<li><i>QCWSM</i>: Quality layer providing basic assessment of WSM quality</li>
+	</ul>
+	</li>
+	<li><b>WetDrySnow</b> - Sentine-1 + Sentinel-2 Wet/Dry Snow (WDS) 60m<br>
+	The Wet / Dry Snow (WDS) product provides information on the snow state (wet or dry) by 
+	combining S1 based wet snow maps within the snow cover extent observed by means of S2 
+	data (cf. Section 2). The WDS product is provided for each S2 tile with a grid spacing of 
+	60 m by 60 m.<br>
+	mission: S1<br>
+	resolution: 60m<br>
+	subdatasets:
+	<ul>
+		<li><i>SSC</i>: Snow State Classification (SSC)</li>
+		<li><i>QCSSC</i>: Quality layer providing basic assessment of the wet snow state classification</li>
+	</ul>
+    </li>
+</ul>
+ 
+<h3><a name="data-quality">Data quality</a></h3>
+Product types that are based on Sentinel-2 data can be further filtered 
+using the <em>cloudCover</em> parameter, that limits download of data to
+scenes that have cloud cover percent less or equal to the given number 
+in percent (0-100).
+
+<h3><a name="temporal-filter">Temporal filter</a></h3>
+Data download can be limited using the <em>start_time</em> and 
+<em>end_time</em> time stamp in ISO format
+<p>
+With the <em>m-flag</em>, the temporal filter parameters <em>start</em> and 
+<em>end</em> refer to modification (publication) time.
+
+<h3><a name="spatial-filter">Spatial filter</a></h3>
+The data download can be spatially filtered either using the bounding box
+of the <i>computational region</i> or using an input GeoJSON file with 
+one geometry given in the <em>aoi</em> option.
+
+<p>
+Downloaded data is stored in the <em>output_directory</em> and either 
+linked to the GRASS GIS database (with the <em>f-flag</em> or <em>f-flag</em>, 
+using <i>r.external</i>) or imported using <i>r.in.gdal</i>. 
+
+<h3><a name="output">Output</a></h3>
+
+Metadata for the downloaded data is - as far as possibel - stored in the 
+resulting <em>output</em> SpaceTimeRasterDataset as well as in the individual 
+maps. Here, especially the <i>title</i>, <i>description</i>, and if relevant 
+<i>categories</i> are assigned according to the chosen product type.
+
+The module can also be used to update and extend an existing SpaceTimeRasterDataset
+with newly downloaded data if the <em>e-flag</em> is set.
+
+<p>
+This module is not sensitive to a possibly existing mask.
+Parallel processing is supported, depending on the number of specified
+parallel processes (<em>nprocs</em>) and the number of input products to
+download register.
+<p>
+
+THe download API requires login information which can be either provided with a 
+<em>credits_file</em>, <i>.cryo_land</i> with the same content in the users
+HOME directory or using environment variebles <em>HRSI_USERNAME</em> and 
+<em>HRSI_PASSWORD</em>.
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<h3><a name="download-fractional-snow-cover-data">Download fractional snow cover data</a></h3>
+
+<div class="code"><pre>
+t.import.hrsi product_type=SARWetSnow aoi=/c/data/aoi.geojson start_time="2023-04-05T00:00:00" \
+  end_time="2023-04-05T23:59:59" nprocs=7 memory=2048 output=SARWetSnow --o --v
+
+t.info SARWetSnow
++-------------------- Space Time Raster Dataset -----------------------------+
+|                                                                            |
++-------------------- Basic information -------------------------------------+
+| Id: ........................ SARWetSnow@PERMANENT
+| Name: ...................... SARWetSnow
+| Mapset: .................... PERMANENT
+| Creator: ................... stbl
+| Temporal type: ............. absolute
+| Creation time: ............. 2023-06-07 14:19:46.661012
+| Modification time:.......... 2023-06-07 14:19:47.197596
+| Semantic type:.............. mean
++-------------------- Absolute time -----------------------------------------+
+| Start time:................. 2023-04-05 05:55:46
+| End time:................... 2023-04-05 17:11:27
+| Granularity:................ 40541 seconds
+| Temporal type of maps:...... point
++-------------------- Spatial extent ----------------------------------------+
+| North:...................... 6933060.0
+| South:...................... 6804060.0
+| East:.. .................... 198180.0
+| West:....................... -21300.0
+| Top:........................ 0.0
+| Bottom:..................... 0.0
++-------------------- Metadata information ----------------------------------+
+| Raster register table:...... raster_map_register_d38496b143274cf58e7c53fd1f408146
+| North-South resolution min:. 60.0
+| North-South resolution max:. 60.0
+| East-west resolution min:... 60.0
+| East-west resolution max:... 60.0
+| Minimum value min:.......... 1.0
+| Minimum value max:.......... 110.0
+| Maximum value min:.......... 240.0
+| Maximum value max:.......... 255.0
+| Aggregation type:........... None
+| Number of semantic labels:.. 2
+| Semantic labels:............ wet_snow_classes_quality,wet_snow_classes
+| Number of registered maps:.. 8
+|
+| Title:
+| Sentinel-1 + Sentinel-2 SAR Wet Snow in high mountains (SWS) 60m
+| Description:
+| The S1 based SAR Wet Snow (SWS) classification is applicable for high-mountain areas withinselected S2 tiles of the EEA38+UK domain. For the SWS product generation, "high mountains" means areas above a certain elevation where no human activities such as tilling agricultural areas are affecting the SAR signal. The SWS product is generated in NRT based on C-band SAR satellite data from the S1 constellation. The product provides binary information on the wet snow extent and the snow free or patchy snow or dry snow extent in high mountain areas. The SWS product is provided with a grid spacing of 60 m by 60 m.
+| Command history:
+| # 2023-06-07 14:19:46
+| t.create type="strds" temporaltype="absolute"
+|     semantictype="mean"
+|     title="Sentinel-1 + Sentinel-2 SAR Wet Snow in high mountains (SWS) 60m"
+|     description="The S1 based SAR Wet Snow (SWS) classification is applicable for high-mountain areas withinselected S2 tiles of the EEA38+UK domain. For the SWS product generation,  high mountains  means areas above a certain elevation where no human activities such as tilling agricultural areas are affecting the SAR signal. The SWS product is generated in NRT based on C-band SAR satellite data from the S1 constellation. The product provides binary information on the wet snow extent and the snow free or patchy snow or dry snow extent in high mountain areas. The SWS product is provided with a grid spacing of 60 m by 60 m."
+|     output="SARWetSnow" --v
+|
++----------------------------------------------------------------------------+
+</pre></div>
+
+<h2><a name="references">REFERENCES</a></h2>
+
+<a href="https://land.copernicus.eu/user-corner/technical-library/hrsi-ice-pum">r.reclass</a>
+<a href="https://land.copernicus.eu/user-corner/technical-library/hrsi-snow-pum">r.reclass</a>
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+<a href="file:///usr/lib/grass82/docs/html/r.external.html">r.external</a>,
+<a href="file:///usr/lib/grass82/docs/html/t.create.html">t.create</a>,
+<a href="file:///usr/lib/grass82/docs/html/t.register.html">t.register</a>,
+</em>
+<p>
+<a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">t.import.hrsi source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Wednesday Aug 30 09:03:12 2023
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass82/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass82/docs/html/temporal.html">Temporal index</a> |
+<a href="file:///usr/lib/grass82/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass82/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass82/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass82/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2023
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.2.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

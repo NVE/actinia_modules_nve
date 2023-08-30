@@ -1,0 +1,347 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>t.register.local - GRASS GIS manual</title>
+ <meta name="description" content="t.register.local: Register files from the local file system as STRDS">
+ <meta name="keywords" content="temporal, import, raster, time, external, link, gdal">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass82/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#register-sentinel-2-snow-cover-data">Register Sentinel-2 snow cover data</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>t.register.local</b></em>  - Register files from the local file system as STRDS
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass82/docs/html/temporal.html">temporal</a>, <a href="file:///usr/lib/grass82/docs/html/topic_import.html">import</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#raster">raster</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#time">time</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#external">external</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#link">link</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#gdal">gdal</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>t.register.local</b><br></div>
+<b>t.register.local --help</b><br>
+<div id="synopsis"><b>t.register.local</b> [-<b>eamorf</b>] <b>input</b>=<em>name</em>  [<b>files</b>=<em>Comma separated list of files to register</em>[,<i>Comma separated list of files to register</i>,...]]  <b>output</b>=<em>name</em>  [<b>semantic_labels</b>=<em>Input file with configuration for semantic labels ("-" = stdin)</em>]   [<b>long_name</b>=<em>string</em>]  <b>suffix</b>=<em>string</em>  [<b>time_format</b>=<em>string</em>]   [<b>file_pattern</b>=<em>string</em>]   [<b>start_time</b>=<em>string</em>]   [<b>end_time</b>=<em>string</em>]   [<b>color</b>=<em>style</em>]   [<b>nodata</b>=<em>Source nodata</em>]  <b>units</b>=<em>string</em>  [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-e</b></dt>
+<dd>Extend existing STRDS</dd>
+
+<dt><b>-a</b></dt>
+<dd>Auto-adjustment for lat/lon</dd>
+
+<dt><b>-m</b></dt>
+<dd>Read data range from metadata</dd>
+
+<dt><b>-o</b></dt>
+<dd>Override projection check (use current location's projection)</dd>
+
+<dt><b>-r</b></dt>
+<dd>Create fast link without data range</dd>
+
+<dt><b>-f</b></dt>
+<dd>Filter files using modification time (default is logical time stamp in file name)</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of input directory</dd>
+
+<dt><b>files</b>=<em>Comma separated list of files to register[,<i>Comma separated list of files to register</i>,...]</em></dt>
+<dd>Comma separated list of files to register</dd>
+
+<dt><b>output</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the output space time raster dataset</dd>
+
+<dt><b>semantic_labels</b>=<em>Input file with configuration for semantic labels ("-" = stdin)</em></dt>
+<dd>File with mapping of band numbers, variables or subdatasets to semantic labels</dd>
+
+<dt><b>long_name</b>=<em>string</em></dt>
+<dd>Descriptive long name of the phenomenon the raster maps represent</dd>
+
+<dt><b>suffix</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Suffix of files to register</dd>
+
+<dt><b>time_format</b>=<em>string</em></dt>
+<dd>datetime string format description for extracting date/time from file name (e.g. "%Y%m%d_%H%M")</dd>
+<dd>Default extracts 8 numbers between underscores</dd>
+<dd>Default: <em>"%Y%m%d"</em></dd>
+
+<dt><b>file_pattern</b>=<em>string</em></dt>
+<dd>Regular expression for filtering files based on file name</dd>
+<dd>Regular expression for filtering files based on file name</dd>
+<dd>Default: <em>*</em></dd>
+
+<dt><b>start_time</b>=<em>string</em></dt>
+<dd>Earliest timestamp of files to register</dd>
+<dd>Timestamp in ISO format "YYYY-MM-DD HH:MM:SS"</dd>
+
+<dt><b>end_time</b>=<em>string</em></dt>
+<dd>Latest timestamp of files to register</dd>
+<dd>Timestamp in ISO format "YYYY-MM-DD HH:MM:SS"</dd>
+
+<dt><b>color</b>=<em>style</em></dt>
+<dd>Color table to assign to imported datasets</dd>
+<dd>Options: <em>aspect, aspectcolr, bcyr, bgyr, blues, byg, byr, celsius, corine, curvature, differences, elevation, etopo2, evi, fahrenheit, forest_cover, gdd, grass, greens, grey, grey.eq, grey.log, grey1.0, grey255, gyr, haxby, inferno, kelvin, magma, ndvi, ndwi, nlcd, oranges, plasma, population, population_dens, precipitation, precipitation_daily, precipitation_monthly, rainbow, ramp, random, reds, roygbiv, rstcurv, ryb, ryg, sepia, slope, soilmoisture, srtm, srtm_plus, terrain, viridis, water, wave</em></dd>
+<dd>Default: <em>viridis</em></dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/aspect.png" alt="aspect"> aspect</b>: aspect oriented grey colors [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/aspectcolr.png" alt="aspectcolr"> aspectcolr</b>: aspect oriented rainbow colors [range: 0 to 360]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/bcyr.png" alt="bcyr"> bcyr</b>: blue through cyan through yellow to red [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/bgyr.png" alt="bgyr"> bgyr</b>: blue through green through yellow to red [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/blues.png" alt="blues"> blues</b>: white to blue [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/byg.png" alt="byg"> byg</b>: blue through yellow to green [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/byr.png" alt="byr"> byr</b>: blue through yellow to red [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/celsius.png" alt="celsius"> celsius</b>: blue to red for degree Celsius temperature [range: -80 to 80]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/corine.png" alt="corine"> corine</b>: EU Corine land cover colors [range: 111 to 995]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/curvature.png" alt="curvature"> curvature</b>: for terrain curvatures (from v.surf.rst and r.slope.aspect) [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/differences.png" alt="differences"> differences</b>: differences oriented colors [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/elevation.png" alt="elevation"> elevation</b>: maps relative ranges of raster values to elevation color ramp [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/etopo2.png" alt="etopo2"> etopo2</b>: colors for ETOPO2 worldwide bathymetry/topography [range: -11000 to 8850]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/evi.png" alt="evi"> evi</b>: enhanced vegetative index colors [range: -1 to 1]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/fahrenheit.png" alt="fahrenheit"> fahrenheit</b>: blue to red for Fahrenheit temperature [range: -112 to 176]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/forest_cover.png" alt="forest_cover"> forest_cover</b>: percentage of forest cover [range: 0 to 100]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/gdd.png" alt="gdd"> gdd</b>: accumulated growing degree days [range: 0 to 6000]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/grass.png" alt="grass"> grass</b>: GRASS GIS green (perceptually uniform) [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/greens.png" alt="greens"> greens</b>: white to green [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/grey.png" alt="grey"> grey</b>: grey scale [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/grey.eq.png" alt="grey.eq"> grey.eq</b>: histogram-equalized grey scale [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/grey.log.png" alt="grey.log"> grey.log</b>: histogram logarithmic transformed grey scale [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/grey1.0.png" alt="grey1.0"> grey1.0</b>: grey scale for raster values between 0.0-1.0 [range: 0 to 1]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/grey255.png" alt="grey255"> grey255</b>: grey scale for raster values between 0-255 [range: 0 to 255]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/gyr.png" alt="gyr"> gyr</b>: green through yellow to red [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/haxby.png" alt="haxby"> haxby</b>: relative colors for bathymetry or topography [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/inferno.png" alt="inferno"> inferno</b>: perceptually uniform sequential color table inferno [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/kelvin.png" alt="kelvin"> kelvin</b>: blue to red for temperature in Kelvin scale [range: 193.15 to 353.15]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/magma.png" alt="magma"> magma</b>: perceptually uniform sequential color table magma [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/ndvi.png" alt="ndvi"> ndvi</b>: Normalized Difference Vegetation Index colors [range: -1 to 1]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/ndwi.png" alt="ndwi"> ndwi</b>: Normalized Difference Water Index colors [range: -200 to 200]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/nlcd.png" alt="nlcd"> nlcd</b>: US National Land Cover Dataset colors [range: 0 to 95]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/oranges.png" alt="oranges"> oranges</b>: white to orange [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/plasma.png" alt="plasma"> plasma</b>: perceptually uniform sequential color table plasma [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/population.png" alt="population"> population</b>: color table covering human population classification breaks [range: 0 to 2e+09]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/population_dens.png" alt="population_dens"> population_dens</b>: color table covering human population density classification breaks [range: 0 to 1e+09]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/precipitation.png" alt="precipitation"> precipitation</b>: precipitation color table (0..2000mm) [range: 0 to 7000]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/precipitation_daily.png" alt="precipitation_daily"> precipitation_daily</b>: precipitation color table (0..1000mm) [range: 0 to 10000]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/precipitation_monthly.png" alt="precipitation_monthly"> precipitation_monthly</b>: precipitation color table (0..1000mm) [range: 0 to 1000]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/rainbow.png" alt="rainbow"> rainbow</b>: rainbow color table [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/ramp.png" alt="ramp"> ramp</b>: color ramp [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/random.png" alt="random"> random</b>: random color table [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/reds.png" alt="reds"> reds</b>: white to red [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/roygbiv.png" alt="roygbiv"> roygbiv</b>:  [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/rstcurv.png" alt="rstcurv"> rstcurv</b>: terrain curvature (from r.resamp.rst) [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/ryb.png" alt="ryb"> ryb</b>: red through yellow to blue [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/ryg.png" alt="ryg"> ryg</b>: red through yellow to green [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/sepia.png" alt="sepia"> sepia</b>: yellowish-brown through to white [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/slope.png" alt="slope"> slope</b>: r.slope.aspect-type slope colors for raster values 0-90 [range: 0 to 90]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/soilmoisture.png" alt="soilmoisture"> soilmoisture</b>: soilmoisture color table (0.0-1.0) [range: 0 to 1]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/srtm.png" alt="srtm"> srtm</b>: color palette for Shuttle Radar Topography Mission elevation [range: -11000 to 8850]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/srtm_plus.png" alt="srtm_plus"> srtm_plus</b>: color palette for Shuttle Radar Topography Mission elevation (with seafloor colors) [range: -11000 to 8850]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/terrain.png" alt="terrain"> terrain</b>: global elevation color table covering -11000 to +8850m [range: -11000 to 8850]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/viridis.png" alt="viridis"> viridis</b>: perceptually uniform sequential color table viridis [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/water.png" alt="water"> water</b>: water depth [range: map values]</dd>
+<dd><b><img height="12" style="max-width: 80;" src="colortables/wave.png" alt="wave"> wave</b>: color wave [range: map values]</dd>
+
+<dt><b>nodata</b>=<em>Source nodata</em></dt>
+<dd>NoData value in source raster maps</dd>
+
+<dt><b>units</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Units of the values in the input raster maps</dd>
+
+<dt><b>nprocs</b>=<em>integer</em></dt>
+<dd>Number of threads for parallel computing</dd>
+<dd>Default: <em>1</em></dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a>
+    <ul class="toc">
+        <li class="toc"><a href="#register-sentinel-2-snow-cover-data" class="toc">Register Sentinel-2 snow cover data</a></li>
+    </ul></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>t.register.local</em> links all local raster data files in a given
+<em>input</em> directory, with a given <em>file_pattern</em>, and a given
+<em>suffix</em> to the GRASSDB. Time stamps are extracted from the file
+name with a user defined <em>time_format</em> regular expression.
+
+The <em>start_time</em> option allows to register only files newer than
+the given time stamp in ISO format (%Y%m%d) optionally including "%H:%M"
+
+A <em>semantic_labels</em> file can be used to filter bands in the
+input files and assign semantic labels to them.
+
+The resulting <em>output</em> SpaceTimeRasterDataset can be described with
+a <em>long_name</em> and units the raster data represent.
+
+In addition, <em>nodata</em> values of the source data and a <em>color</em>
+map can be defined
+
+The raster maps can also be registered into an existing SpaceTimeRasterDataset
+if the <em>e-flag</em> is set.
+
+<p>
+This module is not sensitive to the current region and mask settings.
+Parallel processing is supported, depending on the number of specified
+parallel processes (<em>nprocs</em>) and the number of input maps to
+register.
+<p>
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<h3><a name="register-sentinel-2-snow-cover-data">Register Sentinel-2 snow cover data</a></h3>
+
+<div class="code"><pre>
+t.register.local --o -o suffix="nc" units="%" nprocs=5 time_format="%Y%m%d" \
+    input="/hdata/fjernanalyse2/Sentinel2/Sentinel2jobs/workdir/snowcover/" \
+	semantic_labels="/hdata/fjernanalyse3/CopernicusUtviklingOgTest/data_import/semantic_labels_snow_cover.txt" \
+	output=Sentinel_2_snow_cover \
+	long_name="Snow cover from Sentinel-2, classification and fraction"
+
+t.info Sentinel_2_snow_cover
+ +-------------------- Space Time Raster Dataset -----------------------------+
+ |                                                                            |
+ +-------------------- Basic information -------------------------------------+
+ | Id: ........................ Sentinel_2_snow_cover@Sentinel_2_snow_cover
+ | Name: ...................... Sentinel_2_snow_cover
+ | Mapset: .................... Sentinel_2_snow_cover
+ | Creator: ................... actiniad
+ | Temporal type: ............. absolute
+ | Creation time: ............. 2022-12-07 21:29:12.023462
+ | Temporal type: ............. absolute
+ | Creation time: ............. 2022-12-07 21:29:12.023462
+ | Modification time:.......... 2022-12-08 06:20:51.837265
+ | Semantic type:.............. mean
+ +-------------------- Absolute time -----------------------------------------+
+ | Start time:................. 2021-06-25 00:00:00
+ | End time:................... 2022-12-07 00:00:00
+ | Granularity:................ 1 day
+ | Temporal type of maps:...... point
+ +-------------------- Spatial extent ----------------------------------------+
+ | North:...................... 12833400.0
+ | South:...................... 6387540.0
+ | East:.. .................... 1283160.0
+ | West:....................... -196080.0
+ | Top:........................ 0.0
+ | Bottom:..................... 0.0
+ +-------------------- Metadata information ----------------------------------+
+ | Raster register table:...... raster_map_register_1d72255a0d074986af455ad279dda25b
+ | North-South resolution min:. 20.0
+ | North-South resolution max:. 20.0
+ | East-west resolution min:... 20.0
+ | East-west resolution max:... 20.0
+ | Minimum value min:.......... 0.0
+ | Minimum value max:.......... 100.0
+ | Maximum value min:.......... 0.0
+ | Maximum value max:.......... 100.0
+ | Aggregation type:........... None
+ | Number of semantic labels:.. 1
+ | Semantic labels:............ fractional_snow_cover
+ | Number of registered maps:.. 36236
+ |
+ | Title:
+ | Snow cover from Sentinel-2, classification and fraction
+ | Description:
+ | Snow cover from Sentinel-2, classification and fraction
+ | Command history:
+ | # 2022-12-07 21:29:12
+ | t.create type="strds" temporaltype="absolute"
+ |     semantictype="mean"
+ |     title="Snow cover from Sentinel-2, classification and fraction"
+ |     description="Snow cover from Sentinel-2, classification and fraction"
+ |     output="Sentinel_2_snow_cover" --v
+ |
+ +----------------------------------------------------------------------------+
+</pre></div>
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+<a href="file:///usr/lib/grass82/docs/html/r.external.html">r.reclass</a>,
+<a href="file:///usr/lib/grass82/docs/html/t.create.html">t.info</a>,
+<a href="file:///usr/lib/grass82/docs/html/t.register.html">t.info</a>,
+</em>
+<p>
+<a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">t.register.local source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Wednesday Aug 30 09:03:09 2023
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass82/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass82/docs/html/temporal.html">Temporal index</a> |
+<a href="file:///usr/lib/grass82/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass82/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass82/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass82/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2023
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.2.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

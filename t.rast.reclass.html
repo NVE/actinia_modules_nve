@@ -1,0 +1,257 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>t.rast.reclass - GRASS GIS manual</title>
+ <meta name="description" content="t.rast.reclass: Reclassify maps in a SpaceTimeRasterDataset.">
+ <meta name="keywords" content="temporal, reclassification, raster, time">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass82/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#notes">NOTES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#reclassification-of-monthly-data-into-yearly-data">Reclassification of monthly data into yearly data</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>t.rast.reclass</b></em>  - Reclassify maps in a SpaceTimeRasterDataset.
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass82/docs/html/temporal.html">temporal</a>, <a href="file:///usr/lib/grass82/docs/html/topic_reclassification.html">reclassification</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#raster">raster</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#time">time</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>t.rast.reclass</b><br></div>
+<b>t.rast.reclass --help</b><br>
+<div id="synopsis"><b>t.rast.reclass</b> [-<b>ne</b>] <b>input</b>=<em>name</em> <b>output</b>=<em>name</em> <b>rules</b>=<em>name</em>  [<b>semantic_label</b>=<em>string</em>]   [<b>temporaltype</b>=<em>name</em>]   [<b>semantictype</b>=<em>string</em>]   [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>where</b>=<em>sql_query</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-n</b></dt>
+<dd>Register Null maps</dd>
+
+<dt><b>-e</b></dt>
+<dd>Extend existing space time raster dataset</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the input space time raster dataset</dd>
+
+<dt><b>output</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the output space time raster dataset</dd>
+
+<dt><b>rules</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>File containing reclass rules</dd>
+<dd>'-' for standard input</dd>
+
+<dt><b>semantic_label</b>=<em>string</em></dt>
+<dd>Semantic label to be assigned to the reclassified map - also used as a suffix that is appended to input map name</dd>
+
+<dt><b>temporaltype</b>=<em>name</em></dt>
+<dd>The temporal type of the space time dataset</dd>
+<dd>Options: <em>absolute, relative</em></dd>
+
+<dt><b>semantictype</b>=<em>string</em></dt>
+<dd>Semantic type of the space time dataset</dd>
+<dd>Options: <em>min, max, sum, mean</em></dd>
+
+<dt><b>title</b>=<em>string</em></dt>
+<dd>Title of the new space time dataset</dd>
+
+<dt><b>description</b>=<em>string</em></dt>
+<dd>Description of the new space time dataset</dd>
+
+<dt><b>nprocs</b>=<em>integer</em></dt>
+<dd>Number of r.reclass processes to run in parallel</dd>
+<dd>Default: <em>1</em></dd>
+
+<dt><b>where</b>=<em>sql_query</em></dt>
+<dd>WHERE conditions of SQL statement without 'where' keyword used in the temporal GIS framework</dd>
+<dd>Example: start_time &gt; '2001-01-01 12:30:00'</dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#notes" class="toc">NOTES</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a>
+    <ul class="toc">
+        <li class="toc"><a href="#reclassification-of-monthly-data-into-yearly-data" class="toc">Reclassification of monthly data into yearly data</a></li>
+    </ul></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>t.rast.reclass</em> is a wrapper around the <em>r.reclass</em> module
+that creates a reclassified map for each registered map of a space time
+raster dataset and registers it in an output space time raster dataset.
+Metadata of the input space time raster dataset are transfered to the
+output space time raster dataset as far as possible. A new <em>title</em>
+and <em>description</em> can be assigned to the <em>output</em> space
+time raster dataset, if it does not exist. The reclassified maps can also
+be registered into an existing space time raster dataset if the
+<em>e-flag</em> is set.
+
+<p>
+This module is not sensitive to the current region and mask settings.
+
+<h2><a name="notes">NOTES</a></h2>
+Parallel processing is supported. Internally, several <em>r.reclass</em>
+modules will be started, depending on the number of specified parallel
+processes (<em>nprocs</em>) and the number of input maps to reclassify.
+<p>
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<h3><a name="reclassification-of-monthly-data-into-yearly-data">Reclassification of monthly data into yearly data</a></h3>
+
+<div class="code"><pre>
+t.rast.reclass input=tempmean_monthly output=tempmean_yearly \
+                 basename=tempmean_year \
+                 granularity="1 years" method=average
+
+t.support input=tempmean_yearly \
+          title="Yearly precipitation" \
+          description="Aggregated precipitation dataset with yearly resolution"
+
+t.info tempmean_yearly
+ +-------------------- Space Time Raster Dataset -----------------------------+
+ |                                                                            |
+ +-------------------- Basic information -------------------------------------+
+ | Id: ........................ tempmean_yearly@climate_2000_2012
+ | Name: ...................... tempmean_yearly
+ | Mapset: .................... climate_2000_2012
+ | Creator: ................... lucadelu
+ | Temporal type: ............. absolute
+ | Creation time: ............. 2014-11-27 10:25:21.243319
+ | Modification time:.......... 2014-11-27 10:25:21.862136
+ | Semantic type:.............. mean
+ +-------------------- Absolute time -----------------------------------------+
+ | Start time:................. 2009-01-01 00:00:00
+ | End time:................... 2013-01-01 00:00:00
+ | Granularity:................ 1 year
+ | Temporal type of maps:...... interval
+ +-------------------- Spatial extent ----------------------------------------+
+ | North:...................... 320000.0
+ | South:...................... 10000.0
+ | East:.. .................... 935000.0
+ | West:....................... 120000.0
+ | Top:........................ 0.0
+ | Bottom:..................... 0.0
+ +-------------------- Metadata information ----------------------------------+
+ | Raster register table:...... raster_map_register_514082e62e864522a13c8123d1949dea
+ | North-South resolution min:. 500.0
+ | North-South resolution max:. 500.0
+ | East-west resolution min:... 500.0
+ | East-west resolution max:... 500.0
+ | Minimum value min:.......... 7.370747
+ | Minimum value max:.......... 8.81603
+ | Maximum value min:.......... 17.111387
+ | Maximum value max:.......... 17.915511
+ | Aggregation type:........... average
+ | Number of registered maps:.. 4
+ |
+ | Title: Yearly precipitation
+ | Monthly precipitation
+ | Description: Aggregated precipitation dataset with yearly resolution
+ | Dataset with monthly precipitation
+ | Command history:
+ | # 2014-11-27 10:25:21
+ | t.rast.aggregate input="tempmean_monthly"
+ |     output="tempmean_yearly" basename="tempmean_year" granularity="1 years"
+ |     method="average"
+ |
+ | # 2014-11-27 10:26:21
+ | t.support input=tempmean_yearly \
+ |        title="Yearly precipitation" \
+ |        description="Aggregated precipitation dataset with yearly resolution"
+ +----------------------------------------------------------------------------+
+</pre></div>
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+<a href="file:///usr/lib/grass82/docs/html/r.reclass.html">r.reclass</a>,
+<a href="file:///usr/lib/grass82/docs/html/t.info.html">t.info</a>,
+</em>
+<p>
+<a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">t.rast.reclass source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Wednesday Aug 30 09:03:12 2023
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass82/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass82/docs/html/temporal.html">Temporal index</a> |
+<a href="file:///usr/lib/grass82/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass82/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass82/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass82/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2023
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.2.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>r.avaframe.com1dfa - GRASS GIS manual</title>
+ <meta name="description" content="r.avaframe.com1dfa: Run com1dfa avalanche simulations using AvaFrame">
+ <meta name="keywords" content="avalanche, simulation, avaframe, com1dfa, raster, terrain, dtm">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass82/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#notes">NOTES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#references">REFERENCES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#run-com1dfa-simulations-for-a-release-area-registered-in-nve-database">Run com1DFA simulations for a release area registered in NVE database</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>r.avaframe.com1dfa</b></em>  - Run com1dfa avalanche simulations using AvaFrame
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass82/docs/html/avalanche.html">avalanche</a>, <a href="file:///usr/lib/grass82/docs/html/topic_simulation.html">simulation</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#avaframe">avaframe</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#com1dfa">com1dfa</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#raster">raster</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#terrain">terrain</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#dtm">dtm</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>r.avaframe.com1dfa</b><br></div>
+<b>r.avaframe.com1dfa --help</b><br>
+<div id="synopsis"><b>r.avaframe.com1dfa</b> [-<b>l</b>] <b>release_area</b>=<em>string</em> <b>elevation</b>=<em>name</em>  [<b>buffer</b>=<em>integer</em>]   [<b>export_directory</b>=<em>name</em>]   [<b>ppr</b>=<em>string</em>]   [<b>pft</b>=<em>string</em>]   [<b>pfv</b>=<em>string</em>]   [<b>format</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-l</b></dt>
+<dd>Link temporary results (do not import)</dd>
+
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>release_area</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Path or URL to OGR readable vector dataset with release area(s)</dd>
+
+<dt><b>elevation</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of input elevation raster map</dd>
+
+<dt><b>buffer</b>=<em>integer</em></dt>
+<dd>Buffer around release area for area of interest</dd>
+<dd>Default: <em>2000</em></dd>
+
+<dt><b>export_directory</b>=<em>name</em></dt>
+<dd>Directory where resulting raster maps should be stored as GeoTiff</dd>
+
+<dt><b>ppr</b>=<em>string</em></dt>
+<dd>Name of the output imagery group for ppr</dd>
+
+<dt><b>pft</b>=<em>string</em></dt>
+<dd>Name of the output imagery group for pft</dd>
+
+<dt><b>pfv</b>=<em>string</em></dt>
+<dd>Name of the output imagery group for pfv</dd>
+
+<dt><b>format</b>=<em>string</em></dt>
+<dd>Format for output of simulation report to stdout</dd>
+<dd>Options: <em>csv,  json</em></dd>
+
+<dt><b>nprocs</b>=<em>integer</em></dt>
+<dd>Number of threads for parallel computing</dd>
+<dd>Default: <em>1</em></dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#notes" class="toc">NOTES</a></li>
+    <li class="toc"><a href="#references" class="toc">REFERENCES</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a>
+    <ul class="toc">
+        <li class="toc"><a href="#run-com1dfa-simulations-for-a-release-area-registered-in-nve-database" class="toc">Run com1DFA simulations for a release area registered in NVE database</a></li>
+    </ul></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>r.avaframe.com1dfa</em> runs Dense flow avalanche kernel (com1DFA)
+simulations using the Open Avalanche Framework
+<a href="https://github.com/avaframe/AvaFrame">AvaFrame</a>.
+
+<p>
+Requred input are an OGR readable vector data source for the <em>release_area</em>,
+and a Digital Elevation Model <em>elevation</em>.
+<p>
+Parameters for the simulation need to be provided in the attribute table of the
+<em>release_area</em> data source, according to the table below.
+
+Currently, the following parameters for com1DFA simulations are supported:
+<table>
+  <tr>
+    <th>com1DFA parameter name</th>
+    <th>Column name in attribute table</th>
+    <th>Parameter description</th>
+  </tr>
+  <tr>
+    <td>relTh</td>
+    <td>snowDepth_cm</td>
+    <td>Release thickness</td>
+  </tr>
+  <tr>
+    <td>rho</td>
+    <td>rho_kgPerSqM</td>
+    <td>Density of snow in <var>kg</var>/<var>m</var><sup>3</sup></td>
+  </tr>
+  <tr>
+    <td>rhoEnt</td>
+    <td>rhoEnt_kgPerSqM</td>
+    <td>Density of entrained snow in <var>kg</var>/<var>m</var><sup>3</sup></td>
+  </tr>
+  <tr>
+    <td>frictModel</td>
+    <td>frictModel</td>
+    <td>Friction models can be samosAT (1), Coulomb (2), and Voellmy (2)</td>
+  </tr>
+</table>
+
+The ASCII-raster files resulting from the AvaFrame simulations are either
+linked to the current mapset (if the <em>l-flag</em> is set),
+otherwise they ar imported into the GRASS GIS database.
+<p>
+An imagery group is created where thickness levels are stored as bands.
+
+<h2><a name="notes">NOTES</a></h2>
+<p>
+This module sets the computational region to the release area with a
+user-defined <em>buffer</em> around, aligned to the input elevation model.
+<p>
+It assumes that the projection of the input OGR data source matches
+with the projection of the current location.
+<p>
+Parallel processing is supported, depending on the number of specified
+parallel processes (<em>nprocs</em>) and the number of realse thickness
+values to simulate for.
+<p>
+
+<h2><a name="references">REFERENCES</a></h2>
+<a href="https://docs.avaframe.org/en/latest/theoryCom1DFA.html">com1DFA DFA-Kernel theory</a><br>
+<a href="https://docs.avaframe.org/en/latest/DFAnumerics.html">com1DFA DFA-Kernel numerics</a><br>
+<a href="https://zenodo.org/record/7189007#.Y6RXlNWZND8">AvaFrame: Version 1.3 on Zenodo</a>
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<h3><a name="run-com1dfa-simulations-for-a-release-area-registered-in-nve-database">Run com1DFA simulations for a release area registered in NVE database</a></h3>
+
+<div class="code"><pre>
+r.avaframe.com1dfa --o -l elevation="DTM_10m@DTM" nprocs=8 format="csv" buffer=1500 \
+    release_area="https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmSamosAT/MapServer/0/query?where=objectid+%3D+1&amp;outFields=*&amp;f=json" \
+    ppr="ppr" pft="pft" pfv="pfv"
+
+</pre></div>
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+<a href="file:///usr/lib/grass82/docs/html/r.external.html">r.external</a>,
+<a href="file:///usr/lib/grass82/docs/html/i.group.html">i.group</a>,
+</em>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">r.avaframe.com1dfa source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Wednesday Aug 30 09:03:16 2023
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass82/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass82/docs/html/raster.html">Raster index</a> |
+<a href="file:///usr/lib/grass82/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass82/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass82/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass82/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2023
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.2.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

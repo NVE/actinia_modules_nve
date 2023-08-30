@@ -1,0 +1,205 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>i.asf.download - GRASS GIS manual</title>
+ <meta name="description" content="i.asf.download: Searches and downloads SAR data from the Alaska Satellite Facility.">
+ <meta name="keywords" content="imagery, satellite, download, SAR, Sentinel">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass82/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#platform">Platform</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#beammode">BeamMode</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#processinglevel">Processinglevel</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#to-be-continued">To be continued</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#references">REFERENCES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>i.asf.download</b></em>  - Searches and downloads SAR data from the Alaska Satellite Facility.
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass82/docs/html/imagery.html">imagery</a>, <a href="file:///usr/lib/grass82/docs/html/topic_satellite.html">satellite</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#download">download</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#SAR">SAR</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#Sentinel">Sentinel</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>i.asf.download</b><br></div>
+<b>i.asf.download --help</b><br>
+<div id="synopsis"><b>i.asf.download</b> [-<b>lc</b>]  [<b>output_directory</b>=<em>string</em>]  <b>aoi</b>=<em>name</em>  [<b>token</b>=<em>string</em>]  <b>start</b>=<em>string</em>  [<b>end</b>=<em>string</em>]  <b>platform</b>=<em>string</em> <b>beam_mode</b>=<em>string</em>  [<b>processinglevel</b>=<em>string</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-l</b></dt>
+<dd>Only list scenes available</dd>
+
+<dt><b>-c</b></dt>
+<dd>Do checksum test of all scenes</dd>
+
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>output_directory</b>=<em>string</em></dt>
+<dd>Directory where to store downloaded data</dd>
+<dd>Name for output directory where to store downloaded Sentinel data</dd>
+
+<dt><b>aoi</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to GeoJSON file with the Area Of Interest (aoi)</dd>
+<dd>Path to GeoJSON file with the Area Of Interest (aoi)</dd>
+
+<dt><b>token</b>=<em>string</em></dt>
+<dd>File has to contain ASF token</dd>
+<dd>Path to ASF token file</dd>
+
+<dt><b>start</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Start date ('YYYY-MM-DD')</dd>
+
+<dt><b>end</b>=<em>string</em></dt>
+<dd>End date ('YYYY-MM-DD')</dd>
+
+<dt><b>platform</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Currently only Sentinel-1 is supported</dd>
+<dd>Satellite platform</dd>
+<dd>Options: <em>Sentinel-1</em></dd>
+<dd>Default: <em>Sentinel-1</em></dd>
+
+<dt><b>beam_mode</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Currently only IW is supported</dd>
+<dd>Satellite beam mode</dd>
+<dd>Options: <em>IW</em></dd>
+<dd>Default: <em>IW</em></dd>
+
+<dt><b>processinglevel</b>=<em>string</em></dt>
+<dd>Ground-Range-Detected (GRD) or Single-Look-Complex (SLC)</dd>
+<dd>SAR processing level</dd>
+<dd>Options: <em>GRD_HD, SLC</em></dd>
+<dd>Default: <em>GRD_HD</em></dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a>
+    <ul class="toc">
+        <li class="toc"><a href="#platform" class="toc">Platform</a></li>
+        <li class="toc"><a href="#beammode" class="toc">BeamMode</a></li>
+        <li class="toc"><a href="#processinglevel" class="toc">Processinglevel</a></li>
+        <li class="toc"><a href="#to-be-continued" class="toc">To be continued</a></li>
+    </ul></li>
+    <li class="toc"><a href="#references" class="toc">REFERENCES</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>i.asf.download</em> for search and download of products available from Alaska Satellite Facility (ASF)
+<a href="https://asf.alaska.edu/">https://asf.alaska.edu/</a>. 
+
+<p>
+Users can only use a limited set of query parameters from the underlying API. The rest will be implemented when needed. The following filter parameters are so far supported:
+
+<h3><a name="platform">Platform</a></h3>
+In the <em>platform</em> option, users can choose which product types 
+to download.
+
+<ul>
+<li><b>Sentinel-1</b></li>
+</ul>
+
+<h3><a name="beammode">BeamMode</a></h3>
+In the <em>beamMode</em> option, users can choose which product types 
+to download.
+
+<ul>
+<li><b>IW</b></li>
+</ul>
+
+<h3><a name="processinglevel">Processinglevel</a></h3>
+In the <em>processinglevel</em> option, users can choose which product types 
+to download.
+
+<ul>
+<li><b>GRD_HD</b></li>
+<li><b>SLC</b></li>
+</ul>
+
+<h3><a name="to-be-continued">To be continued</a></h3>
+
+<div class="code"><pre>
+Todo
+</pre></div>
+
+<h2><a name="references">REFERENCES</a></h2>
+
+<a href="https://docs.asf.alaska.edu/asf_search/basics/">asf_search Basics</a>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Yngve Antonsen<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">i.asf.download source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Wednesday Aug 30 09:03:14 2023
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass82/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass82/docs/html/imagery.html">Imagery index</a> |
+<a href="file:///usr/lib/grass82/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass82/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass82/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass82/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2023
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.2.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

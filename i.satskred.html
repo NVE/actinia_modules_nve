@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>i.satskred - GRASS GIS manual</title>
+ <meta name="description" content="i.satskred: Run avalanche detection from Sentinel-1 imagery using satskred">
+ <meta name="keywords" content="raster, imagery, copernicus, sentinel, satellite, radar, satskred, avalanche, snow">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass82/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#notes">NOTES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#requirements">REQUIREMENTS</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>i.satskred</b></em>  - Run avalanche detection from Sentinel-1 imagery using satskred
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass82/docs/html/raster.html">raster</a>, <a href="file:///usr/lib/grass82/docs/html/topic_imagery.html">imagery</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#copernicus">copernicus</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#sentinel">sentinel</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#satellite">satellite</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#radar">radar</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#satskred">satskred</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#avalanche">avalanche</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#snow">snow</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>i.satskred</b><br></div>
+<b>i.satskred --help</b><br>
+<div id="synopsis"><b>i.satskred</b> <b>input</b>=<em>name</em> <b>elevation</b>=<em>string</em>  [<b>output_directory</b>=<em>name</em>]  <b>mask_directory</b>=<em>name</em>  [<b>mask_suffix</b>=<em>string</em>]  <b>mask_exclude</b>=<em>integer</em>[,<i>integer</i>,...] <b>mask_min_valid</b>=<em>integer</em>  [<b>start</b>=<em>string</em>]   [<b>end</b>=<em>string</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Input directory with Sentinel-1 imagery</dd>
+
+<dt><b>elevation</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Digital elevation model to use for geocoding (either a path to a GeoTiff or a linked raster map)</dd>
+
+<dt><b>output_directory</b>=<em>name</em></dt>
+<dd>Directory where satskred results are stored</dd>
+<dd>Name for output directory where satskred results are stored (default: ./)</dd>
+<dd>Default: <em>./</em></dd>
+
+<dt><b>mask_directory</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Directory where masks for avalanche detection are stored</dd>
+<dd>Name for output directory where masks for avalanche detection are stored</dd>
+
+<dt><b>mask_suffix</b>=<em>string</em></dt>
+<dd>Suffix used for files with runout masks</dd>
+<dd>Default: <em>tif</em></dd>
+
+<dt><b>mask_exclude</b>=<em>integer[,<i>integer</i>,...]</em>&nbsp;<b>[required]</b></dt>
+<dd>Comma separated list of category values in mask to exclude from avalanche detection</dd>
+
+<dt><b>mask_min_valid</b>=<em>integer</em>&nbsp;<b>[required]</b></dt>
+<dd>Minimum valid category value in mask (values &gt;= mask_min_valid are incuded in avalanche detection)</dd>
+
+<dt><b>start</b>=<em>string</em></dt>
+<dd>Start date of time frame to compute (required format: YYYY-MM-DD)</dd>
+<dd>Start date of time frame to compute (required format: YYYY-MM-DD)</dd>
+
+<dt><b>end</b>=<em>string</em></dt>
+<dd>End date of time frame to compute (required format: YYYY-MM-DD)</dd>
+<dd>End date of time frame to compute (required format: YYYY-MM-DD)</dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#notes" class="toc">NOTES</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a></li>
+    <li class="toc"><a href="#requirements" class="toc">REQUIREMENTS</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>i.satkred</em> runs avalanche detection from Sentinel-1 imagery using the
+<a href=https://github.com/NVE/satskred_dev>satskred</a> library. Main <b>input</b> is a directory
+containing a tme series of Sentinel-1 GRD imagery. In addition, a Digital Elevation Model (DEM)
+is required in the <b>elevation</b> option.
+
+<p>
+<em>i.satkred</em> creates configuration files for satskred, initializes the area to process and
+executes the satskred command line utility to run avalance detection. All results (geocoded Sentinel-1
+images, RGB-change images, shape files of detected avalanches) are stored in the <b>output_directory</b>.
+
+<p>
+Further required input are a directory containing runout masks given in the <b>mask_directory</b> option,
+together with mask settings like <b>mask_suffix</b>, describing the suffix used for files with runout masks,
+a comma separated list of category values in the masks to exclude from avalanche detection given in the
+<b>mask_exclude</b> option and finally the minimum valid category value in the mask files <b>mask_min_valid</b>
+(values >= mask_min_valid are incuded in avalanche detection). Default settings for the mask options are
+chosen to match current settings for satskred production at NVE.
+
+<p>
+The user can choose to process only a specific time span defined by the <b>start</b> and <b>stop</b> option.
+The extent to process is taken from the computational region (set with <em>g.region</em>), and relevant
+images in the <b>input</b> directory are selected according to the user-provided spatial and temporal
+extent to process.
+
+<h2><a name="notes">NOTES</a></h2>
+Currently, the module expects the input Digital Elevation Model to be in UTM 33N Coordinate
+Reference System, and all output is generated in that CRS (EPSG:25833) as well.
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<div class="code"><pre>
+i.satskred input="./Sentinel_1_raw" elevation="./dtm20m.tif" mask_directory="./runoutmasks/" \
+  start="2019-11-24" end="2020-06-06" output_directory="./satskred_results"
+</pre></div>
+
+<h2><a name="requirements">REQUIREMENTS</a></h2>
+<em>i.satskred</em> uses the following non-standard Python libraries:
+<ul>
+  <li>The non-open <em>satskred</em> Python library</li>
+  <li>The proprietary <em>GDAR</em> Python library developed by NORCE (coming with own dependencies)</li>
+  <li>Python bindings for <a href="https://pypi.org/project/GDAL/">GDAL</a></li>
+</ul>
+
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">i.satskred source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Wednesday Aug 30 09:03:15 2023
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass82/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass82/docs/html/imagery.html">Imagery index</a> |
+<a href="file:///usr/lib/grass82/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass82/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass82/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass82/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2023
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.2.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>
