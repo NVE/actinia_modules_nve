@@ -19,10 +19,10 @@ jobs:
           sudo apt-get install -y -qq grass grass-dev grass-doc wget
       - name: Fix GRASS GIS installation for g.extension (needed for Ubuntu 18.04 grass packages)
         run: |
-          wget https://grass.osgeo.org/grass83/manuals/grass_logo.png
-          wget https://grass.osgeo.org/grass83/manuals/grassdocs.css
-          sudo mv grass_logo.png /usr/lib/grass83/docs/html/grass_logo.png
-          sudo mv grassdocs.css /usr/lib/grass83/docs/html/grassdocs.css
+          wget https://grass.osgeo.org/grass82/manuals/grass_logo.png
+          wget https://grass.osgeo.org/grass82/manuals/grassdocs.css
+          sudo mv grass_logo.png /usr/lib/grass82/docs/html/grass_logo.png
+          sudo mv grassdocs.css /usr/lib/grass82/docs/html/grassdocs.css
       - name: Install the modules to directory called build
         run: |
           find ./src/ -maxdepth 2 -mindepth 2 -type d \
