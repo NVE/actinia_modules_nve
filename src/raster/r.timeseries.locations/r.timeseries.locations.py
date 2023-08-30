@@ -140,7 +140,6 @@ import sys
 from functools import partial
 from subprocess import PIPE
 
-import pyodbc
 import numpy as np
 
 import grass.script as gs
@@ -442,6 +441,15 @@ def main():
 if __name__ == "__main__":
     options, flags = gs.parser()
     # lazy imports
+    try:
+        import pyodbc
+    except ImportError:
+        gs.fatal(_("Python module pyodbc required but cannot be imported"))
+    try:
+        from pykeepass import PyKeePass
+    except ImportError:
+        gs.fatal(_("Python module pykeepass required but cannot be imported"))
+
     from grass.pygrass.modules.interface import Module
     from grass.pygrass.vector import VectorTopo
 
