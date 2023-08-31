@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install GRASS GIS and other dependencies
         run: |
           sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable -y
@@ -44,3 +44,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/docs/html
           publish_branch: gh-pages
+          enable_jekyll: true
