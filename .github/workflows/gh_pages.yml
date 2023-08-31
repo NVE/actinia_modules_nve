@@ -33,7 +33,9 @@ jobs:
           | bash' \;
       - name: Copy the page as index.html
         run: |
-          echo "test" build/docs/html/index.html
+          echo "# actinia modules from NVE" > build/docs/html/index.md
+          find ./src/ -maxdepth 2 -mindepth 2 -type d -iwholename "*[g|i|r|t|v|m|d|db]*.*" -exec bash -c 'echo {} | \
+          awk -v FS="/" "{print(\"./\" \$4 \".html\")}"' \; | sort >> build/docs/html/index.md
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v2.1.0
         env:
