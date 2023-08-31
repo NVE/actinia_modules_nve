@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>g.unzip - GRASS GIS manual</title>
+ <meta name="description" content="g.unzip: Unzip zip-files in a directory in parallel">
+ <meta name="keywords" content="general, zip, unzip, unpack">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass82/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>g.unzip</b></em>  - Unzip zip-files in a directory in parallel
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass82/docs/html/general.html">general</a>, <a href="file:///usr/lib/grass82/docs/html/topic_zip.html">zip</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#unzip">unzip</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#unpack">unpack</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>g.unzip</b><br></div>
+<b>g.unzip --help</b><br>
+<div id="synopsis"><b>g.unzip</b> [-<b>r</b>] <b>input</b>=<em>name</em>  [<b>output</b>=<em>name</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-r</b></dt>
+<dd>Remove zip-file(s) after extraction</dd>
+<dd>Remove zip-file(s) after extraction</dd>
+
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to the input directory with zip-files to extract</dd>
+
+<dt><b>output</b>=<em>name</em></dt>
+<dd>Path to the output directory to extract zip-files to</dd>
+
+<dt><b>nprocs</b>=<em>integer</em></dt>
+<dd>Number of threads for parallel computing</dd>
+<dd>Default: <em>1</em></dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>g.unzip</em> is a simple helper module to unzip all zip-files in a directory
+in parallel. The user can select an <b>output</b> directory, the number of parallel
+processes (<b>nprocs</b>) and to remove the extracted zip-file (<b>r-flag</b>).
+
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<div class="code"><pre>
+g.unizip -r nprocs=5 input="./"
+</pre></div>
+
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">g.unzip source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Thursday Aug 31 07:56:44 2023
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass82/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass82/docs/html/general.html">General index</a> |
+<a href="file:///usr/lib/grass82/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass82/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass82/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass82/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2023
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.2.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>
