@@ -1,20 +1,21 @@
 <h2>DESCRIPTION</h2>
 
 <em>i.sentinel1.pyrosargeocode</em> geocodes Sentinel-1 imagery on a user defined Digital Elevation Model (DEM)
-<b>elevation</b> using ESA SNAP Sentinel-1 Tool Box (S1TBX) through the pyrosar library developed by (XXXXXXXXXXX).
+<b>elevation</b> using ESA SNAP Sentinel-1 Tool Box (S1TBX) through the
+<a href="https://pyrosar.readthedocs.io/en/latest/">pyrosar</a> library.
 Sentinel-1 images will be projected to the Coordinate reference systems (CRS) of the input DEM, wich is assumed to
 match the CRS of the current LOCATION. In that process, results will be aligned with and resampled to the pixels
 in the input DEM.
 
 If the <b>f-flag</b> is set, a precise orbit file is fetched from ESAs web service if available (recommended).
-Note that there is usually a several days time lag after sensing time before these files are made available. If
-precise orbit files for the given scene are not available, the process will proceeed and give a warning.
+Note that there is usually a several (~ 20) days time lag after sensing time before these files are made available.
+If precise orbit files for the given scene are not available, the process will proceeed and give a warning.
 
 <p>
 <b>input</b> can be a single Sentinel-1 SAFE file (also in zipped format), a comma separated list of Sentinel-1
 files or a text file with a list of Sentinel-1 files to geocode. Geocoded images are stored in GeoTIFF format
 in the <b>output_directory</b> with file names following the naming convention in pyroSAR. Resulting files are
-then either imported into the GRASS GIS database <em>r.in.gdal</em> or linked  using <em>r.external</em>, if
+then either imported into the GRASS GIS database <em>r.in.gdal</em> or linked using <em>r.external</em>, if
 the <b>l-flag</b>, <b>m-flag</b>, or <b>r-flag</b> are given.
 
 <p>
@@ -23,17 +24,17 @@ the Area of Interest <b>aoi</b> in form of a GeoJSON with a single geometry.
 
 <p>
 In the <b>nprocs</b> option, users can specify the number of parallel process to run. If more than one
-Sentinel-1 scene is given in the <b>input</n> option, <b>nprocs</b> number of scenes will be processed in
+Sentinel-1 scene is given in the <b>input</b> option, <b>nprocs</b> number of scenes will be processed in
 parallel. Otherwise, <b>nprocs</b> defines the number of cores available to the graph processing tool (gpt)
-in ESA SNAP. As geocoding is quite memory demanding, the user has to account for the amount of memory made
+in ESA SNAP. As geocoding is quite memory demanding, the user has to consider for the amount of memory made
 available to ESA SNAP / gpt when activating parallel processing with <b>nprocs</b> > 1.
 
 <p>
 Currently, only geocoding of Sentinel-1 GRD imagery in IW <b>mode</b> and with VV or VH <b>polarization</b>
 is supported.
 
-For more information on the pyroSAR processing chain, lease consult the pyroSAR manual, especially the
-documentation for processing with ESA SNAP.
+For more information on the pyroSAR processing chain, please consult the pyroSAR manual, especially the
+documentation for <a href="https://pyrosar.readthedocs.io/en/latest/api/snap.html#id2">processing with ESA SNAP</a>.
 
 <h2>EXAMPLES</h2>
 
@@ -45,17 +46,28 @@ i.sentinel1.pyroargeocode -dfmn input=S1A_IW_GRDH_1SDV_20200304T161544_20200304T
 
 <h2>REQUIREMENTS</h2>
 <em>i.sentinel1.pyrosargeocode</em> requires ESA SNAP to be installed with the Graph Processing tool
-(gpt) available on PATH. In addition, the pyroSAR Python libraries is required which can be installed
-from pypi with: pip install pyroSAR
+(gpt) available on PATH.<br>
+In addition, the pyroSAR Python libraries is required which can be installed
+from pypi with:
+<div class="code"><pre>
+pip install pyroSAR
+</pre></div>
 
 <h2>SEE ALSO</h2>
 <a href="i.sentinel1.gdargeocode.html">i.sentinel1.gdargeocode</a>
 
 <h2>REFERENCES</h2>
 
-<a href="https://docs.asf.alaska.edu/asf_search/basics/">pyroSAR</a>
-<a href="https://docs.asf.alaska.edu/asf_search/basics/">pyroSAR paper</a>
-<a href="https://docs.asf.alaska.edu/asf_search/basics/">pyroSAR ARD paper</a>
+<ul>
+<li><a href="https://pyrosar.readthedocs.io/en/latest/">pyroSAR</a> documentation</li>
+<li>J. Truckenbrodt, F. Cremer, I. Baris, and J. Eberle. Pyrosar: a framework for large-scale sar satellite
+data processing. In P. Soille, S. Loekken, and S. Albani (editors): Big Data from Space, 197–200.
+Luxembourg, 2019. Publications Office of the European Union.
+<a href="https://op.europa.eu/en/publication-detail/-/publication/7075ed48-3a4d-11e9-8d04-01aa75ed71a1">doi:10.2760/848593</a></li>
+<li>Truckenbrodt J, Freemantle T, Williams C, Jones T, Small D, Dubois C, Thiel C, Rossi C, Syriou A, Giuliani G. 2019:
+Towards Sentinel-1 SAR Analysis-Ready Data: A Best Practices Assessment on Preparing Backscatter Data for the Cube.
+Data 2019 4(3):93. <a href="https://www.mdpi.com/2306-5729/4/3/93">https://doi.org/10.3390/data4030093</a></li>
+</ul>
 
 <h2>AUTHOR</h2>
 
