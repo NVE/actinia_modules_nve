@@ -300,7 +300,13 @@ def main():
         gs.call(
             ["satskred", "init"]
             + config_list
-            + ["--projname", "UTM33N", str(output_directory)]
+            + [
+                "--areaname",
+                output_directory.name,
+                "--projname",
+                "UTM33N",
+                str(output_directory),
+            ]
             + region_list
         )
 
