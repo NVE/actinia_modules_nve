@@ -34,7 +34,22 @@ class TestGUnzipParallel(TestCase):
         """Remove the temporary data"""
         gs.utils.try_rmdir(cls.tempdir)
 
-    def test_g_unzip(self):
+    def test_g_unzip_no_out_dir(self):
+        """Test unzipping to output directory while
+        removing zip files in parallel"""
+        # Check that zip-files are created
+        self.assertTrue(len(list(self.tempdir.glob("testfile_*.zip"))) == 4)
+        # Check that g.unzip runs successfully
+        self.assertModule(
+            "g.unzip",
+            input=str(self.tempdir),
+            nprocs=2,
+            verbose=True,
+        )
+        # Check that unzipped-files exist in the file system
+        self.assertTrue(len(list((self.tempdir).glob("testfile_*.txt"))) == 4)
+
+    def test_g_unzip_with_out_dir(self):
         """Test unzipping to output directory while
         removing zip files in parallel"""
         # Check that zip-files are created
