@@ -41,6 +41,7 @@
 
 import os
 import sys
+import time
 
 from functools import partial
 from multiprocessing import Pool
@@ -52,16 +53,34 @@ import grass.script as gs
 
 def unzip_file(file_path, out_dir=None, remove=False):
     """Unzip file to output directory if given or current working directory
-    and remove unpacked zip-file if requested"""
+    and remove unpacked zip-file if requested
+    Unzipping preserves modification time"""
+
     gs.verbose(_("Unzipping {}").format(str(file_path)))
+
+    if not out_dir:
+        out_dir = Path("./")
+    else:
+        out_dir = Path(out_dir)
+
     with ZipFile(file_path) as zip_file_object:
-        zip_file_object.extractall(path=out_dir)
+        for zipped_file in zip_file_object.infolist():
+            file_name, file_date_time = (
+                zipped_file.filename.lstrip("/").lstrip("\\"),
+                zipped_file.date_time,
+            )
+            out_file_name = os.path.join(out_dir, file_name)
+            with open(out_file_name, "wb") as out_file:
+                with zip_file_object.open(zipped_file) as zip_content:
+                    out_file.write(zip_content.read())
+            file_date_time = time.mktime(file_date_time + (0, 0, -1))
+            os.utime(out_file_name, (file_date_time, file_date_time))
 
     if not remove:
-        return
+        return 0
 
     file_path.unlink()
-    return
+    return 0
 
 
 def main():
@@ -84,7 +103,7 @@ def main():
             _("Output directory <{}> is not writeable").format(str(output_directory))
         )
 
-    unzip = partial(unzip_file, out_dir=output_directory, remove=flags["r"])
+    unzip = partial(unzip_file, out_dir=str(output_directory), remove=flags["r"])
 
     input_files = list(input_directory.glob("*.[zZ][iI][pP]"))
     if len(input_files) <= 0:
