@@ -9,7 +9,7 @@ for details.
 """
 
 from pathlib import Path
-from zipfile import ZipFile
+from zipfile import ZipFile, ZipInfo
 
 import grass.script as gs
 
@@ -25,8 +25,10 @@ class TestGUnzipParallel(TestCase):
         cls.tempdir = Path(gs.tempdir())
         for file_number in range(4):
             with ZipFile(cls.tempdir / f"testfile_{file_number}.zip", "w") as test_zip:
+                zipinfo_dir = ZipInfo("./testdir/")
+                test_zip.writestr(zipinfo_dir, "")
                 test_zip.writestr(
-                    f"/testfile_{file_number}.txt", "This is test content!"
+                    f"./testdir/testfile_{file_number}.txt", "This is test content!"
                 )
 
     @classmethod
@@ -47,7 +49,9 @@ class TestGUnzipParallel(TestCase):
             verbose=True,
         )
         # Check that unzipped-files exist in the file system
-        self.assertTrue(len(list((self.tempdir).glob("testfile_*.txt"))) == 4)
+        self.assertTrue(
+            len(list((self.tempdir / "testdir").glob("testfile_*.txt"))) == 4
+        )
 
     def test_g_unzip_with_out_dir(self):
         """Test unzipping to output directory while
@@ -67,7 +71,14 @@ class TestGUnzipParallel(TestCase):
         self.assertTrue(len(list(self.tempdir.glob("testfile_*.zip"))) == 0)
         # Check that unzipped-files exist in the file system
         self.assertTrue(
-            len(list((self.tempdir / "output_directory").glob("testfile_*.txt"))) == 4
+            len(
+                list(
+                    (self.tempdir / "output_directory" / "testdir").glob(
+                        "testfile_*.txt"
+                    )
+                )
+            )
+            == 4
         )
 
 
