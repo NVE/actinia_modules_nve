@@ -48,7 +48,6 @@ class TestAggregationAbsolute(TestCase):
         self.assertModule(
             "i.asf.download",
             flags="w",
-            check_scenes="all",
             platform="Sentinel-1",
             beam_mode="IW",
             processinglevel="GRD_HD",
