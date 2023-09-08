@@ -101,7 +101,7 @@ time satskred run \
 # % type: integer
 # % required: yes
 # % multiple: no
-# % description: Minimum valid category value in mask (values >= mask_min_valid are incuded in avalanche detection)
+# % description: Minimum number of valid pixels in mask
 # %end
 
 # %option
@@ -148,6 +148,7 @@ def write_config(
     mask_name=None,
     mask_hard=True,
     mask_excluded_values=(0, 3),
+    mask_min_valid=50,
 ):
     """Write configuration files for satskred
     according to user input"""
@@ -223,7 +224,7 @@ def write_config(
                 "min_size": 15,
                 "max_size": 400,
                 "min_backscatter": -40,
-                "min_valid_mask_pixels": 50,
+                "min_valid_mask_pixels": mask_min_valid,
                 "min_edge_segment_fraction": 0.001,
                 "dog_std_0": 1,
                 "dog_std_1": 18,
@@ -245,9 +246,7 @@ def main():
     if not shutil.which("satskred"):
         gs.fatal(_("satskred commandline tool not found on current PATH"))
 
-    dem = options[
-        "elevation"
-    ]  # "/hdata/SatSkredTestArea/dtm/DTM10_20200629_Lavangsdalen.tif"
+    dem = options["elevation"]
 
     output_directory = Path(options["output_directory"])
     input_directory = Path(options["input"])
@@ -279,6 +278,7 @@ def main():
         mask_name="runoutmask",
         mask_hard=True,
         mask_excluded_values=[0, 3],
+        mask_min_valid=int(options["mask_min_valid"]),
     )
 
     region = gs.parse_command("g.region", flags="ug")
@@ -286,29 +286,26 @@ def main():
 
     config_list = [
         "--config",
-        satskred_config["satskredconf"],
+        str(satskred_config["satskredconf"]),
         "--woodpecker-config",
-        satskred_config["woodpeckerconf"],
+        str(satskred_config["woodpeckerconf"]),
         "--avaldet-config",
-        satskred_config["avaldetconf"],
+        str(satskred_config["avaldetconf"]),
     ]
     region_list = list(map(str, [west, north, east, south]))
 
     if not output_directory.exists():
         gs.info(_("Initializing input region {}").format(output_directory.name))
-        satskred_command = ["satskred", "init"] + config_list
-        gs.call(
+        satskred_command = (
             ["satskred", "init"]
             + config_list
-            + [
-                "--areaname",
-                output_directory.name,
-                "--projname",
-                "UTM33N",
-                str(output_directory),
-            ]
+            + [str(output_directory)]
             + region_list
+            + ["--areaname", output_directory.name, "--projname", "UTM33N"]
         )
+
+        gs.verbose(_('Running "{}"').format(" ".join(satskred_command)))
+        gs.call(satskred_command)
 
     satskred_command = ["satskred", "run"] + config_list
     if options["start"]:
@@ -323,15 +320,4 @@ def main():
 
 if __name__ == "__main__":
     options, flags = gs.parser()
-    # lazy imports
-
-    # try:
-    #     from osgeo import gdal, ogr, osr
-    # except ImportError:
-    #     gs.fatal(
-    #         _(
-    #             "Can not import GDAL python bindings. Please install it with 'pip install GDAL==${GDAL_VERSION}'"
-    #         )
-    #     )
-
     sys.exit(main())
