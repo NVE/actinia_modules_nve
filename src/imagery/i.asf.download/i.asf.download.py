@@ -36,7 +36,8 @@
 
 # %option G_OPT_F_INPUT
 # % key: aoi
-# % description: Path to GeoJSON file with the Area Of Interest (aoi)
+# % required: no
+# % description: Path to GeoJSON file with the Area Of Interest (aoi) (defaults to computational region)
 # % label: Path to GeoJSON file with the Area Of Interest (aoi)
 # %end
 
@@ -464,7 +465,7 @@ def main():
                 for result in results
             ]
         elif not flags["l"]:
-            results.download(
+            asf.ASFSearchResults(results).download(
                 path=options["output_directory"],
                 procersses=nprocs,
                 session=token_session,
@@ -488,7 +489,7 @@ def main():
                 )
                 results = pool.map(download_with_checksumtest_parallel, results)
         elif not flags["l"]:
-            results.download(
+            asf.ASFSearchResults(results).download(
                 path=options["output_directory"],
                 session=token_session,
                 procersses=nprocs,
