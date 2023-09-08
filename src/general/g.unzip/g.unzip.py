@@ -69,10 +69,13 @@ def unzip_file(file_path, out_dir=None, remove=False):
                 zipped_file.filename.lstrip("/").lstrip("\\"),
                 zipped_file.date_time,
             )
-            out_file_name = os.path.join(out_dir, file_name)
-            with open(out_file_name, "wb") as out_file:
-                with zip_file_object.open(zipped_file) as zip_content:
-                    out_file.write(zip_content.read())
+            out_file_name = out_dir / file_name
+            if zipped_file.is_dir():
+                out_file_name.mkdir(parents=True, exist_ok=True)
+            else:
+                with open(out_file_name, "wb") as out_file:
+                    with zip_file_object.open(zipped_file) as zip_content:
+                        out_file.write(zip_content.read())
             file_date_time = time.mktime(file_date_time + (0, 0, -1))
             os.utime(out_file_name, (file_date_time, file_date_time))
 
