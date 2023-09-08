@@ -388,11 +388,16 @@ def checkout_results(
             download_result = {
                 "downloaded": [result.properties["fileName"] for result in result_set]
             }
-        json.dump(
-            download_result,
+        with (
             download_path
-            / f"i_asf_download_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log",
-        )
+            / f"i_asf_download_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+        ).open("w", encoding="UTF-8") as log_file:
+            json.dump(
+                download_result,
+                log_file,
+                sort_keys=True,
+                indent=2,
+            )
 
 
 def main():
