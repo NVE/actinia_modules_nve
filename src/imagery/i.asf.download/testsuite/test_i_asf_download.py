@@ -41,12 +41,13 @@ class TestAggregationAbsolute(TestCase):
             verbose=True,
         )
 
-    def test_asf_download_flag_c(self):
-        """Test download and import of Sentinel-1 with flag c - checksum-test
-        Tests also if already downloaded files are skipped"""
+    def test_asf_parallel_download_with_checks(self):
+        """Test parallel download and import of Sentinel-1 with
+        checksum-test. Tests also if already downloaded files
+        are skipped"""
         self.assertModule(
             "i.asf.download",
-            flags="c",
+            flags="w",
             platform="Sentinel-1",
             beam_mode="IW",
             processinglevel="GRD_HD",
@@ -54,6 +55,8 @@ class TestAggregationAbsolute(TestCase):
             end="2023-03-16T00:00:00Z",
             aoi="./data/roi.geojson",
             output_directory=self.tempdir,
+            check_scenes="all",
+            nprocs=2,
             verbose=True,
         )
 

@@ -1,40 +1,60 @@
 <h2>DESCRIPTION</h2>
 
 <em>i.asf.download</em> for search and download of products available from Alaska Satellite Facility (ASF)
-<a href="https://asf.alaska.edu/">https://asf.alaska.edu/</a>. 
+<a href="https://asf.alaska.edu/">https://asf.alaska.edu/</a>. The module supports parallel
+downloads using the <b>nprocs</b> option which defines the maximum number of parallel
+processes.
 
 <p>
-Users can only use a limited set of query parameters from the underlying API. The rest will be implemented when needed. The following filter parameters are so far supported:
+Users can only use a limited set of query parameters from the underlying API.
+The rest will be implemented when needed. The following filter parameters are so far supported:
 
 <h3>Platform</h3>
-In the <em>platform</em> option, users can choose which product types 
+In the <b>platform</b> option, users can choose which product types
 to download.
 
 <ul>
-<li><b>Sentinel-1</b></li>
+<li>Sentinel-1</li>
 </ul>
 
 <h3>BeamMode</h3>
-In the <em>beamMode</em> option, users can choose which product types 
-to download.
+In the <b>beamMode</b> option, users can choose which product types
+to download. Currently only IW is supported.
 
 <ul>
-<li><b>IW</b></li>
+<li>IW</li>
 </ul>
 
 <h3>Processinglevel</h3>
-In the <em>processinglevel</em> option, users can choose which product types 
-to download.
+In the <b>processinglevel</b> option, users can choose which product types
+to download. Currently supported are:
 
 <ul>
-<li><b>GRD_HD</b></li>
-<li><b>SLC</b></li>
+<li>GRD_HD</li>
+<li>SLC</li>
 </ul>
 
-<h3>To be continued</h3>
 
+<h2>EXAMPLES</h2>
+
+<h3>List scenes matching geo-search</h3>
 <div class="code"><pre>
-Todo
+i.asf.download --v -l start="2020-12-01" end="2020-12-14" \
+    aoi=./aoi.geojson
+</pre></div>
+
+<h3>Parallel download with token file</h3>
+<div class="code"><pre>
+# Skip existing files
+    i.asf.download --v -s start="2020-12-01" end="2020-12-14" \
+    output_directory=./ token=./asf.token nprocs=5
+</pre></div>
+
+<h3>Parallel download with checksum / modification time test</h3>
+<div class="code"><pre>
+export ASF_TOKEN=my_long_and_complicated_token_string
+i.asf.download --v -s start="2020-12-01" end="2020-12-14" \
+    output_directory=./ nprocs=5 check_scenes=all
 </pre></div>
 
 <h2>REFERENCES</h2>
@@ -43,4 +63,5 @@ Todo
 
 <h2>AUTHOR</h2>
 
-Yngve Antonsen
+Yngve Antonsen,<br>
+Stefan Blumentrath (parallelization and additional checks)
