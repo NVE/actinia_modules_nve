@@ -472,7 +472,7 @@ def main():
         elif not flags["l"]:
             asf.ASFSearchResults(results).download(
                 path=options["output_directory"],
-                procersses=nprocs,
+                processes=nprocs,
                 session=token_session,
             )
     else:
@@ -497,7 +497,7 @@ def main():
             asf.ASFSearchResults(results).download(
                 path=options["output_directory"],
                 session=token_session,
-                procersses=nprocs,
+                processes=nprocs,
             )
 
     checkout_results(
