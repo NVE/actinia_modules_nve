@@ -23,6 +23,7 @@ class TestGUnzipParallel(TestCase):
     def setUpClass(cls):
         """Initiate the working environment"""
         cls.tempdir = Path(gs.tempdir())
+        (cls.tempdir / "empty_dir").mkdir(parents=True, exist_ok=True)
         for file_number in range(4):
             with ZipFile(cls.tempdir / f"testfile_{file_number}.zip", "w") as test_zip:
                 zipinfo_dir = ZipInfo("./testdir/")
@@ -51,6 +52,18 @@ class TestGUnzipParallel(TestCase):
         # Check that unzipped-files exist in the file system
         self.assertTrue(
             len(list((self.tempdir / "testdir").glob("testfile_*.txt"))) == 4
+        )
+
+    def test_g_unzip_empty_dir(self):
+        """Test unzipping if input directory is empty (should not fail)"""
+        # Check that zip-files are created
+        self.assertTrue(len(list((self.tempdir / "empty_dir").glob("*.zip"))) == 0)
+        # Check that g.unzip runs successfully
+        self.assertModule(
+            "g.unzip",
+            input=str(self.tempdir / "empty_dir"),
+            nprocs=2,
+            verbose=True,
         )
 
     def test_g_unzip_with_out_dir(self):
