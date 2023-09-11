@@ -113,6 +113,7 @@ def main():
         gs.warning(
             _("No zip-files found in input directory <{}>").format(str(input_directory))
         )
+        sys.exit(0)
 
     nprocs = min(int(options["nprocs"]), len(input_files))
     gs.verbose(
