@@ -62,7 +62,7 @@ time satskred run \
 # % type: string
 # % required: yes
 # % multiple: no
-# % description: Digital elevation model to use for geocoding (either a path to a GeoTiff or a linked raster map)
+# % description: Digital elevation model for geocoding (path to a GeoTiff or a linked raster map)
 # %end
 
 # %option G_OPT_M_DIR
@@ -120,17 +120,12 @@ time satskred run \
 # % label: End date of time frame to compute (required format: YYYY-MM-DD)
 # %end
 
-
 import json
 import shutil
 import sys
 
 from datetime import datetime
-
-# from multiprocessing import Pool
 from pathlib import Path
-
-# from subprocess import PIPE
 
 import grass.script as gs
 
@@ -149,6 +144,7 @@ def write_config(
     mask_hard=True,
     mask_excluded_values=(0, 3),
     mask_min_valid=50,
+    summer=None,
 ):
     """Write configuration files for satskred
     according to user input"""
@@ -174,6 +170,7 @@ def write_config(
                 "projectdir": "",
                 "datadir": "",
                 "node": "",
+                "summer": summer,
                 "data_sources": {
                     "sar": {"source_spec": {"type": "dir", "source": sar}},
                     "reporting": {"source_spec": {"type": "dir", "source": reporting}},
@@ -246,15 +243,16 @@ def main():
     if not shutil.which("satskred"):
         gs.fatal(_("satskred commandline tool not found on current PATH"))
 
+    # Parse options
     dem = options["elevation"]
 
     output_directory = Path(options["output_directory"])
-    input_directory = Path(options["input"])
 
+    input_directory = Path(options["input"])
     if not input_directory.exists():
         gs.fatal(_("Input directoy {} not found").format(str(input_directory)))
-    mask_directory = Path(options["mask_directory"])
 
+    mask_directory = Path(options["mask_directory"])
     if not mask_directory.exists():
         gs.fatal(
             _("Directoy {} with runout masks not found").format(str(mask_directory))
@@ -266,6 +264,7 @@ def main():
         temp_dir / f"i_satskred_{datetime.now().strftime('%Y%m%d%H%M%S')}.log"
     )
 
+    # Write config files
     satskred_config = write_config(
         directory=temp_dir,
         logfile=log_file,
@@ -279,10 +278,11 @@ def main():
         mask_hard=True,
         mask_excluded_values=[0, 3],
         mask_min_valid=int(options["mask_min_valid"]),
+        summer=None,
     )
 
+    # Get comutational region
     region = gs.parse_command("g.region", flags="ug")
-    west, north, east, south = region["w"], region["n"], region["e"], region["s"]
 
     config_list = [
         "--config",
@@ -292,21 +292,22 @@ def main():
         "--avaldet-config",
         str(satskred_config["avaldetconf"]),
     ]
-    region_list = list(map(str, [west, north, east, south]))
 
+    # Initialize directory if it does not exist
     if not output_directory.exists():
         gs.info(_("Initializing input region {}").format(output_directory.name))
         satskred_command = (
             ["satskred", "init"]
             + config_list
             + [str(output_directory)]
-            + region_list
+            + list(map(str, [region["w"], region["n"], region["e"], region["s"]]))
             + ["--areaname", output_directory.name, "--projname", "UTM33N"]
         )
 
         gs.verbose(_('Running "{}"').format(" ".join(satskred_command)))
         gs.call(satskred_command)
 
+    # Run satskred (for a given time frame)
     satskred_command = ["satskred", "run"] + config_list
     if options["start"]:
         satskred_command.extend(["--starttime", options["start"]])
