@@ -334,7 +334,7 @@ def main():
     sp = tgis.open_old_stds(input, "strds", dbif)
 
     # Get a list for selected raster maps from input STRDS
-    if region_relation and gs.version():
+    if region_relation and float(gs.version()["version"][0:3]) >= 8.4:
         map_list = sp.get_registered_maps_as_objects(
             where,
             "start_time",
