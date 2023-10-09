@@ -381,13 +381,13 @@ def main():
             if len(zone) > 1:
                 for idx in range(len(zone)):
                     zone_header = f"zone_{idx + 1}"
-                    if "l" in flags:
-                        header.append(f"{zone_header}_label")
                     header.append(zone_header)
+                    if "l" in flags and flags["l"]:
+                        header.append(f"{zone_header}_label")
             else:
+                header.append("zone")
                 if "l" in flags:
                     header.append("zone_label")
-                header.append("zone")
 
         header.append("raster_value")
         if "l" in flags:
