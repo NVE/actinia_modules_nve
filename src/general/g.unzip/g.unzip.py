@@ -70,9 +70,14 @@ def unzip_file(file_path, out_dir=None, remove=False):
                 zipped_file.date_time,
             )
             out_file_name = out_dir / file_name
+            # Create directory if path in zipfile is a directory
             if zipped_file.is_dir():
                 out_file_name.mkdir(parents=True, exist_ok=True)
             else:
+                # Create parent directory if needed
+                if not out_file_name.parent.exists():
+                    out_file_name.parent.mkdir(parents=True, exist_ok=True)
+                # Extract file
                 with open(out_file_name, "wb") as out_file:
                     with zip_file_object.open(zipped_file) as zip_content:
                         out_file.write(zip_content.read())
