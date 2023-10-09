@@ -370,11 +370,11 @@ def main():
 
     # Generate header if needed
     if flags["h"]:
-        header = ["map"]
-        if "g" in flags:
+        header = ["map", "start", "end"]
+        if "g" in flags and flags["g"]:
             header.append("east")
             header.append("north")
-        elif "x" in flags:
+        elif "x" in flags and flags["x"]:
             header.append("x")
             header.append("y")
         if options["zone"]:
