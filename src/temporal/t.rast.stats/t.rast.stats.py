@@ -370,24 +370,24 @@ def main():
 
     # Generate header if needed
     if flags["h"]:
-        header = ["map"]
-        if "g" in flags:
+        header = ["map", "start", "end"]
+        if "g" in flags and flags["g"]:
             header.append("east")
             header.append("north")
-        elif "x" in flags:
+        elif "x" in flags and flags["x"]:
             header.append("x")
             header.append("y")
         if options["zone"]:
             if len(zone) > 1:
                 for idx in range(len(zone)):
                     zone_header = f"zone_{idx + 1}"
-                    if "l" in flags:
-                        header.append(f"{zone_header}_label")
                     header.append(zone_header)
+                    if "l" in flags and flags["l"]:
+                        header.append(f"{zone_header}_label")
             else:
+                header.append("zone")
                 if "l" in flags:
                     header.append("zone_label")
-                header.append("zone")
 
         header.append("raster_value")
         if "l" in flags:
