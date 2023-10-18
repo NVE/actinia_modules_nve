@@ -41,17 +41,19 @@ COPYRIGHT:	(C) 2023 by NVE, Stefan Blumentrath
 
 # %option G_OPT_F_INPUT
 # %key: aoi
+# % required: no
 # % description: Path to GeoJSON file with the Area Of Interest (aoi)
 # % label: Path to GeoJSON file with the Area Of Interest (aoi)
 # %end
 
 # %option
 # % key: polarization
-# % required: yes
 # % type: string
-# % description: Sentinel-1 polarization to geocode
-# % label: Currently only Sentinel-1 is supported
+# % required: yes
+# % multiple: yes
 # % options: VV,VH
+# % description: Sentinel-1 polarization to geocode
+# % label: Currently only VV and VH are supported for Sentinel-1
 # % answer: VH
 # %end
 
@@ -303,7 +305,7 @@ def main():
         # File-list mode
         file_input = check_files_list(file_input)
 
-    if len(file_input < 1):
+    if len(file_input) < 1:
         gs.fatal(_("No Sentinel-1 files found to Geocode"))
 
     # Read DEM into GDAR raster
