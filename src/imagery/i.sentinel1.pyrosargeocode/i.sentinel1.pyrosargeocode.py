@@ -157,14 +157,31 @@ import grass.script as gs
 
 
 def get_raster_gdalpath(map_name):
-    """Open GRASS GIS raster map with rasterio"""
+    """Get Path of linked GeoTIFF for map"""
     # return gs.find_file(map_name)["file"].replace("/cell/", "/cellhd/")
-    return gs.parse_key_val(
+    gdal_path = gs.parse_key_val(
         gs.parse_command("r.info", flags="e", map=map_name)["comments"]
         .replace("\\", "")
         .replace('"', ""),
         vsep=" ",
     )["input"]
+    if Path(gdal_path).exists():
+        return str(gdal_path)
+    gis_env = gs.gisenv()
+    map_info = gs.find_file(map_name)
+    gdal_path = gdal_path = (
+        Path(gis_env["GISDBASE"])
+        / gis_env["LOCATION_NAME"]
+        / map_info["mapset"]
+        / "cell_misc"
+        / map_info["name"]
+        / "gdal"
+    )
+    if Path(gdal_path).exists():
+        return gs.parse_key_val(gdal_path.read_text().replace(": ", "="))["file"]
+    gs.fatal(
+        _("Input digital elevation model {} is not a linked GeoTiff").format(map_name)
+    )
 
 
 def get_aoi_geometry(geojson_file):
@@ -227,8 +244,6 @@ def get_target_geometry(s1_file, aoi=None):
         )
         return False
     bpol = bpol_geom.Intersection(aoi)
-
-    # bpol.TransformTo(t_srs)
     bpol.AssignSpatialReference(t_srs)
     aoi = Path(f"{gs.tempfile(create=False)}.geojson")
     Path(aoi).write_text(bpol.ExportToJson(), encoding="UTF8")
@@ -298,7 +313,10 @@ def process_image_file(
 
     if aoi:
         aoi = get_target_geometry(s1_file_id, aoi=aoi)
-        kwargs["shapefile"] = aoi
+        if not aoi:
+            return None
+        if not isinstance(aoi, bool):
+            kwargs["shapefile"] = aoi
 
     # Apply processing graph
     gs.verbose(_("Start geocoding scene {}").format(s1_file.name))
@@ -313,7 +331,6 @@ def process_image_file(
 
     register_strings = []
     output_dir = Path(kwargs["outdir"])
-
     orbit_direction = "ascending" if s1_file_id.orbit == "A" else "descending"
     polarizations = kwargs["polarizations"]
     polarizations.extend(kwargs["export_extra"])
@@ -356,10 +373,6 @@ def process_image_file(
             map=output_map,
             semantic_label=semantic_label,
         )
-        # Module(
-        #     "r.timestamp",
-        #     input=output_tif.stem,
-        # )
         register_strings.append(
             "|".join((output_map, start_time, end_time, semantic_label))
         )
@@ -429,16 +442,16 @@ def main():
     file_input = options["input"].split(",")
     if len(file_input) == 1:
         file_input = Path(file_input[0])
-        # print(file_input.suffix)
         if file_input.is_dir() and file_input.suffix.upper() != ".SAFE":
             # Directory mode
             file_input = list(file_input.glob("S1*.SAFE"))
         elif (
             file_input.suffix.upper() == ".SAFE" or file_input.suffix.lower() == ".zip"
         ):
+            # Single file mode
             file_input = [file_input]
         else:
-            # File mode
+            # Text file mode
             file_input = file_input.read_text(encoding="UTF8").split("\n")
 
     file_input = check_files_list(file_input)
@@ -492,9 +505,14 @@ def main():
         "refarea": "gamma0" if flags["n"] else "sigma0",
         "export_extra": export_extra,
         "outdir": str(output_directory),
-        "speckleFilter": speckle_filter_dict[options["speckle_filter"]],
+        "speckleFilter": speckle_filter_dict[options["speckle_filter"]]
+        if options["speckle_filter"]
+        else None,
         "spacing": float(dem_info["nsres"]),
         "externalDEMFile": dem_info["GDAL_path"],
+        "externalDEMNoDataValue": -2147483678.0
+        if dem_info["datatype"] == "DCELL"
+        else None,
         "externalDEMApplyEGM": False,
         "alignToStandardGrid": True,
         "demResamplingMethod": "BILINEAR_INTERPOLATION",
@@ -512,6 +530,7 @@ def main():
     if export_extra and "gammaSigmaRatio" in export_extra:
         geocode_kwargs["refarea"] = ["sigma0", "gamma0"]
 
+    # Pre-configure geocode function
     _geocode_snap = partial(
         process_image_file,
         kwargs=geocode_kwargs,
