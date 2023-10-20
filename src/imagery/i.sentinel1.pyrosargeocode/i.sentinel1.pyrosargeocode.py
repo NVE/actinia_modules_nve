@@ -336,12 +336,14 @@ def process_image_file(
     polarizations.extend(kwargs["export_extra"])
     for polarization in polarizations:
         if polarization in kwargs["export_extra"]:
-            semantic_label = f"S1_{orbit_direction}_{polarization}"
+            semantic_label = (
+                f"S1_{orbit_direction}_{s1_file_id.orbitNumber_rel}_{polarization}"
+            )
             output_tif = output_dir / f"{s1_file_id.outname_base()}_{polarization}.tif"
         else:
             geocoding = "rtc" if import_flags["n"] else "elp"
             scale = "_db" if import_flags["d"] else ""
-            semantic_label = f"S1_{orbit_direction}_{polarization}_{kwargs['refarea']}_{geocoding}{scale}"
+            semantic_label = f"S1_{orbit_direction}_{s1_file_id.orbitNumber_rel}_{polarization}_{kwargs['refarea']}_{geocoding}{scale}"
             # e.g.: S1A__IW___D_20230602T043121_VV_gamma0-elp_db.tif
             output_tif = (
                 output_dir
