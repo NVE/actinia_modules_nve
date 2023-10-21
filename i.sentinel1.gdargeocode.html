@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
- <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
  <meta name="Author" content="GRASS Development Team">
  <meta http-equiv="content-language" content="en-us">
  <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,7 +13,7 @@
 <body bgcolor="white">
 <div id="container">
 
-<a href="file:///usr/lib/grass82/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<a href="file:///usr/lib/grass83/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
 <script>
 // Create hamburger menu TOC HTML elements by the JavaScript
 let temp = document.createElement('template');
@@ -44,11 +44,11 @@ grassLogoLink.after(temp.content);
 <h2>NAME</h2>
 <em><b>i.sentinel1.gdargeocode</b></em>  - Geocode Sentinel-1 data using the GDAR library
 <h2>KEYWORDS</h2>
-<a href="file:///usr/lib/grass82/docs/html/imagery.html">imagery</a>, <a href="file:///usr/lib/grass82/docs/html/topic_satellite.html">satellite</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#download">download</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#SAR">SAR</a>, <a href="file:///usr/lib/grass82/docs/html/keywords.html#Sentinel">Sentinel</a>
+<a href="file:///usr/lib/grass83/docs/html/imagery.html">imagery</a>, <a href="file:///usr/lib/grass83/docs/html/topic_satellite.html">satellite</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#download">download</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#SAR">SAR</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#Sentinel">Sentinel</a>
 <h2>SYNOPSIS</h2>
 <div id="name"><b>i.sentinel1.gdargeocode</b><br></div>
 <b>i.sentinel1.gdargeocode --help</b><br>
-<div id="synopsis"><b>i.sentinel1.gdargeocode</b> [-<b>a</b>] <b>input</b>=<em>name</em>  [<b>output_directory</b>=<em>name</em>]  <b>aoi</b>=<em>name</em> <b>polarization</b>=<em>string</em> <b>mode</b>=<em>string</em>  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>i.sentinel1.gdargeocode</b> [-<b>at</b>] <b>input</b>=<em>name</em> <b>elevation</b>=<em>name</em>  [<b>output_directory</b>=<em>name</em>]  <b>aoi</b>=<em>name</em> <b>polarization</b>=<em>string</em>[,<i>string</i>,...] <b>mode</b>=<em>string</em> <b>scale</b>=<em>string</em> <b>suffix</b>=<em>string</em>  [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -56,6 +56,9 @@ grassLogoLink.after(temp.content);
 <dl>
 <dt><b>-a</b></dt>
 <dd>Apply precision orbit information if available</dd>
+
+<dt><b>-t</b></dt>
+<dd>Write register file for registering results in TGIS</dd>
 
 <dt><b>--help</b></dt>
 <dd>Print usage summary</dd>
@@ -72,8 +75,11 @@ grassLogoLink.after(temp.content);
 <h3>Parameters:</h3>
 <dl>
 <dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
-<dd>Path to GeoJSON file with the Area Of Interest (aoi)</dd>
+<dd>Path to input file(s)</dd>
 <dd>Comma separated list of paths to Sentinel-1 SAFE files or single text file with list of Sentinel-1 SAFE files (one path per row)</dd>
+
+<dt><b>elevation</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of input elevation raster map</dd>
 
 <dt><b>output_directory</b>=<em>name</em></dt>
 <dd>Directory where to store geocoded Sentinel-1 data</dd>
@@ -83,8 +89,8 @@ grassLogoLink.after(temp.content);
 <dd>Path to GeoJSON file with the Area Of Interest (aoi)</dd>
 <dd>Path to GeoJSON file with the Area Of Interest (aoi)</dd>
 
-<dt><b>polarization</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
-<dd>Currently only Sentinel-1 is supported</dd>
+<dt><b>polarization</b>=<em>string[,<i>string</i>,...]</em>&nbsp;<b>[required]</b></dt>
+<dd>Currently only VV and VH from Sentinel-1 GRD IW are supported</dd>
 <dd>Sentinel-1 polarization to geocode</dd>
 <dd>Options: <em>VV, VH</em></dd>
 <dd>Default: <em>VH</em></dd>
@@ -94,6 +100,20 @@ grassLogoLink.after(temp.content);
 <dd>Sentinel-1 mode to geocode</dd>
 <dd>Options: <em>IW</em></dd>
 <dd>Default: <em>IW</em></dd>
+
+<dt><b>scale</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Currently only dbi scaling is supported</dd>
+<dd>Scaling applied to output values</dd>
+<dd>Options: <em>dbi</em></dd>
+<dd>Default: <em>dbi</em></dd>
+
+<dt><b>suffix</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Suffix added to geocoded file / map names</dd>
+<dd>Default: <em>gec</em></dd>
+
+<dt><b>nprocs</b>=<em>integer</em></dt>
+<dd>Number of threads for parallel computing</dd>
+<dd>Default: <em>1</em></dd>
 
 </dl>
 </div>
@@ -164,21 +184,21 @@ Stefan Blumentrath<h2>SOURCE CODE</h2>
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Friday Sep 15 09:55:41 2023
+  Accessed: Saturday Oct 21 21:07:19 2023
 </p>
 <hr class="header">
 <p>
-<a href="file:///usr/lib/grass82/docs/html/index.html">Main index</a> |
-<a href="file:///usr/lib/grass82/docs/html/imagery.html">Imagery index</a> |
-<a href="file:///usr/lib/grass82/docs/html/topics.html">Topics index</a> |
-<a href="file:///usr/lib/grass82/docs/html/keywords.html">Keywords index</a> |
-<a href="file:///usr/lib/grass82/docs/html/graphical_index.html">Graphical index</a> |
-<a href="file:///usr/lib/grass82/docs/html/full_index.html">Full index</a>
+<a href="file:///usr/lib/grass83/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass83/docs/html/imagery.html">Imagery index</a> |
+<a href="file:///usr/lib/grass83/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass83/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass83/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass83/docs/html/full_index.html">Full index</a>
 </p>
 <p>
 &copy; 2003-2023
 <a href="https://grass.osgeo.org">GRASS Development Team</a>,
-GRASS GIS 8.2.1 Reference Manual
+GRASS GIS 8.3.0 Reference Manual
 </p>
 
 </div>
