@@ -124,6 +124,12 @@
 # %end
 
 # %flag
+# % key: e
+# % description: Input elevation model represents ellipsoidal heights
+# % description: If the input elevation model represents ellipsoidal heights, no Earth Gravitational Model is applied during geocoding
+# %end
+
+# %flag
 # % key: d
 # % description: Rescale backscatter to dB
 # %end
@@ -156,32 +162,41 @@ from subprocess import PIPE
 import grass.script as gs
 
 
-def get_raster_gdalpath(map_name):
-    """Get Path of linked GeoTIFF for map"""
-    # return gs.find_file(map_name)["file"].replace("/cell/", "/cellhd/")
-    gdal_path = gs.parse_key_val(
-        gs.parse_command("r.info", flags="e", map=map_name)["comments"]
-        .replace("\\", "")
-        .replace('"', ""),
-        vsep=" ",
-    )["input"]
-    if Path(gdal_path).exists():
-        return str(gdal_path)
-    gis_env = gs.gisenv()
-    map_info = gs.find_file(map_name)
-    gdal_path = gdal_path = (
-        Path(gis_env["GISDBASE"])
-        / gis_env["LOCATION_NAME"]
-        / map_info["mapset"]
-        / "cell_misc"
-        / map_info["name"]
-        / "gdal"
-    )
-    if Path(gdal_path).exists():
-        return gs.parse_key_val(gdal_path.read_text().replace(": ", "="))["file"]
-    gs.fatal(
-        _("Input digital elevation model {} is not a linked GeoTiff").format(map_name)
-    )
+def get_raster_gdalpath(map_name, check_linked=True):
+    """Get get the path to a raster map that can be opened by GDAL
+    Checks for GDAL source of linked raster data and returns those
+    if not otherwise requested"""
+    if check_linked:
+        gis_env = gs.gisenv()
+        map_info = gs.find_file(map_name)
+        header_path = (
+            Path(gis_env["GISDBASE"])
+            / gis_env["LOCATION_NAME"]
+            / map_info["mapset"]
+            / "cell_misc"
+            / map_info["name"]
+            / "gdal"
+        )
+        if header_path.exists():
+            gdal_path = Path(
+                gs.parse_key_val(header_path.read_text().replace(": ", "="))["file"]
+            )
+            if gdal_path.exists():
+                return gdal_path
+        gdal_path = Path(
+            gs.parse_key_val(
+                gs.parse_command("r.info", flags="e", map=map_name)["comments"]
+                .replace("\\", "")
+                .replace('"', ""),
+                vsep=" ",
+            )["input"]
+        )
+        if gdal_path.exists():
+            return gdal_path
+    gdal_path = Path(gs.find_file(map_name)["file"].replace("/cell/", "/cellhd/"))
+    if gdal_path.exists():
+        return gdal_path
+    gs.fatal(_("Cannot determine GDAL readable path to raster map {}").format(map_name))
 
 
 def get_aoi_geometry(geojson_file):
@@ -515,7 +530,7 @@ def main():
         "externalDEMNoDataValue": -2147483678.0
         if dem_info["datatype"] == "DCELL"
         else None,
-        "externalDEMApplyEGM": False,
+        "externalDEMApplyEGM": False if flags["e"] else True,
         "alignToStandardGrid": True,
         "demResamplingMethod": "BILINEAR_INTERPOLATION",
         "imgResamplingMethod": "BILINEAR_INTERPOLATION",
