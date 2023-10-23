@@ -76,7 +76,7 @@ COPYRIGHT:	(C) 2023 by NVE, Stefan Blumentrath
 # % description: Scaling applied to output values
 # % label: Currently only dbi scaling is supported
 # % multiple: no
-# % options: dbi
+# % options: abs,intensity,dba,dbi
 # % answer: dbi
 # %end
 
@@ -100,6 +100,10 @@ COPYRIGHT:	(C) 2023 by NVE, Stefan Blumentrath
 # % key: t
 # % description: Write register file for registering results in TGIS
 # %end
+
+# Todo:
+# - harmonize with i.sentinel1.pyrosargeocode
+# - read geojson to geometry string and pass that to get_target_geometry
 
 from datetime import datetime
 from functools import partial
