@@ -7,6 +7,17 @@ Sentinel-1 images will be projected to the Coordinate reference systems (CRS) of
 match the CRS of the current LOCATION. In that process, results will be aligned with and resampled to the pixels
 in the input DEM.
 
+<p>
+By default, a digital elevation model with geoidal reference height is the expected input in the <b>elevation</b>
+option. During geocoding ESA SNAP applies an Earth Gravitational Model (EGM) to compute ellipsoidal heights.
+Users may apply a specific EGM in advance to their elevation model and use that as input, if the <b>e-flag</b>
+is set. EGMs can be downloaded as GeoTiffs here: https://cdn.proj.org/ and added to the heights in the geoidal
+elevation model:
+<div class="code"><pre>
+r.mapcalc expression="DTM_ellipsoidal=DTM+EGM"
+</pre></div>
+
+<p>
 If the <b>f-flag</b> is set, a precise orbit file is fetched from ESAs web service if available (recommended).
 Note that there is usually a several (~ 20) days time lag after sensing time before these files are made available.
 If precise orbit files for the given scene are not available, the process will proceeed and give a warning.
