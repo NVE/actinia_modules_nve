@@ -50,7 +50,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>i.sentinel1.pyrosargeocode</b><br></div>
 <b>i.sentinel1.pyrosargeocode --help</b><br>
-<div id="synopsis"><b>i.sentinel1.pyrosargeocode</b> [-<b>sfndlmr</b>] <b>input</b>=<em>name</em>  [<b>output_directory</b>=<em>name</em>]   [<b>aoi</b>=<em>name</em>]  <b>elevation</b>=<em>string</em>  [<b>auxillary_data</b>=<em>string</em>[,<i>string</i>,...]]  <b>polarizations</b>=<em>string</em>[,<i>string</i>,...]  [<b>speckle_filter</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>temporary_directory</b>=<em>name</em>]   [<b>register_file</b>=<em>name</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>i.sentinel1.pyrosargeocode</b> [-<b>sfnedlmr</b>] <b>input</b>=<em>name</em>  [<b>output_directory</b>=<em>name</em>]   [<b>aoi</b>=<em>name</em>]  <b>elevation</b>=<em>string</em>  [<b>auxillary_data</b>=<em>string</em>[,<i>string</i>,...]]  <b>polarizations</b>=<em>string</em>[,<i>string</i>,...]  [<b>speckle_filter</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>temporary_directory</b>=<em>name</em>]   [<b>register_file</b>=<em>name</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -64,6 +64,9 @@ grassLogoLink.after(temp.content);
 
 <dt><b>-n</b></dt>
 <dd>Apply radiometric normalization</dd>
+
+<dt><b>-e</b></dt>
+<dd>If the input elevation model represents ellipsoidal heights, no Earth Gravitational Model is applied during geocoding</dd>
 
 <dt><b>-d</b></dt>
 <dd>Rescale backscatter to dB</dd>
@@ -154,6 +157,17 @@ Sentinel-1 images will be projected to the Coordinate reference systems (CRS) of
 match the CRS of the current LOCATION. In that process, results will be aligned with and resampled to the pixels
 in the input DEM.
 
+<p>
+By default, a digital elevation model with geoidal reference height is the expected input in the <b>elevation</b>
+option. During geocoding ESA SNAP applies an Earth Gravitational Model (EGM) to compute ellipsoidal heights.
+Users may apply a specific EGM in advance to their elevation model and use that as input, if the <b>e-flag</b>
+is set. EGMs can be downloaded as GeoTiffs here: https://cdn.proj.org/ and added to the heights in the geoidal
+elevation model:
+<div class="code"><pre>
+r.mapcalc expression="DTM_ellipsoidal=DTM+EGM"
+</pre></div>
+
+<p>
 If the <b>f-flag</b> is set, a precise orbit file is fetched from ESAs web service if available (recommended).
 Note that there is usually a several (~ 20) days time lag after sensing time before these files are made available.
 If precise orbit files for the given scene are not available, the process will proceeed and give a warning.
@@ -225,7 +239,7 @@ Stefan Blumentrath<h2>SOURCE CODE</h2>
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Saturday Oct 21 21:07:20 2023
+  Accessed: Monday Oct 23 13:43:00 2023
 </p>
 <hr class="header">
 <p>
