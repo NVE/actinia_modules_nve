@@ -43,11 +43,23 @@
 # %end
 
 # %option
-# % key: release_area
+# % key: entrainment_area
 # % type: string
-# % required: yes
+# % required: no
 # % multiple: no
-# % description: Path or URL to OGR readable vector dataset with release area(s)
+# % options: yes,no
+# % answer: no
+# % description: Use entrainment area in model
+# %end
+
+# %option
+# % key: resistance_area
+# % type: string
+# % required: no
+# % multiple: no
+# % options: yes,no
+# % answer: no
+# % description: Use resistance area in model
 # %end
 
 # %option G_OPT_R_ELEV
@@ -292,6 +304,7 @@ def main():
         0: "samosAT",
         1: "Coulomb",
         2: "Voellmy",
+        3: "Wetsnow",
     }
 
     buffer = float(options["buffer"])
@@ -307,26 +320,61 @@ def main():
             )
 
     # Get release area
-    ogr_dataset = gdal.OpenEx(options["release_area"], gdal.OF_VECTOR)
+    release_area = "https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer/0/query?where=id+%3D+{id}&outFields=*&f=json".format(id = options["id"])
+    ogr_dataset_release_area = gdal.OpenEx(release_area, gdal.OF_VECTOR)
 
     # actinia requires input URLs to be quoted if eg & is used
-    if not ogr_dataset:
-        ogr_dataset = gdal.OpenEx(
-            parse.unquote(options["release_area"]), gdal.OF_VECTOR
+    if not ogr_dataset_release_area:
+        ogr_dataset_release_area = gdal.OpenEx(
+            parse.unquote(release_area), gdal.OF_VECTOR
         )
-    layer = ogr_dataset.GetLayerByIndex(0)
-    release_extent = layer.GetExtent()  # Extent is west, east, south, north
+    layer_release_area = ogr_dataset_release_area.GetLayerByIndex(0)
+    release_extent = layer_release_area.GetExtent()  # Extent is west, east, south, north
     config = dict(layer.GetNextFeature())  # first feature contains config attributes
 
+    # Get entrainment area
+    if options["entrainment_area"] == "yes":
+        entrainment_area = "https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer/1/query?where=id+%3D+{id}&outFields=*&f=json".format(id = options["id"])
+        ogr_dataset_entrainment_area = gdal.OpenEx(entrainment_area, gdal.OF_VECTOR)
+        # actinia requires input URLs to be quoted if eg & is used
+        if not ogr_dataset_entrainment_area:
+            ogr_dataset_entrainment_area = gdal.OpenEx(
+                parse.unquote(entrainment_area), gdal.OF_VECTOR
+            )
+        layer_entrainment_area = ogr_dataset_entrainment_area.GetLayerByIndex(0)
+        config_entrainment_area = dict(layer_entrainment_area.GetNextFeature())  # first feature contains config attributes
+        entries_to_remove = ('OBJECTID', 'Id', 'Shape__Area', 'Shape__Length')
+        for key in entries_to_remove:
+            if key in config_entrainment_area:
+                del config_entrainment_area[key]
+        config.update(config_entrainment_area)
+
+
+    # Get resistance area
+    if options["resistance_area"] == "yes":
+    entrainment_area = "https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer/2/query?where=id+%3D+{id}&outFields=*&f=json".format(id = options["id"])
+    ogr_dataset_resistance_area = gdal.OpenEx(resistance_area, gdal.OF_VECTOR)
+    # actinia requires input URLs to be quoted if eg & is used
+        if not ogr_dataset_resistance_area:
+            ogr_dataset_resistance_area = gdal.OpenEx(
+                parse.unquote(resistance_area), gdal.OF_VECTOR
+            )
+        layer_resistance_area = ogr_dataset_resistance_area.GetLayerByIndex(0)
+        config_resistance_area = dict(layer_resistance_area.GetNextFeature())  # first feature contains config attributes
+        entries_to_remove = ('OBJECTID', 'Id', 'Shape__Area', 'Shape__Length')
+        for key in entries_to_remove:
+            if key in config_resistance_area:
+                del config_resistance_area[key]
+        config.update(config_resistance_area)
+
     # Currently hardcoded settings
-    if config["multipleSnowDepth_cm"]:
+    if config["multipleRelTh_m"]:
         release_thicknesses = [
-            float(snow_depth) / 100.0
-            for snow_depth in config["multipleSnowDepth_cm"].split(",")
+            for snow_depth in config["multipleRelTh_m"].split(",")
         ]
     else:
         release_thicknesses = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
-    release_name = f"com1DFA_{config['OBJECTID']}"
+    release_name = f"com1DFA_v2_{config['id']}"
 
     # Define directory for simulations
     avalanche_dir = Path(gs.tempfile(create=False))
@@ -347,7 +395,7 @@ def main():
 
     config["mesh_cell_size"] = region["nsres"]
     config["avalanche_dir"] = avalanche_dir
-    config["frictModel_name"] = friction_model_dict[config["frictModel"]]
+    config["frictionModel"] = friction_model_dict[config["frictionModel"]]
 
     # Configue avaframe
     config_main = cfgUtils.getGeneralConfig()
@@ -363,10 +411,23 @@ def main():
 
     # Write release area to shape
     gdal.VectorTranslate(
-        str(avalanche_dir / f"{release_name}.shp"),
-        ogr_dataset,
+        str(avalanche_dir / f"{release_name}_release_area.shp"),
+        ogr_dataset_release_area,
         options='-f "ESRI Shapefile"',
     )
+
+    gdal.VectorTranslate(
+        str(avalanche_dir / f"{release_name}_entrainment_area.shp"),
+        ogr_dataset_entrainment_area,
+        options='-f "ESRI Shapefile"',
+    )
+
+    gdal.VectorTranslate(
+        str(avalanche_dir / f"{release_name}_resistance_area.shp"),
+        ogr_dataset_resistance_area,
+        options='-f "ESRI Shapefile"',
+    )
+    
 
     # Export DTM to ASCII
     Module(
