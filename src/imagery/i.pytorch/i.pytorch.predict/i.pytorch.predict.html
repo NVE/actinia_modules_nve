@@ -1,0 +1,55 @@
+<h2>DESCRIPTION</h2>
+
+<em>i.pytorch.predict</em> applies a pre-trained, saved deep learning model to an imagery group.
+
+The imagery group provided in the <b>group</b> option has to contain raster maps for all bands
+required by the deep learning <b>model</b>. Raster maps are matched to the bands using
+<em>semantic labels</em> and based on the meta information provided in the <b>configuration</b>
+option. The configuration is a JSON file that describes all relevant input variables for applying
+the given deep learning model.
+
+<div class="code"><pre>
+  {"model_type": "UNET",
+  "valid_output_range": [0,100],
+  "bands":
+      {"red": [1, {"offset": 0, "scale": 1, "valid_range": [0, 255]}],
+      "blue": [2, {"offset": 0, "scale": 1, "valid_range": [0, 255]}],
+      },
+  "n_classes": 2,
+  # "in_channels": 1,  # Could be derived from bands
+  "out_channels": 1,  # Could be derived from bands
+  "depth": 5,
+  "start_filts": 32,
+  "up_mode": "bilinear",
+  "merge_mode": "concat",
+  "partial_conv": True,
+  "use_bn": True,
+  "activation_func": "leaky_relu"
+  }
+</pre></div>
+
+
+
+<h2>NOTES</h2>
+Currently, the module expects the input Digital Elevation Model to be in UTM 33N Coordinate
+Reference System, and all output is generated in that CRS (EPSG:25833) as well.
+
+<h2>EXAMPLES</h2>
+
+<div class="code"><pre>
+i.pytorch.predict group="Sentinel_3_2023_11_13" model="./fsc.pt" configuration="./fsc_config.json" \
+  nprocs=8 tile_size="512,512" output="S3_FSC_2023_11_13"
+</pre></div>
+
+<h2>REQUIREMENTS</h2>
+<em>i.pytorch.predict</em> uses the following non-standard Python libraries:
+<ul>
+  <li>The <em>pytorch</em> Python library</li>
+  <li>The <em>numpy</em> Python library</li>
+  <li>An internal "unet" library</li>
+</ul>
+
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath, NVE
