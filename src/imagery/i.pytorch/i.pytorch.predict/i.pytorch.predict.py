@@ -106,22 +106,29 @@ def read_config(
 ):
     """Read band configuration for input deep learning model
     Example for configuration:
-    {"model_type": "UNET",
-    "valid_output_range": [0,100],
-    "bands":
-        {"red": [1, {"offset": 0, "scale": 1, "valid_range": [0, 255]}],
+    {"model": {
+        "type": "UNET",
+        # "in_channels": 1,  # Could be derived from input_bands
+        # "out_channels": 1,  # Could be derived from output_bands
+        "depth": 5,
+        "start_filts": 32,
+        "up_mode": "bilinear",
+        "merge_mode": "concat",
+        "partial_conv": True,
+        "use_bn": True,
+        "activation_func": "leaky_relu"
+        },
+    "input_bands": {
+        "red": [1, {"offset": 0, "scale": 1, "valid_range": [0, 255]}],
         "blue": [2, {"offset": 0, "scale": 1, "valid_range": [0, 255]}],
         },
-    "n_classes": 2,
-    # "in_channels": 1,  # Could be derived from bands
-    "out_channels": 1,  # Could be derived from bands
-    "depth": 5,
-    "start_filts": 32,
-    "up_mode": "bilinear",
-    "merge_mode": "concat",
-    "partial_conv": True,
-    "use_bn": True,
-    "activation_func": "leaky_relu"
+    "output_bands": {1: {
+          "n_classes": 2,
+          "valid_output_range": [0,100],
+          "semantic_label": "S3_SLSTR_fractional_snow_cover"
+          "description": "free text describing the result of the prediction and how it is produced"
+          "units": "ideally CF units name, e.g. fractional_snow_cover"},
+        }
     }
     """
     if not json_path.exists():
