@@ -57,12 +57,25 @@
 # % answer: 512,512
 # %end
 
+# %option
+# %key: device
+# % type: string
+# % required: yes
+# % multiple: no
+# % description: Device to use for prediction (CPU or GPU), currently only CPU is supported
+# % options: CPU,GPU
+# % answer: CPU
+# %end
+
 # %option G_OPT_F_INPUT
-# %key: band_configuration
+# %key: configuration
 # % type: string
 # % required: yes
 # % multiple: no
 # % description: Path to JSON file with band configuration in the input deep learning model
+# %end
+
+# %option G_OPT_M_NPROCS
 # %end
 
 # %option G_OPT_R_OUTPUT
@@ -424,6 +437,10 @@ def patch_results(output_map):
 def main():
     """Do the main work"""
 
+    # Check device
+    if options["device"] != "CPU":
+        gs.fatal(_("Currently only CPU device is supported"))
+
     # Get comutational region
     region = gs.parse_command("g.region", flags="ug")
 
@@ -431,22 +448,32 @@ def main():
     dl_config, group_dict = read_config(options["band_configuration"], options["group"])
 
     # Check if mask is active
+    # ???
 
     # Check tile size
-    try:
-        tile_size = list(map(int, options["tile_size"].split(",")))
-    except ValueError:
-        gs.fatal(_("Invalid input in tile_size option"))
-    # Create tiling
-    tile_set = create_tiling(tile_size, overlap=128, region=None)
+    if options["tile_size"]:
+        try:
+            tile_size = list(map(int, options["tile_size"].split(",")))
+            # Create tiling
+            tile_set = create_tiling(tile_size, overlap=128, region=None)
+        except ValueError:
+            gs.fatal(_("Invalid input in tile_size option"))
+    else:
+        tile_set = create_tiling(tile_size, overlap=128, region=None)
+
     raster_maps = list(dl_config["bands"].keys())
     raster_maps = ["test_b1", "test_b2", "test_b3"]
 
     tiled_group_rediction = partial(tiled_rediction, raster_maps=raster_maps)
     inner_tiles = {cat: tile_set[cat]["inner"] for cat in tile_set}
-    nprocs = 8
-    with Pool(nprocs) as pool:
-        pool.map(tiled_group_rediction, inner_tiles.values())
+    nprocs = np.min(int(options["nprocs"]), len(tile_set))
+    if nprocs > 1:
+        with Pool(nprocs) as pool:
+            pool.map(tiled_group_rediction, inner_tiles.values())
+        patch_results(options["output"])
+    else:
+        [tiled_group_rediction(tile) for til in inner_tiles.values()]
+        gs.run_command("g.rename", raster=f"{TMP_NAME}, {options['output']}")
 
 
 if __name__ == "__main__":
