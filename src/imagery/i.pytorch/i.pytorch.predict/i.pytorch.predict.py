@@ -75,12 +75,13 @@
 # % description: Use CPU as device for prediction, default is use cuda (GPU) if detected
 # %end
 
-
+import os
 import json
 import shutil
 import sys
 
 from datetime import datetime
+from copy import deepcopy
 from functools import partial
 from pathlib import Path
 from multiprocessing import Pool
@@ -88,6 +89,7 @@ from multiprocessing import Pool
 import grass.script as gs
 from grass.pygrass.raster import raster2numpy, numpy2raster
 from grass.pygrass.gis.region import Region
+from grass.pygrass.vector import Bbox
 
 
 TMP_NAME = gs.tempname(12)
@@ -114,9 +116,15 @@ def read_config(
         "activation_func": "leaky_relu"
         },
     "input_bands": {
-        "red": [1, {"offset": 0, "scale": 1, "valid_range": [0, 255]}],
-        "blue": [2, {"offset": 0, "scale": 1, "valid_range": [0, 255]}],
+        'S1_reflectance_an':  [1, {"offset": 0, "scale": 1, "valid_range": [None, 2]}],
+        'S2_reflectance_an':  [2, {"offset": 0, "scale": 1, "valid_range": [None, 2]}],
+        'S3_reflectance_an':  [3, {"offset": 0, "scale": 1, "valid_range": [None, 2]}],
+        'S5_reflectance_an':  [4, {"offset": 0, "scale": 1, "valid_range": [None, 2]}],
+        'S6_reflectance_an':  [5, {"offset": 0, "scale": 1, "valid_range": [None, 2]}],
+        # 'S8_BT_in':  [6, {"offset": -200, "scale": 100, "valid_range": None}],
+        # 'S9_BT_in':  [7, {"offset": -200, "scale": 100, "valid_range": None}],
         },
+    # See: https://github.com/NVE/Snotjeneste/blob/nve-cop/fsc_dl.py
     "output_bands": {"fsc": {
           "valid_output_range": [0,100],
           "semantic_label": "S3_SLSTR_fractional_snow_cover",
@@ -131,7 +139,7 @@ def read_config(
     config = json.loads(json_path.read_text())
 
     # Validate config file
-    validate_config(config)
+    # validate_config(config)
 
     maps_in_group = (
         gs.read_command("i.group", group=input_group, flags="g", quiet=True)
@@ -148,13 +156,13 @@ def read_config(
             continue
         semantic_labels.append(semantic_label)
         valid_range = config["input_bands"][semantic_label][1]["valid_range"]
-        if raster_map_info["min"] < valid_range[0]:
+        if valid_range and valid_range[0] and raster_map_info["min"] < valid_range[0]:
             gs.warning(
                 _(
                     "Minimum of raster map <{0}> {1} exeeds lower bound ({2}) of valid range"
                 ).format(raster_map, raster_map_info["min"], valid_range[0])
             )
-        if raster_map_info["max"] > valid_range[1]:
+        if valid_range and valid_range[1] and raster_map_info["max"] > valid_range[1]:
             gs.warning(
                 _(
                     "Maximum of raster map <{0}> {1} exeeds upper bound ({2}) of valid range"
@@ -317,11 +325,12 @@ def predict(np_cube, dl_model=None):
     return np.sum(np_cube, axis=2)
 
 
-def load_model(dl_model_path):
+def load_model(dl_model_path, dl_config=None, device="cpu"):
     """The following should be included in a predict function"""
     # load pytorch model
     if not dl_model_path.exists():
         gs.fatal(("Model file {} not found").format(str(dl_model_path)))
+    """
     dl_model = UNetV2(
         # n_classes=dl_config["model"]["n_classes"],
         in_channels=len(dl_config["input_bands"]),
@@ -330,24 +339,36 @@ def load_model(dl_model_path):
         width=dl_config["model"]["width"],
         # use_bn=dl_config["model"]["use_bn"],
         # partial_conv=dl_config["model"]["partial_conv"],
+    )"""
+    # Get backbone from dl_config
+    dl_model = UNetV1(
+        n_classes=1,
+        in_channels=len(dl_config["input_bands"]),
+        depth=4,
+        use_bn=True,
+        partial_conv=True,
     )
     dl_model.load_state_dict(
         torch.load(
             str(dl_model_path),
         )
     )
-    dl_model.to(torch.device(options["device"]))
+    return dl_model
+
+
+def predict_torch(data_cube, dl_config=None, device=None, dl_model=None):
+    """Apply model to numpy array"""
+    dl_model.to(device)
     dl_model.eval()
-    out = _tiled_prediction(
-        data_cube,
-        dl_model,
-        [512, 512],
-        [128, 128],
-        apply_softmax=(not reg),
-        apply_classifier=(not reg),
-    ).squeeze()
+    with torch.no_grad():
+        data = numpy2torch(hwc_to_bchw(data_cube)).to(device)
+        torch_out = dl_model(data)
+
+    out_numpy = bcwh_to_hwc(torch2numpy(torch_out))[0]
+
     # Clip result to valid output range
-    out = np.clip(out, *dl_config["valid_output_range"])
+    out_numpy = np.clip(out_numpy, *dl_config["valid_output_range"])
+    return out_numpy
 
 
 def read_bands(raster_map_dict, bbox):
@@ -356,6 +377,7 @@ def read_bands(raster_map_dict, bbox):
     # pygrass sets region for pygrass tasks
     pygrass_region = Region()
     raster_region = deepcopy(pygrass_region)
+    raster_region.read(force_read=True)
     raster_region.set_bbox(Bbox(bbox["n"], bbox["s"], bbox["e"], bbox["w"]))
     raster_region.set_raster_region()
     # Clip to valid range
@@ -367,15 +389,24 @@ def read_bands(raster_map_dict, bbox):
             npa = np.where(npa == -2147483648, np.nan, npa)
         # Add offset ???
         if raster_map_dict[band_number][2]["offset"] != 0:
-            npa = npa + raster_map_dict[band_number][3]
+            npa = npa + np.array(raster_map_dict[band_number][2]["offset"])
         # Apply scale ???
         if raster_map_dict[band_number][2]["scale"] != 1:
-            npa = npa * raster_map_dict[band_number][4]
+            npa = npa * np.array(raster_map_dict[band_number][2]["scale"])
         # Clip to valid range ???
         if raster_map_dict[band_number][2]["valid_range"]:
+            min = raster_map_dict[band_number][2]["valid_range"][0]
+            if not min:
+                min = -np.inf
+            max = raster_map_dict[band_number][2]["valid_range"][1]
+            if not max:
+                max = np.inf
             npa = np.clip(npa, *raster_map_dict[band_number][2]["valid_range"])
         data_cube.append(npa)
-    return np.stack(data_cube, axis=-1)
+    data_cube = np.stack(data_cube, axis=-1)
+    data_cube[np.isnan(data_cube)] = 0
+
+    return data_cube
 
 
 def write_result(np_array, map_type, map_name, bbox):
@@ -420,14 +451,15 @@ def main():
     """Do the main work"""
 
     # Check device
-    if options["device"] != "CPU":
-        gs.fatal(_("Currently only CPU device is supported"))
+    device = "cuda" if torch.cuda.is_available() and not flags["c"] else "cpu"
 
     # Get comutational region
     region = gs.parse_command("g.region", flags="ug")
 
     # Parse and check configuration
-    dl_config, group_dict = read_config(options["band_configuration"], options["group"])
+    dl_config, group_dict = read_config(
+        Path(options["configuration"]), options["group"]
+    )
 
     # Check if mask is active
     # ???
@@ -437,14 +469,14 @@ def main():
         try:
             tile_size = list(map(int, options["tile_size"].split(",")))
             # Create tiling
-            tile_set = create_tiling(tile_size, overlap=128, region=None)
+            tile_set = create_tiling(*tile_size, overlap=128, region=None)
         except ValueError:
             gs.fatal(_("Invalid input in tile_size option"))
     else:
         tile_set = create_tiling(tile_size, overlap=128, region=None)
 
-    raster_maps = list(dl_config["bands"].keys())
-    raster_maps = ["test_b1", "test_b2", "test_b3"]
+    # raster_maps = list(dl_config["bands"].keys())
+    # raster_maps = ["test_b1", "test_b2", "test_b3"]
 
     tiled_group_rediction = partial(tiled_rediction, raster_maps=raster_maps)
     inner_tiles = {cat: tile_set[cat]["inner"] for cat in tile_set}
@@ -472,6 +504,7 @@ if __name__ == "__main__":
 
     try:
         from pytorchlib.utils import numpy2torch, torch2numpy, validate_config
+        from pytorchlib.backbones import UNetV1, UNetV2
     except ImportError:
         gs.fatal(
             (
