@@ -51,20 +51,9 @@
 # %option
 # %key: tile_size
 # % type: integer
-# % required: yes
+# % required: no
 # % multiple: yes
 # % description: Number of cows and columns in tiles
-# % answer: 512,512
-# %end
-
-# %option
-# %key: device
-# % type: string
-# % required: yes
-# % multiple: no
-# % description: Device to use for prediction (CPU or GPU), currently only CPU is supported
-# % options: CPU,GPU
-# % answer: CPU
 # %end
 
 # %option G_OPT_F_INPUT
@@ -79,6 +68,11 @@
 # %end
 
 # %option G_OPT_R_OUTPUT
+# %end
+
+# %flag
+# %key: c
+# % description: Use CPU as device for prediction, default is use cuda (GPU) if detected
 # %end
 
 
@@ -110,6 +104,7 @@ def read_config(
         "type": "UNET",
         # "in_channels": 1,  # Could be derived from input_bands
         # "out_channels": 1,  # Could be derived from output_bands
+        "n_classes": 2,
         "depth": 5,
         "start_filts": 32,
         "up_mode": "bilinear",
@@ -122,11 +117,11 @@ def read_config(
         "red": [1, {"offset": 0, "scale": 1, "valid_range": [0, 255]}],
         "blue": [2, {"offset": 0, "scale": 1, "valid_range": [0, 255]}],
         },
-    "output_bands": {1: {
-          "n_classes": 2,
+    "output_bands": {"fsc": {
           "valid_output_range": [0,100],
-          "semantic_label": "S3_SLSTR_fractional_snow_cover"
-          "description": "free text describing the result of the prediction and how it is produced"
+          "semantic_label": "S3_SLSTR_fractional_snow_cover",
+          "title": "user defined title for map",
+          "description": "free text describing the result of the prediction and how it is produced",
           "units": "ideally CF units name, e.g. fractional_snow_cover"},
         }
     }
@@ -136,26 +131,7 @@ def read_config(
     config = json.loads(json_path.read_text())
 
     # Validate config file
-    required_keys = [
-        "valid_output_range",
-        "bands",
-        "n_classes",
-        "depth",
-        "start_filts",
-        "up_mode",
-        "merge_mode",
-        "partial_conv",
-        "use_bn",
-        "activation_func",
-    ]
-    required_band_keys = ["valid_range", "offset", "scale"]
-    for config_key in required_keys:
-        if config_key not in config:
-            gs.fatal(
-                _("Key '{0}' missing in input config file {1}").format(
-                    config_key, str(json_path)
-                )
-            )
+    validate_config(config)
 
     maps_in_group = (
         gs.read_command("i.group", group=input_group, flags="g", quiet=True)
@@ -168,17 +144,10 @@ def read_config(
     for raster_map in maps_in_group:
         raster_map_info = gs.raster_info(raster_map)
         semantic_label = raster_map_info["semantic_label"]
-        if semantic_label not in config["bands"]:
+        if semantic_label not in config["input_bands"]:
             continue
         semantic_labels.append(semantic_label)
-        for band_key in required_band_keys:
-            if band_key not in config["bands"][semantic_label][1]:
-                gs.fatal(
-                    _("Description of band <{0}> lacks key <{1}>").format(
-                        semantic_label, band_key
-                    )
-                )
-        valid_range = config["bands"][semantic_label][1]["valid_range"]
+        valid_range = config["input_bands"][semantic_label][1]["valid_range"]
         if raster_map_info["min"] < valid_range[0]:
             gs.warning(
                 _(
@@ -191,13 +160,13 @@ def read_config(
                     "Maximum of raster map <{0}> {1} exeeds upper bound ({2}) of valid range"
                 ).format(raster_map, raster_map_info["max"], valid_range[1])
             )
-        input_group_dict[config["bands"][semantic_label][0]] = (
+        input_group_dict[config["input_bands"][semantic_label][0]] = (
             raster_map,
             raster_map_info["datatype"],
-            config["bands"][semantic_label][1],
+            config["input_bands"][semantic_label][1],
         )
 
-    for band in config["bands"]:
+    for band in config["input_bands"]:
         if band not in semantic_labels:
             gs.fatal(
                 _("Band {0} is missing in input group {1}").format(band, input_group)
@@ -233,6 +202,8 @@ def align_bbox_region(bbox, reference_region=None, overlap=0):
         + reference_region["n"]
         + overlap * reference_region["nsres"]
     )
+    bbox["ewres"] = reference_region["ewres"]
+    bbox["nsres"] = reference_region["nsres"]
     return bbox
 
 
@@ -351,15 +322,19 @@ def load_model(dl_model_path):
     # load pytorch model
     if not dl_model_path.exists():
         gs.fatal(("Model file {} not found").format(str(dl_model_path)))
-    dl_model = UNet(
-        n_classes=dl_config["n_classes"],
-        in_channels=len(dl_config["bands"]),
-        depth=dl_config["depth"],
-        use_bn=True,
-        partial_conv=True,
+    dl_model = UNetV2(
+        # n_classes=dl_config["model"]["n_classes"],
+        in_channels=len(dl_config["input_bands"]),
+        out_channels=len(dl_config["output_bands"]),
+        depth=dl_config["model"]["depth"],
+        width=dl_config["model"]["width"],
+        # use_bn=dl_config["model"]["use_bn"],
+        # partial_conv=dl_config["model"]["partial_conv"],
     )
     dl_model.load_state_dict(
-        torch.load(str(dl_model_path), map_location=lambda storage, loc: storage)
+        torch.load(
+            str(dl_model_path),
+        )
     )
     dl_model.to(torch.device(options["device"]))
     dl_model.eval()
@@ -496,7 +471,7 @@ if __name__ == "__main__":
     import numpy as np
 
     try:
-        from unet import UNet
+        from pytorchlib.utils import numpy2torch, torch2numpy, validate_config
     except ImportError:
         gs.fatal(
             (
