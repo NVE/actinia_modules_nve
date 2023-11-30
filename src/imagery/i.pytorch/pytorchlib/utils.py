@@ -41,7 +41,7 @@ except ImportError:
 
 
 def numpy2torch(np_array, device="cpu", precision="float"):
-    # device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    """Create torch variable from numpy array"""
     if precision not in ["float", "half"]:
         gs.fatal(
             _("Invalid precision {}. Only 'float' and 'half' are supported.").format(
@@ -54,6 +54,7 @@ def numpy2torch(np_array, device="cpu", precision="float"):
 
 
 def torch2numpy(torch_tensor):
+    """Create numpy array from torch variable"""
     if torch_tensor.device != "cpu":
         return torch.Tensor.cpu(torch_tensor).numpy()
     return torch_tensor.numpy()
