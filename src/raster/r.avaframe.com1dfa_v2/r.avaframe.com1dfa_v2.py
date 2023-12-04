@@ -34,32 +34,22 @@
 # % description: Link temporary results (do not import)
 # %end
 
+# %flag
+# % key: e
+# % description: Use entrainment area in model
+# %end
+
+# %flag
+# % key: r
+# % description: Use resistance area in model
+# %end
+
 # %option
 # % key: id
 # % type: string
 # % required: yes
 # % multiple: no
 # % description: Id of release area
-# %end
-
-# %option
-# % key: entrainment_area
-# % type: string
-# % required: no
-# % multiple: no
-# % options: yes,no
-# % answer: no
-# % description: Use entrainment area in model
-# %end
-
-# %option
-# % key: resistance_area
-# % type: string
-# % required: no
-# % multiple: no
-# % options: yes,no
-# % answer: no
-# % description: Use resistance area in model
 # %end
 
 # %option G_OPT_R_ELEV
@@ -136,10 +126,11 @@ import grass.script as gs
 
 def write_avaframe_config(
     config_file_path,
-    rho=None,
-    rho_ent=None,
-    mesh_cell_size=None,
-    friction_model="samosAT",
+    input_config,
+    # rho=None,
+    # rho_ent=None,
+    # mesh_cell_size=None,
+    # friction_model="samosAT",
     release_thickness="0.5",
     # release_thickness_range_variation="+3.5$8",
 ):
@@ -152,22 +143,55 @@ def write_avaframe_config(
             .split("\n")
         ):
             # Replace with given values
-            if line.startswith("rho =") and rho:
-                line = f"rho = {rho}"
-            elif line.startswith("rhoEnt =") and rho_ent:
-                line = f"rhoEnt = {rho_ent}"
-            elif line.startswith("frictModel =") and friction_model:
-                line = f"frictModel = {friction_model}"
-            elif line.startswith("meshCellSize =") and mesh_cell_size:
-                line = f"meshCellSize = {mesh_cell_size}"
-            elif line.startswith("sphKernelRadius =") and mesh_cell_size:
-                line = f"sphKernelRadius = {mesh_cell_size}"
+            #ResitanceArea
+            if line.startswith("frictModel =") and input_config["friction_model"]:
+                line = f"frictModel = {input_config["friction_model"]}"
+            elif line.startswith("rho =") and input_config["rho_kgPerCubicM"]:
+                line = f"rho = {input_config["rho_kgPerCubicM"]}"
+            elif line.startswith("cpIce =") and input_config["cpIce_joulePerKg"]:
+                line = f"cpIce = {input_config["cpIce_joulePerKg"]}"
+            elif line.startswith("TIni =") and input_config["tIni_degreeCelcius"]:
+                line = f"TIni = {input_config["tIni_degreeCelcius"]}"
+            elif line.startswith("entTempRef =") and input_config["entTemp_degreeCelcius"]:
+                line = f"entTempRef = {input_config["entTemp_degreeCelcius"]}"
+            elif line.startswith("enthRef =") and input_config["enthalpy_joulePerKg"]:
+                line = f"enthRef = {input_config["enthalpy_joulePerKg"]}"
+            #Mangler mu, xsi, tau0, rs0, kappa, r, b
+            
+            #EntrainmentArea
+            elif line.startswith("rhoEnt =") and input_config["rhoEnt_kgPerCubicM"]:
+                line = f"rhoEnt = {input_config["rhoEnt_kgPerCubicM"]}"
+            elif line.startswith("entEroEnergy =") and input_config["entEro_joulePerKg"]:
+                line = f"entEroEnergy = {input_config["entEro_joulePerKg"]}"
+            elif line.startswith("entShearResistance =") and input_config["entShear_joulePerSqM"]:
+                line = f"entShearResistance = {input_config["entShear_joulePerSqM"]}"
+            elif line.startswith("entDefResistance =") and input_config["entDef_joulePerKg"]:
+                line = f"entDefResistance = {input_config["entDef_joulePerKg"]}"
+            elif line.startswith("entThFromShp ="):
+                line = "entThFromShp = False"
+            elif line.startswith("entTh =") and input_config["entTh_m"]:
+                line = f"entTh = {input_config["entTh_m"]}"
+
+            #Resistance
+            elif line.startswith("hRes =") and input_config["hRes_m"]:
+                line = f"hRes = {input_config["hRes_m"]}"
+            elif line.startswith("cw =") and input_config["cw"]:
+                line = f"cw = {input_config["cw"]}"
+            elif line.startswith("dRes =") and input_config["dRes_m"]:
+                line = f"dRes = {input_config["dRes_m"]}"
+            elif line.startswith("sres =") and input_config["sRes_m"]:
+                line = f"sres = {input_config["sRes_m"]}"
+            
+            #https://github.com/avaframe/AvaFrame/blob/master/avaframe/com1DFA/com1DFACfg.ini
+
+            elif line.startswith("meshCellSize =") and input_config["mesh_cell_size"]:
+                line = f"meshCellSize = {input_config["mesh_cell_size"]}"
+            elif line.startswith("sphKernelRadius =") and input_config["mesh_cell_size"]:
+                line = f"sphKernelRadius = {input_config["mesh_cell_size"]}"
             elif line.startswith("relThFromShp ="):
                 line = "relThFromShp = False"
             elif line.startswith("relTh ="):
                 line = f"relTh = {release_thickness}"
-            # elif line.startswith("relThRangeVariation ="):
-            #     line = f"relThRangeVariation = {release_thickness_range_variation}"
 
             cfg_file.write(line + "\n")
     return 0
@@ -211,7 +235,7 @@ def convert_result(
     gtiff_name = "_".join(
         [
             result_prefix[mapname[-3:]],
-            str(config["OBJECTID"]),
+            str(config["id"]),
             str(
                 [
                     int(results_df.loc[idx] * 100)
@@ -221,7 +245,7 @@ def convert_result(
             ),
             str(config["rho_kgPerSqM"]),
             str(config["rhoEnt_kgPerSqM"]),
-            str(config["frictModel"]),
+            str(config["frictionModel"]),
         ]
     )
     Module(
@@ -270,13 +294,14 @@ def run_com1dfa(thickness, config_dict=None):
     cfg_ini_file = avalanche_dir / f"cfg_{thickness_str}.ini"
     write_avaframe_config(
         cfg_ini_file,
-        # density of snow [kg/m³]
-        rho=config_dict["rho_kgPerSqM"],
-        # density of entrained snow [kg/m³]
-        rho_ent=config_dict["rhoEnt_kgPerSqM"],
-        # friction model (samosAT, Coulomb, Voellmy)
-        friction_model=config_dict["frictModel_name"],
-        mesh_cell_size=config_dict["mesh_cell_size"],
+        config_dict,
+        # # density of snow [kg/m³]
+        # rho=config_dict["rho_kgPerSqM"],
+        # # density of entrained snow [kg/m³]
+        # rho_ent=config_dict["rhoEnt_kgPerSqM"],
+        # # friction model (samosAT, Coulomb, Voellmy)
+        # friction_model=config_dict["frictModel_name"],
+        # mesh_cell_size=config_dict["mesh_cell_size"],
         release_thickness=thickness,
         # release_thickness_range_variation="+3.5$8",
     )
@@ -333,7 +358,7 @@ def main():
     config = dict(layer.GetNextFeature())  # first feature contains config attributes
 
     # Get entrainment area
-    if options["entrainment_area"] == "yes":
+    if flags["e"]:
         entrainment_area = "https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer/1/query?where=id+%3D+{id}&outFields=*&f=json".format(id = options["id"])
         ogr_dataset_entrainment_area = gdal.OpenEx(entrainment_area, gdal.OF_VECTOR)
         # actinia requires input URLs to be quoted if eg & is used
@@ -349,12 +374,18 @@ def main():
                 del config_entrainment_area[key]
         config.update(config_entrainment_area)
 
+        gdal.VectorTranslate(
+        str(avalanche_dir / f"{release_name}_entrainment_area.shp"),
+        ogr_dataset_entrainment_area,
+        options='-f "ESRI Shapefile"',
+    )
+
 
     # Get resistance area
-    if options["resistance_area"] == "yes":
-    entrainment_area = "https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer/2/query?where=id+%3D+{id}&outFields=*&f=json".format(id = options["id"])
-    ogr_dataset_resistance_area = gdal.OpenEx(resistance_area, gdal.OF_VECTOR)
-    # actinia requires input URLs to be quoted if eg & is used
+    if flags["r"]:
+        resistance_area = "https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer/2/query?where=id+%3D+{id}&outFields=*&f=json".format(id = options["id"])
+        ogr_dataset_resistance_area = gdal.OpenEx(resistance_area, gdal.OF_VECTOR)
+        # actinia requires input URLs to be quoted if eg & is used
         if not ogr_dataset_resistance_area:
             ogr_dataset_resistance_area = gdal.OpenEx(
                 parse.unquote(resistance_area), gdal.OF_VECTOR
@@ -366,6 +397,12 @@ def main():
             if key in config_resistance_area:
                 del config_resistance_area[key]
         config.update(config_resistance_area)
+
+        gdal.VectorTranslate(
+        str(avalanche_dir / f"{release_name}_resistance_area.shp"),
+        ogr_dataset_resistance_area,
+        options='-f "ESRI Shapefile"',
+    )
 
     # Currently hardcoded settings
     if config["multipleRelTh_m"]:
@@ -415,19 +452,6 @@ def main():
         ogr_dataset_release_area,
         options='-f "ESRI Shapefile"',
     )
-
-    gdal.VectorTranslate(
-        str(avalanche_dir / f"{release_name}_entrainment_area.shp"),
-        ogr_dataset_entrainment_area,
-        options='-f "ESRI Shapefile"',
-    )
-
-    gdal.VectorTranslate(
-        str(avalanche_dir / f"{release_name}_resistance_area.shp"),
-        ogr_dataset_resistance_area,
-        options='-f "ESRI Shapefile"',
-    )
-    
 
     # Export DTM to ASCII
     Module(
