@@ -19,7 +19,6 @@
  ToDo:
  - unclear parallelization / tiling
 
- time i.pytorch.predict device=cpu group=image_group output= tile_size= nprocs=
  https://github.com/NVE/Snotjeneste/blob/nve-cop/run_dl.py
 
 """
@@ -48,12 +47,28 @@
 # % description: Path to input deep learning model file (.pt)
 # %end
 
+# %option G_OPT_F_INPUT
+# %key: model_code
+# % type: string
+# % required: yes
+# % multiple: no
+# % description: Path to input deep learning model code (.py)
+# %end
+
 # %option
 # %key: tile_size
 # % type: integer
 # % required: no
 # % multiple: yes
 # % description: Number of cows and columns in tiles
+# %end
+
+# %option
+# %key: overlap
+# % type: integer
+# % required: no
+# % multiple: no
+# % description: Number of cows and columns of overlap in tiles
 # %end
 
 # %option G_OPT_F_INPUT
@@ -76,11 +91,8 @@
 # %end
 
 import os
-import json
-import shutil
 import sys
 
-from datetime import datetime
 from copy import deepcopy
 from functools import partial
 from pathlib import Path
@@ -96,16 +108,15 @@ TMP_NAME = gs.tempname(12)
 
 
 # Read and check configuration
-def read_config(
-    json_path,
-    input_group,
-):
+def read_config(module_options):
     """Read band configuration for input deep learning model
-    Example for configuration:
-    {"model": {
-        "type": "UNET",
-        # "in_channels": 1,  # Could be derived from input_bands
-        # "out_channels": 1,  # Could be derived from output_bands
+    Example for configuration se manual:
+    {"model":  # Dictinary matching the parameters of the signature of the UNet model code
+       {
+        "type": "UNetV1",  # Name of the class representing the UNet model in the model code
+        # "in_channels": 1,  # Number of input chanels can be derived from 'input_bands' section
+        # "out_channels": 1,  # Number of output chanels can be derived from 'output_bands' section
+        # Keys below depend on the UNet model code, which should consequently use keyword arguments with defined data type and defaults for all parameters
         "n_classes": 2,
         "depth": 5,
         "start_filts": 32,
@@ -113,33 +124,62 @@ def read_config(
         "merge_mode": "concat",
         "partial_conv": True,
         "use_bn": True,
-        "activation_func": "leaky_relu"
+        "activation_func": "lrelu"
         },
-    "input_bands": {
-        'S1_reflectance_an':  [1, {"offset": 0, "scale": 1, "valid_range": [None, 2]}],
-        'S2_reflectance_an':  [2, {"offset": 0, "scale": 1, "valid_range": [None, 2]}],
-        'S3_reflectance_an':  [3, {"offset": 0, "scale": 1, "valid_range": [None, 2]}],
-        'S5_reflectance_an':  [4, {"offset": 0, "scale": 1, "valid_range": [None, 2]}],
-        'S6_reflectance_an':  [5, {"offset": 0, "scale": 1, "valid_range": [None, 2]}],
-        # 'S8_BT_in':  [6, {"offset": -200, "scale": 100, "valid_range": None}],
-        # 'S9_BT_in':  [7, {"offset": -200, "scale": 100, "valid_range": None}],
+    "input_bands": {  # dictionary describing the input bands expected by the model
+        'S1_reflectance_an':  {  # input band name / key
+            "order": 1,  # position in the input data cube to the DL model
+            "offset": 0,  # Offset to be applied to the values in the input band, (0 means no offset)
+            "scale": 1,  # Scale to be applied to the values in the input band, after offset (1 means no scaling)
+            "valid_range": [None, 2],  # Tuple with valid range (min, max) of the input data with scale and offset applied, (None means inf for max and -inf for min)
+            "fill_value": 0,  # Value to replace NoData value with
+            "description": "Sentinel-3 SLSTR band S1 scaled to reflectance values",  # Human readable description of the band that is expected as input
+            },
+        'S2_reflectance_an':  {"order": 2, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+        'S3_reflectance_an':  {"order": 3, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+        'S5_reflectance_an':  {"order": 4, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+        'S6_reflectance_an':  {"order": 5, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+        'S8_BT_in':  {"order": 6, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+        'S9_BT_in':  {"order": 7, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
         },
-    # See: https://github.com/NVE/Snotjeneste/blob/nve-cop/fsc_dl.py
-    "output_bands": {"fsc": {
-          "valid_output_range": [0,100],
-          "semantic_label": "S3_SLSTR_fractional_snow_cover",
-          "title": "user defined title for map",
-          "description": "free text describing the result of the prediction and how it is produced",
-          "units": "ideally CF units name, e.g. fractional_snow_cover"},
-        }
+    "output_bands":  # This section contains meta information about output bands from the DL model, each output band should have a description
+        {
+            "fsc": {
+                "title": "Fractional Snow Cover (FSC)",
+                "standard_name": "surface_snow_area_fraction",  # https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html
+                "model_name": "NVECOP2-CNN",
+                "model_version": "v1.0",
+                "keywords": ["fractional snow cover", "earth observation", "Sentinel-3", "SLSTR"],
+                "description": ("The NVECOP2-CNN FSC algorithm is developed by NR in
+                    "the AI4Arctic project based on a CNN."
+                    "A modified version of the UNet has been applied and trained with"
+                    "selected and quality-controlled 10-m resolution snow maps based"
+                    "on Sentinel-2."
+                    "The FSC product provides regular information on snow "
+                    "cover fraction (0-100 %) per grid cell for the given "
+                    "land area except for land ice areas. The product is "
+                    "based on reflectance values from Sentinel-3 SLSTR RBT product,"
+                    "bands 1,2,3,5, and 6 at 500m resolution"),
+                "units": "percent",  # ideally CF-compliant name or symbol: https://ncics.org/portfolio/other-resources/udunits2/
+                "valid_output_range": [0,100],
+                "dtype": "uint8",  # string representing the numpy dtype ("uint8", "int8", "uint16", "int16", "uint32", "int32", "float32", "float64")
+                "fill_value": 255  # Value representing NoData
+                "offset": 0,  # Offset to be applied to the values in the output band, (0 means no offset)
+                "scale": 1,  # Scale to be applied to the values in the output band, after offset (1 means no scaling)
+                "classes": None,  # class values and names if output band contains classes, e.g. {0: "bare land", 1: "snow cover", 2: "waterbody", 3: "cloud"}
+                },
+        },
     }
     """
+    json_path = Path(module_options["configuration"])
+    input_group = module_options["group"]
     if not json_path.exists():
-        gs.fatal(_("Could not open "))
-    config = json.loads(json_path.read_text())
+        gs.fatal(_("Could not find configuration file <{}>").format(str(json_path)))
 
     # Validate config file
-    # validate_config(config)
+    config, backbone, model_kwargs = validate_config(
+        json_path, Path(module_options["model_code"])
+    )
 
     maps_in_group = (
         gs.read_command("i.group", group=input_group, flags="g", quiet=True)
@@ -155,7 +195,7 @@ def read_config(
         if semantic_label not in config["input_bands"]:
             continue
         semantic_labels.append(semantic_label)
-        valid_range = config["input_bands"][semantic_label][1]["valid_range"]
+        valid_range = config["input_bands"][semantic_label]["valid_range"]
         if valid_range and valid_range[0] and raster_map_info["min"] < valid_range[0]:
             gs.warning(
                 _(
@@ -168,10 +208,10 @@ def read_config(
                     "Maximum of raster map <{0}> {1} exeeds upper bound ({2}) of valid range"
                 ).format(raster_map, raster_map_info["max"], valid_range[1])
             )
-        input_group_dict[config["input_bands"][semantic_label][0]] = (
+        input_group_dict[config["input_bands"][semantic_label]["order"]] = (
             raster_map,
             raster_map_info["datatype"],
-            config["input_bands"][semantic_label][1],
+            config["input_bands"][semantic_label],
         )
 
     for band in config["input_bands"]:
@@ -179,7 +219,7 @@ def read_config(
             gs.fatal(
                 _("Band {0} is missing in input group {1}").format(band, input_group)
             )
-    return config, input_group_dict
+    return config, backbone, model_kwargs, input_group_dict
 
 
 def align_bbox_region(bbox, reference_region=None, overlap=0):
@@ -291,12 +331,12 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
         if tile_bbox["e"] >= reg["e"]:
             # Right column
             tile_bbox["e"] = reg["e"]
-            tile_bbox["w"] = reg["e"] - (tile_rows * reg["ewres"])
+            tile_bbox["w"] = reg["e"] - (tile_cols * reg["ewres"])
             inner_tile_bbox["e"] = reg["e"]
         elif tile_bbox["w"] <= reg["w"]:
             # Left column
             tile_bbox["w"] = reg["w"]
-            tile_bbox["e"] = reg["w"] + (tile_rows * reg["ewres"])
+            tile_bbox["e"] = reg["w"] + (tile_cols * reg["ewres"])
             inner_tile_bbox["w"] = reg["w"]
         else:
             missing_cols = tile_cols - (tile_bbox["e"] - tile_bbox["w"]) / reg["ewres"]
@@ -316,68 +356,13 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
     return tiling_dict
 
 
-def predict(np_cube, dl_model=None):
-    """Dummy function for testing parallel processing
-    Should be replaced by something like predict function in:
-    https://github.com/NVE/Snotjeneste/blob/nve-cop/run_dl.py
-    """
-    print(dl_model)
-    return np.sum(np_cube, axis=2)
-
-
-def load_model(dl_model_path, dl_config=None, device="cpu"):
-    """The following should be included in a predict function"""
-    # load pytorch model
-    if not dl_model_path.exists():
-        gs.fatal(("Model file {} not found").format(str(dl_model_path)))
-    """
-    dl_model = UNetV2(
-        # n_classes=dl_config["model"]["n_classes"],
-        in_channels=len(dl_config["input_bands"]),
-        out_channels=len(dl_config["output_bands"]),
-        depth=dl_config["model"]["depth"],
-        width=dl_config["model"]["width"],
-        # use_bn=dl_config["model"]["use_bn"],
-        # partial_conv=dl_config["model"]["partial_conv"],
-    )"""
-    # Get backbone from dl_config
-    dl_model = UNetV1(
-        n_classes=1,
-        in_channels=len(dl_config["input_bands"]),
-        depth=4,
-        use_bn=True,
-        partial_conv=True,
-    )
-    dl_model.load_state_dict(
-        torch.load(
-            str(dl_model_path),
-        )
-    )
-    return dl_model
-
-
-def predict_torch(data_cube, dl_config=None, device=None, dl_model=None):
-    """Apply model to numpy array"""
-    dl_model.to(device)
-    dl_model.eval()
-    with torch.no_grad():
-        data = numpy2torch(hwc_to_bchw(data_cube)).to(device)
-        torch_out = dl_model(data)
-
-    out_numpy = bcwh_to_hwc(torch2numpy(torch_out))[0]
-
-    # Clip result to valid output range
-    out_numpy = np.clip(out_numpy, *dl_config["valid_output_range"])
-    return out_numpy
-
-
-def read_bands(raster_map_dict, bbox):
+def read_bands(raster_map_dict, bbox, null_value=0):
     """Read band maps and return stacked numpy array for all bands
     after applying nan-replacement, scale, offset and clamping to valid range"""
     # pygrass sets region for pygrass tasks
     pygrass_region = Region()
     raster_region = deepcopy(pygrass_region)
-    raster_region.read(force_read=True)
+    # raster_region.read(force_read=True)
     raster_region.set_bbox(Bbox(bbox["n"], bbox["s"], bbox["e"], bbox["w"]))
     raster_region.set_raster_region()
     # Clip to valid range
@@ -387,6 +372,9 @@ def read_bands(raster_map_dict, bbox):
         # Set null to nan
         if raster_map_dict[band_number][1] == "CELL":
             npa = np.where(npa == -2147483648, np.nan, npa)
+        # Abort if (any) map only contains nan
+        if np.nansum(npa) == 0:
+            return None
         # Add offset ???
         if raster_map_dict[band_number][2]["offset"] != 0:
             npa = npa + np.array(raster_map_dict[band_number][2]["offset"])
@@ -404,13 +392,31 @@ def read_bands(raster_map_dict, bbox):
             npa = np.clip(npa, *raster_map_dict[band_number][2]["valid_range"])
         data_cube.append(npa)
     data_cube = np.stack(data_cube, axis=-1)
-    data_cube[np.isnan(data_cube)] = 0
+    data_cube[np.isnan(data_cube)] = null_value
 
     return data_cube
 
 
-def write_result(np_array, map_type, map_name, bbox):
+def write_result(np_array, map_name, bbox):
     """"""
+    dtype2grass = {
+        "uint8": "CELL",
+        "int8": "CELL",
+        "uint16": "CELL",
+        "int16": "CELL",
+        "uint32": "CELL",
+        "int32": "CELL",
+        "uint64": "CELL",
+        "int64": "CELL",
+        "float32": "FCELL",
+        "float64": "DCELL",
+    }
+    pygrass_region = Region()
+    raster_region = deepcopy(pygrass_region)
+    # raster_region.read(force_read=True)
+    raster_region.set_bbox(Bbox(bbox["n"], bbox["s"], bbox["e"], bbox["w"]))
+    raster_region.set_raster_region()
+
     gs.use_temp_region()
     gs.run_command(
         "g.region",
@@ -420,31 +426,99 @@ def write_result(np_array, map_type, map_name, bbox):
         s=bbox["s"],
         nsres=bbox["nsres"],
         ewres=bbox["ewres"],
-        flags="g",
+        # flags="g",
     )
-    numpy2raster(np_array, map_type, map_name, overwrite=True)
+    numpy2raster(np_array, dtype2grass[np_array.dtype.name], map_name, overwrite=True)
     gs.del_temp_region()
     return 0
 
 
-def tiled_rediction(bbox, raster_maps=None):
+def tiled_rediction(
+    idx,
+    bboxes,
+    group_dict=None,
+    dl_config=None,
+    dl_model=None,
+    device=None,
+):
     """Predict function to be parallelized"""
-    data_cube = read_bands(raster_maps, bbox)
-    write_result(predict(data_cube), "CELL", f"{TMP_NAME}_{bbox['cat']}", bbox)
+    data_cube = read_bands(group_dict, bboxes["outer"], null_value=0)
+    if data_cube is None:
+        return None
+    prediction_result = predict_torch(
+        data_cube, config_dict=dl_config, device=device, dl_model=dl_model
+    )
+
+    prediction_result = get_inner_bbox(
+        prediction_result, bboxes["outer"], bboxes["inner"]
+    )
+
+    # Write each output band
+    for idx, output_band in enumerate(dl_config["output_bands"]):
+        # Clip result to valid output range
+        if dl_config["output_bands"][output_band]["valid_output_range"]:
+            out_numpy = np.clip(
+                prediction_result[..., idx],
+                *dl_config["output_bands"][output_band]["valid_output_range"],
+            )
+        else:
+            out_numpy = prediction_result[..., idx]
+        # Write data for inner tile
+        write_result(
+            out_numpy,
+            f"{TMP_NAME}_{output_band}_{bboxes['inner']['cat']}",
+            bboxes["inner"],
+        )
     return 0
 
 
-def patch_results(output_map):
+def patch_results(output_map, output_band, dl_config=None, nprocs=1):
     """Patch resulting raster maps"""
+    output_band_config = dl_config["output_bands"][output_band]
     input_maps = (
-        gs.read_command("g.list", type="raster", pattern=f"{TMP_NAME}*")
+        gs.read_command("g.list", type="raster", pattern=f"{TMP_NAME}_{output_band}*")
         .strip()
         .split("\n")
     )
-    gs.run_command(
-        "r.patch", input=input_maps, output=output_map, verbose=True, nprocs=8
-    )
+    if len(input_maps) == 1:
+        gs.run_command(
+            "g.rename",
+            raster=f"{input_maps[0]},{output_map}",
+            quiet=True,
+        )
+    else:
+        gs.run_command(
+            "r.patch",
+            input=input_maps,
+            output=output_map,
+            overwrite=gs.overwrite(),
+            verbose=True,
+            nprocs=nprocs,
+        )
     gs.raster_history(output_map, overwrite=True)
+    gs.run_command(
+        "r.support",
+        map=f"{output_map}_{output_band}",
+        title=output_band_config["title"],
+        units=output_band_config["units"],
+        source1=", ".join(
+            [dl_config["model"]["model_name"], dl_config["model"]["model_version"]]
+        ),
+        description=output_band_config["description"],
+        semantic_label=output_band_config["semantic_label"],
+        overwrite=True,
+    )
+
+
+def get_inner_bbox(data_cube, outer_bbox, inner_bbox):
+    """Get offset indices based on inner and outer (with overlap) bbox
+    starting from upper left corner (n / w) and subset input data_cube
+    using those indices"""
+    offset_n = int((outer_bbox["n"] - inner_bbox["n"]) / outer_bbox["nsres"])
+    offset_w = int((inner_bbox["w"] - outer_bbox["w"]) / outer_bbox["ewres"])
+    bound_s = offset_n + inner_bbox["rows"]
+    bound_e = offset_w + inner_bbox["cols"]
+    return data_cube[offset_n:bound_s, offset_w:bound_e, :]
 
 
 def main():
@@ -457,9 +531,12 @@ def main():
     region = gs.parse_command("g.region", flags="ug")
 
     # Parse and check configuration
-    dl_config, group_dict = read_config(
-        Path(options["configuration"]), options["group"]
-    )
+    dl_config, dl_backbone, dl_model_kwargs, group_dict = read_config(options)
+
+    # Load model
+    dl_model = load_model(Path(options["model"]), dl_backbone, dl_model_kwargs)
+
+    overlap = int(options["overlap"]) or 0
 
     # Check if mask is active
     # ???
@@ -469,25 +546,33 @@ def main():
         try:
             tile_size = list(map(int, options["tile_size"].split(",")))
             # Create tiling
-            tile_set = create_tiling(*tile_size, overlap=128, region=None)
+            tile_set = create_tiling(*tile_size, overlap=overlap, region=None)
         except ValueError:
             gs.fatal(_("Invalid input in tile_size option"))
     else:
-        tile_set = create_tiling(tile_size, overlap=128, region=None)
+        tile_set = create_tiling(tile_size, overlap=overlap, region=None)
 
-    # raster_maps = list(dl_config["bands"].keys())
-    # raster_maps = ["test_b1", "test_b2", "test_b3"]
+    tiled_group_rediction = partial(
+        tiled_rediction,
+        group_dict=group_dict,
+        dl_config=dl_config,
+        dl_model=dl_model,
+        device=device,
+    )
+    nprocs = np.min([int(options["nprocs"]), len(tile_set)])
 
-    tiled_group_rediction = partial(tiled_rediction, raster_maps=raster_maps)
-    inner_tiles = {cat: tile_set[cat]["inner"] for cat in tile_set}
-    nprocs = np.min(int(options["nprocs"]), len(tile_set))
+    torch.set_num_threads(1)
     if nprocs > 1:
         with Pool(nprocs) as pool:
-            pool.map(tiled_group_rediction, inner_tiles.values())
-        patch_results(options["output"])
+            pool.starmap(tiled_group_rediction, tile_set.items())
     else:
-        [tiled_group_rediction(tile) for til in inner_tiles.values()]
-        gs.run_command("g.rename", raster=f"{TMP_NAME}, {options['output']}")
+        [tiled_group_rediction(idx, tile_def) for idx, tile_def in tile_set.items()]
+
+    # Patch or rename results and write metadata
+    for output_band in dl_config["output_bands"]:
+        patch_results(
+            options["output"], output_band, dl_config=dl_config, nprocs=nprocs
+        )
 
 
 if __name__ == "__main__":
@@ -496,15 +581,22 @@ if __name__ == "__main__":
     try:
         import torch
         import torch.nn.functional as F
-        from torch import nn
-        from torch.autograd import Variable
     except ImportError:
         gs.fatal(("Could not import pytorch. Please make sure it is installed."))
-    import numpy as np
+    try:
+        import numpy as np
+    except ImportError:
+        gs.fatal(("Could not import pytorch. Please make sure it is installed."))
 
     try:
-        from pytorchlib.utils import numpy2torch, torch2numpy, validate_config
-        from pytorchlib.backbones import UNetV1, UNetV2
+        from pytorchlib.utils import (
+            numpy2torch,
+            torch2numpy,
+            validate_config,
+            transform_axes,
+            load_model,
+            predict_torch,
+        )
     except ImportError:
         gs.fatal(
             (
