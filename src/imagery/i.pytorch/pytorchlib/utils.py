@@ -42,7 +42,7 @@ def transform_axes(np_array, from_format="HWC", to_format="NCHW"):
     N: Number of images in batch
     H: Height of the images
     W: Width of the images
-    C: Number of channels of the images
+    C: Number of channels / bands of the images
 
     Default is HWC to NCHW format
     """
@@ -232,7 +232,6 @@ def validate_config(json_path, package_dir):
                     )
 
     # Try to load model
-    print(config_dict["model"])
     backbone = load_model_code(package_dir, config_dict["model"]["model_backbone"])
     sig = inspect.signature(backbone.__init__)
     model_kwargs = {}
