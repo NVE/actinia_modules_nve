@@ -1,44 +1,104 @@
 <h2>DESCRIPTION</h2>
 
-<em>i.pytorch.predict</em> applies a pre-trained, saved deep learning model to an imagery group.
+<em>i.pytorch.predict</em> applies a pre-trained, saved deep learning model developed with
+pytorch to an imagery group.
 
 The imagery group provided in the <b>group</b> option has to contain raster maps for all bands
-required by the deep learning <b>model</b>. Raster maps are matched to the bands using
+required by the deep learning <b>model</b>. Raster maps are matched to the input bands using
 <em>semantic labels</em> and based on the meta information provided in the <b>configuration</b>
 option. The configuration is a JSON file that describes all relevant input variables for applying
 the given deep learning model.
 
 <div class="code"><pre>
-  {"model_type": "UNET",
-  "valid_output_range": [0,100],
-  "bands":
-      {"red": [1, {"offset": 0, "scale": 1, "valid_range": [0, 255]}],
-      "blue": [2, {"offset": 0, "scale": 1, "valid_range": [0, 255]}],
-      },
-  "n_classes": 2,
-  # "in_channels": 1,  # Could be derived from bands
-  "out_channels": 1,  # Could be derived from bands
-  "depth": 5,
-  "start_filts": 32,
-  "up_mode": "bilinear",
-  "merge_mode": "concat",
-  "partial_conv": True,
-  "use_bn": True,
-  "activation_func": "leaky_relu"
-  }
+  {"model":  # Dictinary matching the parameters of the signature of the UNet model code
+  {
+   "model_backbone": "UNetV1",  # Name of the class representing the UNet model in the model code
+   # Keys below depend on the UNet model code, which should consequently use keyword arguments with defined data type and defaults for all parameters
+   "n_classes": 2,
+   "depth": 5,
+   "start_filts": 32,
+   "up_mode": "bilinear",
+   "merge_mode": "concat",
+   "partial_conv": True,
+   "use_bn": True,
+   "activation_func": "lrelu"
+   },
+"input_bands": {  # dictionary describing the input bands expected by the model
+   'S1_reflectance_an':  {  # input band name / key (to be matched to semantic labels)
+       "order": 1,  # position in the input data cube to the DL model
+       "offset": 0,  # Offset to be applied to the values in the input band, (0 means no offset)
+       "scale": 1,  # Scale to be applied to the values in the input band, after offset (1 means no scaling)
+       "valid_range": [None, 2],  # Tuple with valid range (min, max) of the input data with scale and offset applied, (None means inf for max and -inf for min)
+       "fill_value": 0,  # Value to replace NoData value with
+       "description": "Sentinel-3 SLSTR band S1 scaled to reflectance values",  # Human readable description of the band that is expected as input
+       },
+   'S2_reflectance_an':  {"order": 2, "offset": 0, "scale": 1, "valid_range": [None, 2], "fill_value": 0, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+   'S3_reflectance_an':  {"order": 3, "offset": 0, "scale": 1, "valid_range": [None, 2], "fill_value": 0, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+   'S5_reflectance_an':  {"order": 4, "offset": 0, "scale": 1, "valid_range": [None, 2], "fill_value": 0, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+   'S6_reflectance_an':  {"order": 5, "offset": 0, "scale": 1, "valid_range": [None, 2], "fill_value": 0, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+   'S8_BT_in':  {"order": 6, "offset": -200, "scale": 100, "valid_range": None, "fill_value": 0, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+   'S9_BT_in':  {"order": 7, "offset": -200, "scale": 100, "valid_range": None, "fill_value": 0, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+   },
+"output_bands":  # This section contains meta information about output bands from the DL model, each output band should have a description
+   {
+       "fsc": {
+           "title": "Fractional Snow Cover (FSC)",
+           "standard_name": "surface_snow_area_fraction",  # https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html
+           "model_name": "NVECOP2-CNN",
+           "model_version": "v1.0",
+           "keywords": ["fractional snow cover", "earth observation", "Sentinel-3", "SLSTR"],
+           "description": ("The NVECOP2-CNN FSC algorithm is developed by NR in
+               "the AI4Arctic project based on a CNN."
+               "A modified version of the UNet has been applied and trained with"
+               "selected and quality-controlled 10-m resolution snow maps based"
+               "on Sentinel-2."
+               "The FSC product provides regular information on snow "
+               "cover fraction (0-100 %) per grid cell for the given "
+               "land area except for land ice areas. The product is "
+               "based on reflectance values from Sentinel-3 SLSTR RBT product,"
+               "bands 1,2,3,5, and 6 at 500m resolution"),
+           "units": "percent",  # ideally CF-compliant name or symbol: https://ncics.org/portfolio/other-resources/udunits2/
+           "valid_output_range": [0,100],
+           "dtype": "uint8",  # string representing the numpy dtype ("uint8", "int8", "uint16", "int16", "uint32", "int32", "float32", "float64")
+           "fill_value": 255  # Value representing NoData
+           "offset": 0,  # Offset to be applied to the values in the output band, (0 means no offset)
+           "scale": 1,  # Scale to be applied to the values in the output band, after offset (1 means no scaling)
+           "classes": None,  # class values and names if output band contains classes, e.g. {0: "bare land", 1: "snow cover", 2: "waterbody", 3: "cloud"}
+           },
+   },
+}
+
 </pre></div>
 
 
 
 <h2>NOTES</h2>
-Currently, the module expects the input Digital Elevation Model to be in UTM 33N Coordinate
-Reference System, and all output is generated in that CRS (EPSG:25833) as well.
+Typically, application of deep learning models requires both the model file
+and associated code. This module requires in addition meta-information
+in JSON format, describing the model together with it`s input and output.
+
+For developers:<br>
+In order to use deep learning models both the model file and code defining
+the model context and application (here called <em>backbone</em> are required).
+
+For adding new models / backbones the following input is required:
+<ul>backbone code containing the custom class derived from
+<em>pytorch.nn.Module</em>. This is supposed to be placed in the <em>backbone</em>
+module. The class has to have a signature with keywords only (see existing examples),
+so the <b>configuration</b> JSON can be validated. Further more, if the number
+of input or output bands is among the required input parameters, they have to be
+named <em>input_bands</em> and <em>input_bands</em> and accept integer input.
+Values for those two parameters are derived from the <b>configuration</b> JSON.</ul>
+<ul>if other transformation functions have to be applied to the input and output
+data to the model, these input functions have to be placed in the <em>utils</em>
+module and registered in the <em>transform_functions</em> dict.</ul>
+
 
 <h2>EXAMPLES</h2>
 
 <div class="code"><pre>
 i.pytorch.predict group="Sentinel_3_2023_11_13" model="./fsc.pt" configuration="./fsc_config.json" \
-  nprocs=8 tile_size="512,512" output="S3_FSC_2023_11_13"
+  nprocs=8 tile_size="1024,1024" output="S3_FSC_2023_11_13"
 </pre></div>
 
 <h2>REQUIREMENTS</h2>
@@ -46,7 +106,7 @@ i.pytorch.predict group="Sentinel_3_2023_11_13" model="./fsc.pt" configuration="
 <ul>
   <li>The <em>pytorch</em> Python library</li>
   <li>The <em>numpy</em> Python library</li>
-  <li>An internal "unet" library</li>
+  <li>An internal "pytorchlib" library</li>
 </ul>
 
 
