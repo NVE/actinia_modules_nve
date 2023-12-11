@@ -273,7 +273,6 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
         int
     )
     if tile_rows_n * tile_cols_n == 1:
-        print({1: {"inner": reg, "outer": reg}})
         return {1: {"inner": reg, "outer": reg}}
     # env = os.environ.copy()
     # env["GRASS_REGION"] = gs.region_env(grow=-overlap)
