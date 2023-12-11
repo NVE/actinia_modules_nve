@@ -90,6 +90,7 @@
 # % description: Use CPU as device for prediction, default is use cuda (GPU) if detected
 # %end
 
+import atexit
 import os
 import sys
 
@@ -172,7 +173,7 @@ def read_config(module_options):
     }
     """
     json_path = Path(module_options["configuration"])
-    input_group = module_options["group"]
+    input_group = module_options["input"]
     if not json_path.exists():
         gs.fatal(_("Could not find configuration file <{}>").format(str(json_path)))
 
@@ -272,9 +273,11 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
     tile_rows_n = np.ceil(float(core_reg["rows"]) / (tile_rows - 2.0 * overlap)).astype(
         int
     )
-
-    env = os.environ.copy()
-    env["GRASS_REGION"] = gs.region_env(grow=-overlap)
+    if tile_rows_n * tile_cols_n == 1:
+        print({1: {"inner": reg, "outer": reg}})
+        return {1: {"inner": reg, "outer": reg}}
+    # env = os.environ.copy()
+    # env["GRASS_REGION"] = gs.region_env(grow=-overlap)
 
     gs.run_command(
         "v.mkgrid",
@@ -282,7 +285,7 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
         grid=[tile_cols_n, tile_rows_n],
         map=TMP_NAME,
         overwrite=True,
-        env=env,
+        # env=env,
     )
     tile_setup = np.genfromtxt(
         gs.read_command(
@@ -304,7 +307,7 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
         )
         tile_bbox = align_bbox_region(
             {dtype_name: tile_coords[dtype_name] for dtype_name in dtype_names},
-            overlap=128,
+            overlap=overlap,
         )
         if tile_bbox["n"] >= reg["n"]:
             # Top row
@@ -428,6 +431,7 @@ def write_result(np_array, map_name, bbox):
         ewres=bbox["ewres"],
         # flags="g",
     )
+
     numpy2raster(np_array, dtype2grass[np_array.dtype.name], map_name, overwrite=True)
     gs.del_temp_region()
     return 0
@@ -463,6 +467,7 @@ def tiled_rediction(
             )
         else:
             out_numpy = prediction_result[..., idx]
+
         # Write data for inner tile
         write_result(
             out_numpy,
@@ -475,6 +480,7 @@ def tiled_rediction(
 def patch_results(output_map, output_band, dl_config=None, nprocs=1):
     """Patch resulting raster maps"""
     output_band_config = dl_config["output_bands"][output_band]
+    output_map_name = f"{output_map}_{output_band}"
     input_maps = (
         gs.read_command("g.list", type="raster", pattern=f"{TMP_NAME}_{output_band}*")
         .strip()
@@ -483,22 +489,22 @@ def patch_results(output_map, output_band, dl_config=None, nprocs=1):
     if len(input_maps) == 1:
         gs.run_command(
             "g.rename",
-            raster=f"{input_maps[0]},{output_map}",
+            raster=f"{input_maps[0]},{output_map_name}",
             quiet=True,
         )
     else:
         gs.run_command(
             "r.patch",
             input=input_maps,
-            output=output_map,
+            output=output_map_name,
             overwrite=gs.overwrite(),
             verbose=True,
             nprocs=nprocs,
         )
-    gs.raster_history(output_map, overwrite=True)
+    gs.raster_history(output_map_name, overwrite=True)
     gs.run_command(
         "r.support",
-        map=f"{output_map}_{output_band}",
+        map=output_map_name,
         title=output_band_config["title"],
         units=output_band_config["units"],
         source1=", ".join(
@@ -518,6 +524,7 @@ def get_inner_bbox(data_cube, outer_bbox, inner_bbox):
     offset_w = int((inner_bbox["w"] - outer_bbox["w"]) / outer_bbox["ewres"])
     bound_s = offset_n + inner_bbox["rows"]
     bound_e = offset_w + inner_bbox["cols"]
+
     return data_cube[offset_n:bound_s, offset_w:bound_e, :]
 
 
@@ -561,12 +568,17 @@ def main():
     )
     nprocs = np.min([int(options["nprocs"]), len(tile_set)])
 
-    torch.set_num_threads(1)
-    if nprocs > 1:
-        with Pool(nprocs) as pool:
-            pool.starmap(tiled_group_rediction, tile_set.items())
-    else:
-        [tiled_group_rediction(idx, tile_def) for idx, tile_def in tile_set.items()]
+    if device == "cpu":
+        torch.set_num_threads(int(options["nprocs"]))
+    # if nprocs > 1:
+    #    with Pool(nprocs) as pool:
+    #        pool.starmap(tiled_group_rediction, tile_set.items())
+    # else:
+    idx = 0
+    for idx, tile_def in tile_set.items():
+        gs.percent(idx, len(tile_set), 3)
+        tiled_group_rediction(idx, tile_def)
+        idx += 1
 
     # Patch or rename results and write metadata
     for output_band in dl_config["output_bands"]:
@@ -575,12 +587,16 @@ def main():
         )
 
 
+def cleanup():
+    """Remove all temporary data"""
+    gs.run_command("g.remove", type="raster", pattern=f"{TMP_NAME}*")
+
+
 if __name__ == "__main__":
     options, flags = gs.parser()
     # Lazy imports
     try:
         import torch
-        import torch.nn.functional as F
     except ImportError:
         gs.fatal(("Could not import pytorch. Please make sure it is installed."))
     try:
@@ -588,6 +604,7 @@ if __name__ == "__main__":
     except ImportError:
         gs.fatal(("Could not import pytorch. Please make sure it is installed."))
 
+    gs.utils.set_path(modulename="i.pytorch", dirname="", path="..")
     try:
         from pytorchlib.utils import (
             numpy2torch,
