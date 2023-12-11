@@ -17,9 +17,8 @@
   GNU General Public License for more details.
 
  ToDo:
- - unclear parallelization / tiling
-
- https://github.com/NVE/Snotjeneste/blob/nve-cop/run_dl.py
+ - linting
+ - test case
 
 """
 
@@ -594,6 +593,7 @@ def cleanup():
 
 if __name__ == "__main__":
     options, flags = gs.parser()
+    atexit.register(cleanup)
     # Lazy imports
     try:
         import torch
