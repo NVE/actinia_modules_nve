@@ -232,6 +232,7 @@ def validate_config(json_path, package_dir):
                     )
 
     # Try to load model
+    print(config_dict["model"])
     backbone = load_model_code(package_dir, config_dict["model"]["model_backbone"])
     sig = inspect.signature(backbone.__init__)
     model_kwargs = {}
@@ -243,7 +244,8 @@ def validate_config(json_path, package_dir):
         # Skip input_bands and output_bands parameters that are
         if parameter.name in ["input_bands", "output_bands"]:
             model_kwargs[parameter.name] = len(config_dict[parameter.name])
-        if parameter not in config_dict["model"]:
+            continue
+        if parameter.name not in config_dict["model"]:
             gs.warning(
                 _(
                     "Parameter '{0}' missing in model configuration, using default {1}"
