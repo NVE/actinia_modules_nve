@@ -1,6 +1,6 @@
 <h2>DESCRIPTION</h2>
 
-<em>r.avaframe.com1dfa</em> runs Dense flow avalanche kernel (com1DFA)
+<em>r.avaframe.com1dfa_v2</em> runs Dense flow avalanche kernel (com1DFA)
 simulations using the Open Avalanche Framework
 <a href="https://github.com/avaframe/AvaFrame">AvaFrame</a>.
 
@@ -19,27 +19,124 @@ Currently, the following parameters for com1DFA simulations are supported:
     <th>Parameter description</th>
   </tr>
   <tr>
-    <td>relTh</td>
-    <td>snowDepth_cm</td>
-    <td>Release thickness</td>
+    <td>frictModel</td>
+    <td>frictionModel</td>
+    <td>Friction models can be samosAT (1), Coulomb (2), Voellmy (2) or Wetsnow (3).</td>
   </tr>
   <tr>
+    <td>relTh</td>
+    <td>multipleRelTh_m</td>
+    <td>Release thicknesses in meter. Comma seperated string if you want to run the model several times with different inputs.</td>
+  </tr>
+  
+  <tr>
     <td>rho</td>
-    <td>rho_kgPerSqM</td>
+    <td>rho_kgPerCubicM</td>
     <td>Density of snow in <var>kg</var>/<var>m</var><sup>3</sup></td>
   </tr>
   <tr>
-    <td>rhoEnt</td>
-    <td>rhoEnt_kgPerSqM</td>
-    <td>Density of entrained snow in <var>kg</var>/<var>m</var><sup>3</sup></td>
+    <td>cpIce</td>
+    <td>cpIce_joulePerKg</td>
+    <td>Ice in <var>J</var>/<var>kg</var></td>
   </tr>
   <tr>
-    <td>frictModel</td>
-    <td>frictModel</td>
-    <td>Friction models can be samosAT (1), Coulomb (2), and Voellmy (2)</td>
+    <td>TIni</td>
+    <td>tIni_degreeCelcius</td>
+    <td>Initial temperature in <sup>0</sup><var>C</var></td>
+  </tr>
+  <tr>
+    <td>entTempRef</td>
+    <td>entTemp_degreeCelcius</td>
+    <td>Initial temperature for entrainment in <sup>0</sup><var>C</var></td>
+  </tr>
+  <tr>
+    <td>enthRef</td>
+    <td>enthalpy_joulePerKg</td>
+    <td>Reference enthalpy in <var>J</var>/<var>kg</var></td>
   </tr>
 </table>
 
+<h3>Entrainment area</h3>
+<p>
+An entrainment area can be used in the model. To do so, set the <em>e-flag</em> and provide 
+an OGR readable vector data source for the <em>entrainment_area</em>
+<p>
+Parameters for the simulation need to be provided in the attribute table of the
+<em>entrainment_area</em> data source, according to the table below.
+
+<table>
+  <tr>
+    <th>com1DFA parameter name</th>
+    <th>Column name in attribute table</th>
+    <th>Parameter description</th>
+  </tr>
+  <tr>
+    <td>rhoEnt</td>
+    <td>rhoEnt_kgPerCubicM</td>
+    <td>density of entrained snow in <var>kg</var>/<var>m</var><sup>3</sup></td>
+  </tr>
+  <tr>
+    <td>entEroEnergy</td>
+    <td>entEro_joulePerKg</td>
+    <td>Entrainment erosion energy in <var>J</var>/<var>kg</var></td>
+  </tr>
+  
+  <tr>
+    <td>entShearResistance</td>
+    <td>entShear_joulePerSqM</td>
+    <td><var>J</var>/<var>m</var><sup>2</sup></td>
+  </tr>
+  <tr>
+    <td>entDefResistance</td>
+    <td>entDef_joulePerKg</td>
+    <td><var>J</var>/<var>kg</var></td>
+  </tr>
+  <tr>
+    <td>entTh</td>
+    <td>entTh_m</td>
+    <td>Entrainment thickness in <var>meter</var></td>
+  </tr>
+</table>
+
+<h3>Resistance area</h3>
+<p>
+An resistance area can be used in the model. To do so, set the <em>e-flag</em> and provide 
+an OGR readable vector data source for the <em>resistance_area</em>
+<p>
+Parameters for the simulation need to be provided in the attribute table of the
+<em>resistance_area</em> data source, according to the table below.
+
+<table>
+  <tr>
+    <th>com1DFA parameter name</th>
+    <th>Column name in attribute table</th>
+    <th>Parameter description</th>
+  </tr>
+  <tr>
+    <td>hRes</td>
+    <td>hRes_m</td>
+    <td>Height of the obstacles in <var>meter</var></td>
+  </tr>
+  <tr>
+    <td>cw</td>
+    <td>cw</td>
+    <td>Resistance coefficient [0-1]</td>
+  </tr>
+  
+  <tr>
+    <td>dRes</td>
+    <td>dRes_m</td>
+    <td>Diameter of obstacles in <var>meter</var></td>
+  </tr>
+  <tr>
+    <td>sres</td>
+    <td>sRes_m</td>
+    <td>Spacing between obstacles in <var>meter</var></td>
+  </tr>
+</table>
+
+
+</p>
 The ASCII-raster files resulting from the AvaFrame simulations are either
 linked to the current mapset (if the <em>l-flag</em> is set),
 otherwise they ar imported into the GRASS GIS database.
@@ -69,8 +166,9 @@ values to simulate for.
 <h3>Run com1DFA simulations for a release area registered in NVE database</h3>
 
 <div class="code"><pre>
-r.avaframe.com1dfa --o -l elevation="DTM_10m@DTM" nprocs=8 format="csv" buffer=1500 \
-    release_area="https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmSamosAT/MapServer/0/query?where=objectid+%3D+1&amp;outFields=*&amp;f=json" \
+r.avaframe.com1dfa_v2 --o -l elevation="DTM_10m@DTM" nprocs=8 format="csv" buffer=1500 \
+    url="https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer" \
+    release_area_layer_id="0" id="1" \
     ppr="ppr" pft="pft" pfv="pfv"
 
 </pre></div>
@@ -84,4 +182,4 @@ r.avaframe.com1dfa --o -l elevation="DTM_10m@DTM" nprocs=8 format="csv" buffer=1
 
 <h2>AUTHOR</h2>
 
-Stefan Blumentrath
+Stefan Blumentrath and Yngve Antonsen
