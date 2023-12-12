@@ -1,0 +1,256 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>i.pytorch.predict - GRASS GIS manual</title>
+ <meta name="description" content="i.pytorch.predict: Apply Deep Learning model to imagery group using pytorch">
+ <meta name="keywords" content="raster, imagery, deep learning, pytorch, unet, GPU, predict">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass83/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#notes">NOTES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#requirements">REQUIREMENTS</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>i.pytorch.predict</b></em>  - Apply Deep Learning model to imagery group using pytorch
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass83/docs/html/raster.html">raster</a>, <a href="file:///usr/lib/grass83/docs/html/topic_imagery.html">imagery</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#deep learning">deep learning</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#pytorch">pytorch</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#unet">unet</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#GPU">GPU</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#predict">predict</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>i.pytorch.predict</b><br></div>
+<b>i.pytorch.predict --help</b><br>
+<div id="synopsis"><b>i.pytorch.predict</b> [-<b>c</b>] <b>input</b>=<em>name</em> <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]  <b>configuration</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]  <b>output</b>=<em>name</em>  [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-c</b></dt>
+<dd>Use CPU as device for prediction, default is use cuda (GPU) if detected</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Input imagery group</dd>
+
+<dt><b>model</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to input deep learning model file (.pt)</dd>
+
+<dt><b>model_code</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to input deep learning model code (.py)</dd>
+
+<dt><b>tile_size</b>=<em>integer[,<i>integer</i>,...]</em></dt>
+<dd>Number of cows and columns in tiles</dd>
+
+<dt><b>overlap</b>=<em>integer</em></dt>
+<dd>Number of cows and columns of overlap in tiles</dd>
+
+<dt><b>configuration</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to JSON file with band configuration in the input deep learning model</dd>
+
+<dt><b>nprocs</b>=<em>integer</em></dt>
+<dd>Number of threads for parallel computing</dd>
+<dd>Default: <em>1</em></dd>
+
+<dt><b>output</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name for output raster map</dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#notes" class="toc">NOTES</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a></li>
+    <li class="toc"><a href="#requirements" class="toc">REQUIREMENTS</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>i.pytorch.predict</em> applies a pre-trained, saved deep learning model developed with
+pytorch to an imagery group.
+
+<p>
+Typically, application of deep learning models requires both the model file
+and associated code. The directory from wich the associated code can be loaded has to be
+given in the <b>model_code</b> option.
+
+<p>
+This module requires in addition meta-information in JSON format, in the <b>configuration</b>
+option describing the model together with it`s input and output.
+
+<p>
+The imagery group provided in the <b>input</b> option has to contain raster maps for all bands
+required by the deep learning <b>model</b>. Raster maps are matched to the input bands using
+<em>semantic labels</em> and based on the meta information provided in the <b>configuration</b>
+option. The configuration is a JSON file that contains relevant information for initialisation
+of the model and describes all relevant input variables for applying the given deep learning model
+as well as the output.
+
+It is excpected to be structure as follows:
+<div class="code"><pre>
+  {"model":  # Dictinary matching the parameters of the signature of the UNet model code
+  {
+   "model_backbone": "backbones.UNetV1",  # Name of the module and class representing the UNet model in the model code directory
+   "model_name": "NVECOP2-CNN",
+   "model_version": "v1.0",
+   "model_dimensions": {"input_dimensions": "NCHW", "output_dimensions": "NCHW"}, # string representation of the dimensions of expected model input and output
+       # N: Number of images in batch
+       # H: Height of the images
+       # W: Width of the images
+       # C: Number of channels / bands of the images
+   # Keys below depend on the UNet model code, which should consequently use keyword arguments with defined data type and defaults for all parameters
+   "n_classes": 2,
+   "depth": 5,
+   "start_filts": 32,
+   "up_mode": "bilinear",
+   "merge_mode": "concat",
+   "partial_conv": True,
+   "use_bn": True,
+   "activation_func": "lrelu"
+   },
+"input_bands": {  # dictionary describing the input bands expected by the model
+   'S1_reflectance_an':  {  # input band name / key (to be matched to semantic labels)
+       "order": 1,  # position in the input data cube to the DL model
+       "offset": 0,  # Offset to be applied to the values in the input band, (0 means no offset)
+       "scale": 1,  # Scale to be applied to the values in the input band, after offset (1 means no scaling)
+       "valid_range": [None, 2],  # Tuple with valid range (min, max) of the input data with scale and offset applied, (None means inf for max and -inf for min)
+       "fill_value": 0,  # Value to replace NoData value with
+       "description": "Sentinel-3 SLSTR band S1 scaled to reflectance values",  # Human readable description of the band that is expected as input
+       },
+   'S2_reflectance_an':  {"order": 2, "offset": 0, "scale": 1, "valid_range": [None, 2], "fill_value": 0, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+   'S3_reflectance_an':  {"order": 3, "offset": 0, "scale": 1, "valid_range": [None, 2], "fill_value": 0, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+   'S5_reflectance_an':  {"order": 4, "offset": 0, "scale": 1, "valid_range": [None, 2], "fill_value": 0, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+   'S6_reflectance_an':  {"order": 5, "offset": 0, "scale": 1, "valid_range": [None, 2], "fill_value": 0, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+   'S8_BT_in':  {"order": 6, "offset": -200, "scale": 100, "valid_range": None, "fill_value": 0, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+   'S9_BT_in':  {"order": 7, "offset": -200, "scale": 100, "valid_range": None, "fill_value": 0, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+   },
+"output_bands":  # This section contains meta information about output bands from the DL model, each output band should have a description
+   {
+       "fsc": {
+           "title": "Fractional Snow Cover (FSC)",
+           "standard_name": "surface_snow_area_fraction",  # https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html
+           "description": ("The NVECOP2-CNN FSC algorithm is developed by NR in
+               "the AI4Arctic project based on a CNN."
+               "A modified version of the UNet has been applied and trained with"
+               "selected and quality-controlled 10-m resolution snow maps based"
+               "on Sentinel-2."
+               "The FSC product provides regular information on snow "
+               "cover fraction (0-100 %) per grid cell for the given "
+               "land area except for land ice areas. The product is "
+               "based on reflectance values from Sentinel-3 SLSTR RBT product,"
+               "bands 1,2,3,5, and 6 at 500m resolution"),
+           "units": "percent",  # ideally CF-compliant name or symbol: https://ncics.org/portfolio/other-resources/udunits2/
+           "valid_output_range": [0,100],
+           "dtype": "uint8",  # string representing the numpy dtype ("uint8", "int8", "uint16", "int16", "uint32", "int32", "float32", "float64")
+           "fill_value": 255  # Value representing NoData
+           "offset": 0,  # Offset to be applied to the values in the output band, (0 means no offset)
+           "scale": 1,  # Scale to be applied to the values in the output band, after offset (1 means no scaling)
+           "classes": None,  # class values and names if output band contains classes, e.g. {0: "bare land", 1: "snow cover", 2: "waterbody", 3: "cloud"}
+           },
+   },
+}
+</pre></div>
+
+<h2><a name="notes">NOTES</a></h2>
+Processing on GPU may require a smaller <b>tile_size</b> setting in order to fit
+data to available GPU memory. Smaller tile sizes however lead to an increased number
+of temporary data. Users may encounter "Too many open files" error in such cases, esp.
+when results are patched in parallel as well. See the <a href="file:///usr/lib/grass83/docs/html/r.patch.html">r.patch</a>
+manual for ways to circumvent those issues.
+
+In general, processing on GPU is significantly faster, and lager tile sizes are
+processed faster than smaller ones. However, the <b>tile_size</b> setting can
+be optimized to match closer to the height and width ratio of the current region.
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<div class="code"><pre>
+i.pytorch.predict input="Sentinel_3_2023_11_13" model="./fsc.pt" \
+  nodel_code=./unet configuration="./fsc_config.json" \
+  nprocs=8 tile_size="1024,1024" output="S3_SLSTR_2023_11_13"
+</pre></div>
+
+<h2><a name="requirements">REQUIREMENTS</a></h2>
+<em>i.pytorch.predict</em> uses the following non-standard Python libraries:
+<ul>
+  <li>The <em>pytorch</em> Python library</li>
+  <li>The <em>numpy</em> Python library</li>
+  <li>An internal "pytorchlib" library</li>
+</ul>
+
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath, NVE<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">i.pytorch.predict source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Tuesday Dec 12 14:33:42 2023
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass83/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass83/docs/html/imagery.html">Imagery index</a> |
+<a href="file:///usr/lib/grass83/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass83/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass83/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass83/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2023
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.3.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>
