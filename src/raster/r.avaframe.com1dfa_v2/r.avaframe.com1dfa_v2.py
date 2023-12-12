@@ -2,7 +2,7 @@
 
 """
  MODULE:       r.avaframe.com1dfa
- AUTHOR(S):    Stefan Blumentrath
+ AUTHOR(S):    Stefan Blumentrath and Yngve Antonsen
  PURPOSE:      Run com1dfa avalanche simulations using AvaFrame
  COPYRIGHT:    (C) 2022 by Stefan Blumentrath
 
@@ -71,7 +71,7 @@
 # %option
 # % key: entrainment_area_layer_id
 # % type: string
-# % required: yes
+# % required: no
 # % multiple: no
 # % description: Layer ID for the entrainment area on the feature service.
 # %end
@@ -79,7 +79,7 @@
 # %option
 # % key: resistance_area_layer_id
 # % type: string
-# % required: yes
+# % required: no
 # % multiple: no
 # % description: Layer ID for the resistance area on the feature service.
 # %end
@@ -327,15 +327,7 @@ def run_com1dfa(thickness, config_dict=None):
     write_avaframe_config(
         cfg_ini_file,
         config_dict,
-        # # density of snow [kg/m³]
-        # rho=config_dict["rho_kgPerSqM"],
-        # # density of entrained snow [kg/m³]
-        # rho_ent=config_dict["rhoEnt_kgPerSqM"],
-        # # friction model (samosAT, Coulomb, Voellmy)
-        # friction_model=config_dict["frictModel_name"],
-        # mesh_cell_size=config_dict["mesh_cell_size"],
         release_thickness=thickness,
-        # release_thickness_range_variation="+3.5$8",
     )
 
     # Start logging
@@ -384,12 +376,7 @@ def run_com1dfa(thickness, config_dict=None):
 
 def main():
     """Run com1DFA simulation from Avaframe with selected configuration"""
-    # options = {"elevation": "DTM_10m@DTM",
-    #     "release_area": "https://gis3.nve.no/arcgis/rest/services/"
-    #         "featureservice/AlarmSamosAT/MapServer/"
-    #         "0/query?where=objectid+%3D+1&outFields=*&f=json",
-    #     "buffer": 1000,
-    # }
+
     friction_model_dict = {
         0: "samosAT",
         1: "Coulomb",
@@ -425,51 +412,10 @@ def main():
     # Get entrainment area
     if flags["e"]:
         get_shape_file_and_config("entrainment")
-        # entrainment_area = "{url}/{layerId}/query?where=id+%3D+{id}&outFields=*&f=json".format(url = options["url"], layerId = options["entrainment_area_layer_id"], id = options["id"])
-        # ogr_dataset_entrainment_area = gdal.OpenEx(entrainment_area, gdal.OF_VECTOR)
-        # # actinia requires input URLs to be quoted if eg & is used
-        # if not ogr_dataset_entrainment_area:
-        #     ogr_dataset_entrainment_area = gdal.OpenEx(
-        #         parse.unquote(entrainment_area), gdal.OF_VECTOR
-        #     )
-        # layer_entrainment_area = ogr_dataset_entrainment_area.GetLayerByIndex(0)
-        # config_entrainment_area = dict(layer_entrainment_area.GetNextFeature())  # first feature contains config attributes
-        # entries_to_remove = ('OBJECTID', 'Id', 'Shape__Area', 'Shape__Length')
-        # for key in entries_to_remove:
-        #     if key in config_entrainment_area:
-        #         del config_entrainment_area[key]
-        # config.update(config_entrainment_area)
-
-        # gdal.VectorTranslate(
-        # str(avalanche_dir / "ENT" / f"{release_name}_entrainment_area.shp"),
-        # ogr_dataset_entrainment_area,
-        # options='-f "ESRI Shapefile"',
-        # )
-
 
     # Get resistance area
     if flags["r"]:
         get_shape_file_and_config("resistance")
-    #     resistance_area = "{url}/{layerId}/query?where=id+%3D+{id}&outFields=*&f=json".format(url = options["url"], layerId = options["resistance_area_layer_id"], id = options["id"])
-    #     ogr_dataset_resistance_area = gdal.OpenEx(resistance_area, gdal.OF_VECTOR)
-    #     # actinia requires input URLs to be quoted if eg & is used
-    #     if not ogr_dataset_resistance_area:
-    #         ogr_dataset_resistance_area = gdal.OpenEx(
-    #             parse.unquote(resistance_area), gdal.OF_VECTOR
-    #         )
-    #     layer_resistance_area = ogr_dataset_resistance_area.GetLayerByIndex(0)
-    #     config_resistance_area = dict(layer_resistance_area.GetNextFeature())  # first feature contains config attributes
-    #     entries_to_remove = ('OBJECTID', 'Id', 'Shape__Area', 'Shape__Length')
-    #     for key in entries_to_remove:
-    #         if key in config_resistance_area:
-    #             del config_resistance_area[key]
-    #     config.update(config_resistance_area)
-
-    #     gdal.VectorTranslate(
-    #     str(avalanche_dir / "RES" /f"{release_name}_resistance_area.shp"),
-    #     ogr_dataset_resistance_area,
-    #     options='-f "ESRI Shapefile"',
-    #     )
 
     # Currently hardcoded settings
     if config["multipleRelTh_m"]:
