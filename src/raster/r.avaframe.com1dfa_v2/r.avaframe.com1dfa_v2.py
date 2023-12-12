@@ -52,6 +52,38 @@
 # % description: Id of release area
 # %end
 
+# %option
+# % key: url
+# % type: string
+# % required: yes
+# % multiple: no
+# % description: URL to the featureservice of the input data (release, entrainment and resistance area)
+# %end
+
+# %option
+# % key: release_area_layer_id
+# % type: string
+# % required: yes
+# % multiple: no
+# % description: Layer ID for the release area on the feature service.
+# %end
+
+# %option
+# % key: entrainment_area_layer_id
+# % type: string
+# % required: yes
+# % multiple: no
+# % description: Layer ID for the entrainment area on the feature service.
+# %end
+
+# %option
+# % key: resistance_area_layer_id
+# % type: string
+# % required: yes
+# % multiple: no
+# % description: Layer ID for the resistance area on the feature service.
+# %end
+
 # %option G_OPT_R_ELEV
 # %end
 
@@ -143,51 +175,51 @@ def write_avaframe_config(
             .split("\n")
         ):
             # Replace with given values
-            #ResitanceArea
+            #ReleaseArea
             if line.startswith("frictModel =") and input_config["friction_model"]:
-                line = f"frictModel = {input_config["friction_model"]}"
+                line = f"frictModel = {input_config['friction_model']}"
             elif line.startswith("rho =") and input_config["rho_kgPerCubicM"]:
-                line = f"rho = {input_config["rho_kgPerCubicM"]}"
+                line = f"rho = {input_config['rho_kgPerCubicM']}"
             elif line.startswith("cpIce =") and input_config["cpIce_joulePerKg"]:
-                line = f"cpIce = {input_config["cpIce_joulePerKg"]}"
+                line = f"cpIce = {input_config['cpIce_joulePerKg']}"
             elif line.startswith("TIni =") and input_config["tIni_degreeCelcius"]:
-                line = f"TIni = {input_config["tIni_degreeCelcius"]}"
+                line = f"TIni = {input_config['tIni_degreeCelcius']}"
             elif line.startswith("entTempRef =") and input_config["entTemp_degreeCelcius"]:
-                line = f"entTempRef = {input_config["entTemp_degreeCelcius"]}"
+                line = f"entTempRef = {input_config['entTemp_degreeCelcius']}"
             elif line.startswith("enthRef =") and input_config["enthalpy_joulePerKg"]:
-                line = f"enthRef = {input_config["enthalpy_joulePerKg"]}"
+                line = f"enthRef = {input_config['enthalpy_joulePerKg']}"
             #Mangler mu, xsi, tau0, rs0, kappa, r, b
             
             #EntrainmentArea
-            elif line.startswith("rhoEnt =") and input_config["rhoEnt_kgPerCubicM"]:
-                line = f"rhoEnt = {input_config["rhoEnt_kgPerCubicM"]}"
-            elif line.startswith("entEroEnergy =") and input_config["entEro_joulePerKg"]:
-                line = f"entEroEnergy = {input_config["entEro_joulePerKg"]}"
-            elif line.startswith("entShearResistance =") and input_config["entShear_joulePerSqM"]:
-                line = f"entShearResistance = {input_config["entShear_joulePerSqM"]}"
-            elif line.startswith("entDefResistance =") and input_config["entDef_joulePerKg"]:
-                line = f"entDefResistance = {input_config["entDef_joulePerKg"]}"
-            elif line.startswith("entThFromShp ="):
+            elif line.startswith("rhoEnt =") and "rhoEnt_kgPerCubicM" in input_config and input_config["rhoEnt_kgPerCubicM"]:
+                line = f"rhoEnt = {input_config['rhoEnt_kgPerCubicM']}"
+            elif line.startswith("entEroEnergy =") and "entEro_joulePerKg" in input_config and input_config["entEro_joulePerKg"]:
+                line = f"entEroEnergy = {input_config['entEro_joulePerKg']}"
+            elif line.startswith("entShearResistance =") and "entShear_joulePerSqM" in input_config and input_config["entShear_joulePerSqM"]:
+                line = f"entShearResistance = {input_config['entShear_joulePerSqM']}"
+            elif line.startswith("entDefResistance =") and "entDef_joulePerKg" in input_config and input_config["entDef_joulePerKg"]:
+                line = f"entDefResistance = {input_config['entDef_joulePerKg']}"
+            elif line.startswith("entThFromShp =") and "entTh_m" in input_config and input_config["entTh_m"]:
                 line = "entThFromShp = False"
-            elif line.startswith("entTh =") and input_config["entTh_m"]:
-                line = f"entTh = {input_config["entTh_m"]}"
+            elif line.startswith("entTh =") and "entTh_m" in input_config and input_config["entTh_m"]:
+                line = f"entTh = {input_config['entTh_m']}"
 
             #Resistance
-            elif line.startswith("hRes =") and input_config["hRes_m"]:
-                line = f"hRes = {input_config["hRes_m"]}"
-            elif line.startswith("cw =") and input_config["cw"]:
-                line = f"cw = {input_config["cw"]}"
-            elif line.startswith("dRes =") and input_config["dRes_m"]:
-                line = f"dRes = {input_config["dRes_m"]}"
-            elif line.startswith("sres =") and input_config["sRes_m"]:
-                line = f"sres = {input_config["sRes_m"]}"
+            elif line.startswith("hRes =") and "hRes_m" in input_config and input_config["hRes_m"]:
+                line = f"hRes = {input_config['hRes_m']}"
+            elif line.startswith("cw =") and "cw" in input_config and input_config["cw"]:
+                line = f"cw = {input_config['cw']}"
+            elif line.startswith("dRes =") and "dRes_m" in input_config and input_config["dRes_m"]:
+                line = f"dRes = {input_config['dRes_m']}"
+            elif line.startswith("sres =") and "sRes_m" in input_config and input_config["sRes_m"]:
+                line = f"sres = {input_config['sRes_m']}"
             
             #https://github.com/avaframe/AvaFrame/blob/master/avaframe/com1DFA/com1DFACfg.ini
 
             elif line.startswith("meshCellSize =") and input_config["mesh_cell_size"]:
-                line = f"meshCellSize = {input_config["mesh_cell_size"]}"
+                line = f"meshCellSize = {input_config['mesh_cell_size']}"
             elif line.startswith("sphKernelRadius =") and input_config["mesh_cell_size"]:
-                line = f"sphKernelRadius = {input_config["mesh_cell_size"]}"
+                line = f"sphKernelRadius = {input_config['mesh_cell_size']}"
             elif line.startswith("relThFromShp ="):
                 line = "relThFromShp = False"
             elif line.startswith("relTh ="):
@@ -316,6 +348,39 @@ def run_com1dfa(thickness, config_dict=None):
         str(avalanche_dir), config_dict["main"], cfgFile=cfg_ini_file
     )
 
+    def get_shape_file_and_config(area_type):
+        if area_type == "entrainment":
+            layer_id = options["entrainment_area_layer_id"]
+            subfolder = "ENT"
+        elif area_tpe == "resistance":
+            layer_id = options["resistance_area_layer_id"]
+            subfolder = "RES"
+        else:
+            return 0
+
+        area = "{url}/{layer_id}/query?where=id+%3D+{id}&outFields=*&f=json".format(url = options["url"], layer_id = layer_id, id = options["id"])
+        ogr_dataset_area = gdal.OpenEx(entrainment_area, gdal.OF_VECTOR)
+        # actinia requires input URLs to be quoted if eg & is used
+        if not ogr_dataset_area:
+            ogr_dataset_area = gdal.OpenEx(
+                parse.unquote(area), gdal.OF_VECTOR
+            )
+        layer_area = ogr_dataset_area.GetLayerByIndex(0)
+        config_area = dict(layer_area.GetNextFeature())  # first feature contains config attributes
+        entries_to_remove = ('OBJECTID', 'Id', 'Shape__Area', 'Shape__Length')
+        for key in entries_to_remove:
+            if key in config_area:
+                del config_area[key]
+        config.update(config_area)
+
+        gdal.VectorTranslate(
+        str(avalanche_dir / subfolder / f"{release_name}_{area_type}_area.shp"),
+        ogr_dataset_area,
+        options='-f "ESRI Shapefile"',
+        )
+
+        return 0
+
 
 def main():
     """Run com1DFA simulation from Avaframe with selected configuration"""
@@ -345,7 +410,7 @@ def main():
             )
 
     # Get release area
-    release_area = "https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer/0/query?where=id+%3D+{id}&outFields=*&f=json".format(id = options["id"])
+    release_area = "{url}/{layerId}/query?where=id+%3D+{id}&outFields=*&f=json".format(url = options["url"], layerId = options["release_area_layer_id"], id = options["id"])
     ogr_dataset_release_area = gdal.OpenEx(release_area, gdal.OF_VECTOR)
 
     # actinia requires input URLs to be quoted if eg & is used
@@ -359,58 +424,62 @@ def main():
 
     # Get entrainment area
     if flags["e"]:
-        entrainment_area = "https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer/1/query?where=id+%3D+{id}&outFields=*&f=json".format(id = options["id"])
-        ogr_dataset_entrainment_area = gdal.OpenEx(entrainment_area, gdal.OF_VECTOR)
-        # actinia requires input URLs to be quoted if eg & is used
-        if not ogr_dataset_entrainment_area:
-            ogr_dataset_entrainment_area = gdal.OpenEx(
-                parse.unquote(entrainment_area), gdal.OF_VECTOR
-            )
-        layer_entrainment_area = ogr_dataset_entrainment_area.GetLayerByIndex(0)
-        config_entrainment_area = dict(layer_entrainment_area.GetNextFeature())  # first feature contains config attributes
-        entries_to_remove = ('OBJECTID', 'Id', 'Shape__Area', 'Shape__Length')
-        for key in entries_to_remove:
-            if key in config_entrainment_area:
-                del config_entrainment_area[key]
-        config.update(config_entrainment_area)
+        get_shape_file_and_config("entrainment")
+        # entrainment_area = "{url}/{layerId}/query?where=id+%3D+{id}&outFields=*&f=json".format(url = options["url"], layerId = options["entrainment_area_layer_id"], id = options["id"])
+        # ogr_dataset_entrainment_area = gdal.OpenEx(entrainment_area, gdal.OF_VECTOR)
+        # # actinia requires input URLs to be quoted if eg & is used
+        # if not ogr_dataset_entrainment_area:
+        #     ogr_dataset_entrainment_area = gdal.OpenEx(
+        #         parse.unquote(entrainment_area), gdal.OF_VECTOR
+        #     )
+        # layer_entrainment_area = ogr_dataset_entrainment_area.GetLayerByIndex(0)
+        # config_entrainment_area = dict(layer_entrainment_area.GetNextFeature())  # first feature contains config attributes
+        # entries_to_remove = ('OBJECTID', 'Id', 'Shape__Area', 'Shape__Length')
+        # for key in entries_to_remove:
+        #     if key in config_entrainment_area:
+        #         del config_entrainment_area[key]
+        # config.update(config_entrainment_area)
 
-        gdal.VectorTranslate(
-        str(avalanche_dir / f"{release_name}_entrainment_area.shp"),
-        ogr_dataset_entrainment_area,
-        options='-f "ESRI Shapefile"',
-    )
+        # gdal.VectorTranslate(
+        # str(avalanche_dir / "ENT" / f"{release_name}_entrainment_area.shp"),
+        # ogr_dataset_entrainment_area,
+        # options='-f "ESRI Shapefile"',
+        # )
 
 
     # Get resistance area
     if flags["r"]:
-        resistance_area = "https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer/2/query?where=id+%3D+{id}&outFields=*&f=json".format(id = options["id"])
-        ogr_dataset_resistance_area = gdal.OpenEx(resistance_area, gdal.OF_VECTOR)
-        # actinia requires input URLs to be quoted if eg & is used
-        if not ogr_dataset_resistance_area:
-            ogr_dataset_resistance_area = gdal.OpenEx(
-                parse.unquote(resistance_area), gdal.OF_VECTOR
-            )
-        layer_resistance_area = ogr_dataset_resistance_area.GetLayerByIndex(0)
-        config_resistance_area = dict(layer_resistance_area.GetNextFeature())  # first feature contains config attributes
-        entries_to_remove = ('OBJECTID', 'Id', 'Shape__Area', 'Shape__Length')
-        for key in entries_to_remove:
-            if key in config_resistance_area:
-                del config_resistance_area[key]
-        config.update(config_resistance_area)
+        get_shape_file_and_config("resistance")
+    #     resistance_area = "{url}/{layerId}/query?where=id+%3D+{id}&outFields=*&f=json".format(url = options["url"], layerId = options["resistance_area_layer_id"], id = options["id"])
+    #     ogr_dataset_resistance_area = gdal.OpenEx(resistance_area, gdal.OF_VECTOR)
+    #     # actinia requires input URLs to be quoted if eg & is used
+    #     if not ogr_dataset_resistance_area:
+    #         ogr_dataset_resistance_area = gdal.OpenEx(
+    #             parse.unquote(resistance_area), gdal.OF_VECTOR
+    #         )
+    #     layer_resistance_area = ogr_dataset_resistance_area.GetLayerByIndex(0)
+    #     config_resistance_area = dict(layer_resistance_area.GetNextFeature())  # first feature contains config attributes
+    #     entries_to_remove = ('OBJECTID', 'Id', 'Shape__Area', 'Shape__Length')
+    #     for key in entries_to_remove:
+    #         if key in config_resistance_area:
+    #             del config_resistance_area[key]
+    #     config.update(config_resistance_area)
 
-        gdal.VectorTranslate(
-        str(avalanche_dir / f"{release_name}_resistance_area.shp"),
-        ogr_dataset_resistance_area,
-        options='-f "ESRI Shapefile"',
-    )
+    #     gdal.VectorTranslate(
+    #     str(avalanche_dir / "RES" /f"{release_name}_resistance_area.shp"),
+    #     ogr_dataset_resistance_area,
+    #     options='-f "ESRI Shapefile"',
+    #     )
 
     # Currently hardcoded settings
     if config["multipleRelTh_m"]:
         release_thicknesses = [
-            for snow_depth in config["multipleRelTh_m"].split(",")
-        ]
+            float(RelTh)
+            for RelTh in config["multipleRelTh_m"].split(",")
+            ]
     else:
         release_thicknesses = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
+
     release_name = f"com1DFA_v2_{config['id']}"
 
     # Define directory for simulations

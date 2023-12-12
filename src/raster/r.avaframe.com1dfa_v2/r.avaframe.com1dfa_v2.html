@@ -1,0 +1,87 @@
+<h2>DESCRIPTION</h2>
+
+<em>r.avaframe.com1dfa</em> runs Dense flow avalanche kernel (com1DFA)
+simulations using the Open Avalanche Framework
+<a href="https://github.com/avaframe/AvaFrame">AvaFrame</a>.
+
+<p>
+Requred input are an OGR readable vector data source for the <em>release_area</em>,
+and a Digital Elevation Model <em>elevation</em>.
+<p>
+Parameters for the simulation need to be provided in the attribute table of the
+<em>release_area</em> data source, according to the table below.
+
+Currently, the following parameters for com1DFA simulations are supported:
+<table>
+  <tr>
+    <th>com1DFA parameter name</th>
+    <th>Column name in attribute table</th>
+    <th>Parameter description</th>
+  </tr>
+  <tr>
+    <td>relTh</td>
+    <td>snowDepth_cm</td>
+    <td>Release thickness</td>
+  </tr>
+  <tr>
+    <td>rho</td>
+    <td>rho_kgPerSqM</td>
+    <td>Density of snow in <var>kg</var>/<var>m</var><sup>3</sup></td>
+  </tr>
+  <tr>
+    <td>rhoEnt</td>
+    <td>rhoEnt_kgPerSqM</td>
+    <td>Density of entrained snow in <var>kg</var>/<var>m</var><sup>3</sup></td>
+  </tr>
+  <tr>
+    <td>frictModel</td>
+    <td>frictModel</td>
+    <td>Friction models can be samosAT (1), Coulomb (2), and Voellmy (2)</td>
+  </tr>
+</table>
+
+The ASCII-raster files resulting from the AvaFrame simulations are either
+linked to the current mapset (if the <em>l-flag</em> is set),
+otherwise they ar imported into the GRASS GIS database.
+<p>
+An imagery group is created where thickness levels are stored as bands.
+
+<h2>NOTES</h2>
+<p>
+This module sets the computational region to the release area with a
+user-defined <em>buffer</em> around, aligned to the input elevation model.
+<p>
+It assumes that the projection of the input OGR data source matches
+with the projection of the current location.
+<p>
+Parallel processing is supported, depending on the number of specified
+parallel processes (<em>nprocs</em>) and the number of realse thickness
+values to simulate for.
+<p>
+
+<h2>REFERENCES</h2>
+<a href="https://docs.avaframe.org/en/latest/theoryCom1DFA.html">com1DFA DFA-Kernel theory</a><br>
+<a href="https://docs.avaframe.org/en/latest/DFAnumerics.html">com1DFA DFA-Kernel numerics</a><br>
+<a href="https://zenodo.org/record/7189007#.Y6RXlNWZND8">AvaFrame: Version 1.3 on Zenodo</a>
+
+<h2>EXAMPLES</h2>
+
+<h3>Run com1DFA simulations for a release area registered in NVE database</h3>
+
+<div class="code"><pre>
+r.avaframe.com1dfa --o -l elevation="DTM_10m@DTM" nprocs=8 format="csv" buffer=1500 \
+    release_area="https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmSamosAT/MapServer/0/query?where=objectid+%3D+1&amp;outFields=*&amp;f=json" \
+    ppr="ppr" pft="pft" pfv="pfv"
+
+</pre></div>
+
+<h2>SEE ALSO</h2>
+
+<em>
+<a href="r.external.html">r.external</a>,
+<a href="i.group.html">i.group</a>,
+</em>
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath
