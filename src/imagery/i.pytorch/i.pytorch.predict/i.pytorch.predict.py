@@ -89,6 +89,13 @@
 # % description: Use CPU as device for prediction, default is use cuda (GPU) if detected
 # %end
 
+
+# To do:
+# optimize tiling (shape) to minimize number of tiles and overlap between them within max size
+# Handle divisible by x (e.g. 8) for tile size to avoid:
+#    RuntimeError: Sizes of tensors must match except in dimension 1
+
+
 import atexit
 import os
 import sys
@@ -263,27 +270,27 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
     """
     gs.verbose(_("Setting up tiling ..."))
     reg = region or gs.region()
-    core_reg = gs.parse_command(
-        "g.region", flags="ug", grow=-overlap, overwrite=True, quiet=True
-    )
-    tile_cols_n = np.ceil(float(core_reg["cols"]) / (tile_cols - 2.0 * overlap)).astype(
-        int
-    )
-    tile_rows_n = np.ceil(float(core_reg["rows"]) / (tile_rows - 2.0 * overlap)).astype(
-        int
-    )
+    env = os.environ.copy()
+    env["GRASS_REGION"] = gs.region_env(grow=overlap)
+    reg_buffer = gs.region(env=env)
+    # gs.parse_command(
+    #     "g.region", flags="ug", grow=overlap, overwrite=True, quiet=True
+    # )
+
+    tile_cols_n = np.ceil(float(reg_buffer["cols"]) / tile_cols).astype(int)
+    tile_rows_n = np.ceil(float(reg_buffer["rows"]) / tile_rows).astype(int)
+
     if tile_rows_n * tile_cols_n == 1:
-        return {1: {"inner": reg, "outer": reg}}
-    # env = os.environ.copy()
-    # env["GRASS_REGION"] = gs.region_env(grow=-overlap)
+        reg["cat"] = 1
+        return {1: {"inner": reg, "outer": reg_buffer}}
 
     gs.run_command(
         "v.mkgrid",
         quiet=True,
-        grid=[tile_cols_n, tile_rows_n],
+        grid=[tile_rows_n, tile_cols_n],
         map=TMP_NAME,
         overwrite=True,
-        # env=env,
+        env=env,
     )
     tile_setup = np.genfromtxt(
         gs.read_command(
@@ -296,6 +303,7 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
         delimiter="|",
         dtype=None,
     )
+
     dtype_names = tile_setup.dtype.names
     tiling_dict = {}
     for tile_coords in tile_setup:
@@ -307,16 +315,32 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
             {dtype_name: tile_coords[dtype_name] for dtype_name in dtype_names},
             overlap=overlap,
         )
-        if tile_bbox["n"] >= reg["n"]:
+        if tile_bbox["n"] >= reg_buffer["n"]:
             # Top row
-            tile_bbox["n"] = reg["n"]
-            tile_bbox["s"] = reg["n"] - (tile_rows * reg["nsres"])
+            tile_bbox["n"] = reg_buffer["n"]
+            tile_bbox["s"] = np.max(
+                [reg_buffer["n"] - (tile_rows * reg_buffer["nsres"]), reg_buffer["s"]]
+            )
             inner_tile_bbox["n"] = reg["n"]
-        elif tile_bbox["s"] <= reg["s"]:
+            inner_tile_bbox["s"] = np.max(
+                [
+                    reg_buffer["n"] - ((tile_rows * reg_buffer["nsres"]) - overlap),
+                    reg["s"],
+                ]
+            )
+        elif tile_bbox["s"] <= reg_buffer["s"]:
             # Bottom row
-            tile_bbox["s"] = reg["s"]
-            tile_bbox["n"] = reg["s"] + (tile_rows * reg["nsres"])
+            tile_bbox["s"] = reg_buffer["s"]
+            tile_bbox["n"] = np.min(
+                [reg_buffer["s"] + (tile_rows * reg_buffer["nsres"]), reg_buffer["n"]]
+            )
             inner_tile_bbox["s"] = reg["s"]
+            inner_tile_bbox["n"] = np.min(
+                [
+                    reg_buffer["s"] + ((tile_rows * reg_buffer["nsres"]) - overlap),
+                    reg["n"],
+                ]
+            )
         else:
             missing_rows = tile_rows - (tile_bbox["n"] - tile_bbox["s"]) / reg["nsres"]
             if missing_rows % 2 > 0.0:
@@ -329,16 +353,32 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
         inner_tile_bbox["rows"] = int(
             (inner_tile_bbox["n"] - inner_tile_bbox["s"]) / reg["nsres"]
         )
-        if tile_bbox["e"] >= reg["e"]:
+        if tile_bbox["e"] >= reg_buffer["e"]:
             # Right column
-            tile_bbox["e"] = reg["e"]
-            tile_bbox["w"] = reg["e"] - (tile_cols * reg["ewres"])
+            tile_bbox["e"] = reg_buffer["e"]
+            tile_bbox["w"] = np.max(
+                [reg_buffer["e"] - (tile_cols * reg_buffer["ewres"]), reg_buffer["w"]]
+            )
             inner_tile_bbox["e"] = reg["e"]
-        elif tile_bbox["w"] <= reg["w"]:
+            inner_tile_bbox["w"] = np.max(
+                [
+                    reg_buffer["e"] - ((tile_cols * reg_buffer["ewres"]) - overlap),
+                    reg["w"],
+                ]
+            )
+        elif tile_bbox["w"] <= reg_buffer["w"]:
             # Left column
-            tile_bbox["w"] = reg["w"]
-            tile_bbox["e"] = reg["w"] + (tile_cols * reg["ewres"])
+            tile_bbox["w"] = reg_buffer["w"]
+            tile_bbox["e"] = np.min(
+                [reg_buffer["w"] + (tile_cols * reg_buffer["ewres"]), reg_buffer["e"]]
+            )
             inner_tile_bbox["w"] = reg["w"]
+            inner_tile_bbox["e"] = np.min(
+                [
+                    reg_buffer["w"] + ((tile_cols * reg_buffer["ewres"]) - overlap),
+                    reg["e"],
+                ]
+            )
         else:
             missing_cols = tile_cols - (tile_bbox["e"] - tile_bbox["w"]) / reg["ewres"]
             if missing_cols % 2 > 0.0:
@@ -354,6 +394,7 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
         tiling_dict[tile_bbox["cat"]] = {}
         tiling_dict[tile_bbox["cat"]]["inner"] = inner_tile_bbox
         tiling_dict[tile_bbox["cat"]]["outer"] = tile_bbox
+
     return tiling_dict
 
 
@@ -414,7 +455,6 @@ def write_result(np_array, map_name, bbox):
     }
     pygrass_region = Region()
     raster_region = deepcopy(pygrass_region)
-    # raster_region.read(force_read=True)
     raster_region.set_bbox(Bbox(bbox["n"], bbox["s"], bbox["e"], bbox["w"]))
     raster_region.set_raster_region()
 
@@ -427,7 +467,6 @@ def write_result(np_array, map_name, bbox):
         s=bbox["s"],
         nsres=bbox["nsres"],
         ewres=bbox["ewres"],
-        # flags="g",
     )
 
     numpy2raster(np_array, dtype2grass[np_array.dtype.name], map_name, overwrite=True)
@@ -496,7 +535,7 @@ def patch_results(output_map, output_band, dl_config=None, nprocs=1):
             input=input_maps,
             output=output_map_name,
             overwrite=gs.overwrite(),
-            verbose=True,
+            quiet=True,
             nprocs=nprocs,
         )
     gs.raster_history(output_map_name, overwrite=True)
@@ -511,6 +550,7 @@ def patch_results(output_map, output_band, dl_config=None, nprocs=1):
         description=output_band_config["description"],
         semantic_label=output_band_config["semantic_label"],
         overwrite=True,
+        quiet=True,
     )
 
 
@@ -587,7 +627,13 @@ def main():
 
 def cleanup():
     """Remove all temporary data"""
-    gs.run_command("g.remove", type="raster", pattern=f"{TMP_NAME}*")
+    gs.run_command(
+        "g.remove",
+        type=["raster", "vector"],
+        pattern=f"{TMP_NAME}*",
+        flags="f",
+        quiet=True,
+    )
 
 
 if __name__ == "__main__":
