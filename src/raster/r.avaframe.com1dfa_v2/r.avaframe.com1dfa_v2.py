@@ -159,12 +159,7 @@ import grass.script as gs
 def write_avaframe_config(
     config_file_path,
     input_config,
-    # rho=None,
-    # rho_ent=None,
-    # mesh_cell_size=None,
-    # friction_model="samosAT",
     release_thickness="0.5",
-    # release_thickness_range_variation="+3.5$8",
 ):
     """Write Avaframe config file"""
     with open(config_file_path, "w", encoding="utf8") as cfg_file:
@@ -176,8 +171,8 @@ def write_avaframe_config(
         ):
             # Replace with given values
             #ReleaseArea
-            if line.startswith("frictModel =") and input_config["friction_model"]:
-                line = f"frictModel = {input_config['friction_model']}"
+            if line.startswith("frictModel =") and input_config["frictionModel"]:
+                line = f"frictModel = {input_config['frictionModel']}"
             elif line.startswith("rho =") and input_config["rho_kgPerCubicM"]:
                 line = f"rho = {input_config['rho_kgPerCubicM']}"
             elif line.startswith("cpIce =") and input_config["cpIce_joulePerKg"]:
@@ -306,6 +301,8 @@ def run_com1dfa(thickness, config_dict=None):
     avalanche_base_dir = config_dict["avalanche_dir"]
     avalanche_dir = avalanche_base_dir / gs.tempname(12)
     config_dict["main"]["MAIN"]["avalancheDir"] = str(avalanche_dir)
+    config_dict["main"]["MAIN"]["nCPU"] = config_dict["nCPU"]
+    
 
     # Create simulation directory
     (avalanche_dir).mkdir(mode=0o777, parents=True, exist_ok=True)
@@ -337,42 +334,36 @@ def run_com1dfa(thickness, config_dict=None):
 
     # call com1DFA and perform simulations
     return com1DFA.com1DFAMain(
-        str(avalanche_dir), config_dict["main"], cfgFile=cfg_ini_file
+        config_dict["main"], cfgInfo=cfg_ini_file
     )
 
-    def get_shape_file_and_config(area_type):
-        if area_type == "entrainment":
-            layer_id = options["entrainment_area_layer_id"]
-            subfolder = "ENT"
-        elif area_tpe == "resistance":
-            layer_id = options["resistance_area_layer_id"]
-            subfolder = "RES"
-        else:
-            return 0
-
-        area = "{url}/{layer_id}/query?where=id+%3D+{id}&outFields=*&f=json".format(url = options["url"], layer_id = layer_id, id = options["id"])
-        ogr_dataset_area = gdal.OpenEx(entrainment_area, gdal.OF_VECTOR)
-        # actinia requires input URLs to be quoted if eg & is used
-        if not ogr_dataset_area:
-            ogr_dataset_area = gdal.OpenEx(
-                parse.unquote(area), gdal.OF_VECTOR
-            )
-        layer_area = ogr_dataset_area.GetLayerByIndex(0)
-        config_area = dict(layer_area.GetNextFeature())  # first feature contains config attributes
-        entries_to_remove = ('OBJECTID', 'Id', 'Shape__Area', 'Shape__Length')
-        for key in entries_to_remove:
-            if key in config_area:
-                del config_area[key]
-        config.update(config_area)
-
-        gdal.VectorTranslate(
-        str(avalanche_dir / subfolder / f"{release_name}_{area_type}_area.shp"),
-        ogr_dataset_area,
-        options='-f "ESRI Shapefile"',
+def get_shape_file_and_config(area_type, module_config, module_options):
+    """
+    Allowed area_type "RES" and "ENT"
+    See avaframe documentation
+    """
+    area = "{url}/{layer_id}/query?where=id+%3D+{id}&outFields=*&f=json".format(url = module_options["url"], layer_id = module_options[{"ENT": "entrainment_area_layer_id",  "RES": "resistance_area_layer_id"}[area_type]], id = module_options["id"])
+    ogr_dataset_area = gdal.OpenEx(area, gdal.OF_VECTOR)
+    # actinia requires input URLs to be quoted if eg & is used
+    if not ogr_dataset_area:
+        ogr_dataset_area = gdal.OpenEx(
+            parse.unquote(area), gdal.OF_VECTOR
         )
+    layer_area = ogr_dataset_area.GetLayerByIndex(0)
+    config_area = dict(layer_area.GetNextFeature())  # first feature contains config attributes
+    entries_to_remove = ('OBJECTID', 'Id', 'Shape__Area', 'Shape__Length')
+    for key in entries_to_remove:
+        if key in config_area:
+            del config_area[key]
+    module_config.update(config_area)
+    (module_config["avalanche_dir"] / area_type).mkdir(parents=True, exist_ok = True)
+    gdal.VectorTranslate(
+    str(module_config["avalanche_dir"] / area_type / f"{module_config['release_name']}.shp"),
+    ogr_dataset_area,
+    options='-f "ESRI Shapefile"',
+    )
 
-        return 0
-
+    return module_config
 
 def main():
     """Run com1DFA simulation from Avaframe with selected configuration"""
@@ -407,15 +398,7 @@ def main():
         )
     layer_release_area = ogr_dataset_release_area.GetLayerByIndex(0)
     release_extent = layer_release_area.GetExtent()  # Extent is west, east, south, north
-    config = dict(layer.GetNextFeature())  # first feature contains config attributes
-
-    # Get entrainment area
-    if flags["e"]:
-        get_shape_file_and_config("entrainment")
-
-    # Get resistance area
-    if flags["r"]:
-        get_shape_file_and_config("resistance")
+    config = dict(layer_release_area.GetNextFeature())  # first feature contains config attributes
 
     # Currently hardcoded settings
     if config["multipleRelTh_m"]:
@@ -426,7 +409,7 @@ def main():
     else:
         release_thicknesses = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
 
-    release_name = f"com1DFA_v2_{config['id']}"
+    release_name = f"com1DFAV2{config['id']}"
 
     # Define directory for simulations
     avalanche_dir = Path(gs.tempfile(create=False))
@@ -458,12 +441,22 @@ def main():
 
     config["main"] = config_main
     config["release_name"] = release_name
+    config["nCPU"] = options["nprocs"]
+
+     # Get entrainment area
+    if flags["e"]:
+        config = get_shape_file_and_config("ENT", config, options)
+       
+
+    # Get resistance area
+    if flags["r"]:
+        config = get_shape_file_and_config("RES", config, options)
 
     run_com1dfa_thickness = partial(run_com1dfa, config_dict=config)
 
     # Write release area to shape
     gdal.VectorTranslate(
-        str(avalanche_dir / f"{release_name}_release_area.shp"),
+        str(avalanche_dir / f"{release_name}.shp"),
         ogr_dataset_release_area,
         options='-f "ESRI Shapefile"',
     )
@@ -479,13 +472,12 @@ def main():
         verbose=True,
     )
 
-    with Pool(min(int(options["nprocs"]), len(release_thicknesses))) as pool:
-        com1dfa_results_list = pool.map(run_com1dfa_thickness, release_thicknesses)
+    com1dfa_results_list = [run_com1dfa_thickness(thickness) for thickness in release_thicknesses]
 
     com1dfa_results_pd = pd.concat(
         [com1dfa_results[3] for com1dfa_results in com1dfa_results_list]
     )
-
+  
     if options["format"]:
 
         if options["format"] == "json":
@@ -509,22 +501,6 @@ def main():
             pool.map(link_result, result_files)
         else:
             pool.map(import_result, result_files)
-
-    # Create imagery group from results
-    if not options["export_directory"]:
-        for result_type in ["ppr", "pft", "pfv"]:
-            Module(
-                "i.group",
-                group=result_type,
-                subgroup=result_type,
-                input=",".join(
-                    [
-                        result_file.stem
-                        for result_file in result_files
-                        if result_file.stem.endswith(result_type)
-                    ]
-                ),
-            )
 
 
 if __name__ == "__main__":

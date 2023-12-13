@@ -29,7 +29,7 @@ class TestAggregationAbsolute(TestCase):
             overwrite=True,
         )
 
-        cls.runModule("g.region", rasters="DTM_10m", align="DTM_10m")
+        cls.runModule("g.region", raster="DTM_10m", align="DTM_10m")
 
     @classmethod
     def tearDownClass(cls):
@@ -43,7 +43,7 @@ class TestAggregationAbsolute(TestCase):
     def test_reclass_with_null_maps(self):
         """Reclassify and register also maps with only NoData"""
         self.assertModule(
-            "r.avaframe.com1DFA_v2",
+            "r.avaframe.com1dfa_v2",
             flags="er",
             id="1",
             url="https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer",
@@ -56,16 +56,7 @@ class TestAggregationAbsolute(TestCase):
             ppr="ppr",
             pft="pft",
             pfv="pfv",
-            overwrite=True,
         )
-
-        for result_group in []:
-            info = SimpleModule(
-                "i.group",
-                flags="g",
-                input=result_group,
-            ).run()
-            print(info.outputs.stdout)
 
 
 if __name__ == "__main__":
