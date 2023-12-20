@@ -1,4 +1,5 @@
-"""Test t.rast.reclass
+"""Test r.avaframe.comdfa_v2
+
 
 (C) 2022 by the GRASS GIS Development Team
 This program is free software under the GNU General Public
