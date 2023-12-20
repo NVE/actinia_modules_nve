@@ -17,7 +17,6 @@ from grass.pygrass.modules import Module
 import grass.script as gs
 
 
-
 class TestAvaframeV2(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -45,7 +44,7 @@ class TestAvaframeV2(TestCase):
         pass
 
     def test_avaframe_v2(self):
-        """Test avaframe v2 with entrainment, resistance and 
+        """Test avaframe v2 with entrainment, resistance and
         multiple release thicknesses"""
         avaframe_run = gs.start_command(
             "r.avaframe.com1dfa_v2",
@@ -58,9 +57,9 @@ class TestAvaframeV2(TestCase):
             elevation="DTM_10m",
             buffer=3000,
             nprocs=2,
-            #ppr="ppr",
-            #pft="pft",
-            #pfv="pfv",
+            # ppr="ppr",
+            # pft="pft",
+            # pfv="pfv",
             export_directory="./",
             stderr=PIPE,
             stdout=PIPE,
