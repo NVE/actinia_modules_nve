@@ -173,7 +173,7 @@ def write_avaframe_config(
             .split("\n")
         ):
             # Replace with given values
-            #ReleaseArea
+            # ReleaseArea
             if line.startswith("frictModel =") and input_config["frictionModel"]:
                 line = f"frictModel = {input_config['frictionModel']}"
             elif line.startswith("rho =") and input_config["rho_kgPerCubicM"]:
@@ -182,47 +182,92 @@ def write_avaframe_config(
                 line = f"cpIce = {input_config['cpIce_joulePerKg']}"
             elif line.startswith("TIni =") and input_config["tIni_degreeCelcius"]:
                 line = f"TIni = {input_config['tIni_degreeCelcius']}"
-            elif line.startswith("entTempRef =") and input_config["entTemp_degreeCelcius"]:
+            elif (
+                line.startswith("entTempRef =")
+                and input_config["entTemp_degreeCelcius"]
+            ):
                 line = f"entTempRef = {input_config['entTemp_degreeCelcius']}"
             elif line.startswith("enthRef =") and input_config["enthalpy_joulePerKg"]:
                 line = f"enthRef = {input_config['enthalpy_joulePerKg']}"
-            #Mangler mu, xsi, tau0, rs0, kappa, r, b
-            
-            #EntrainmentArea
-            elif line.startswith("rhoEnt =") and "rhoEnt_kgPerCubicM" in input_config and input_config["rhoEnt_kgPerCubicM"]:
+            # Mangler mu, xsi, tau0, rs0, kappa, r, b
+
+            # EntrainmentArea
+            elif (
+                line.startswith("rhoEnt =")
+                and "rhoEnt_kgPerCubicM" in input_config
+                and input_config["rhoEnt_kgPerCubicM"]
+            ):
                 line = f"rhoEnt = {input_config['rhoEnt_kgPerCubicM']}"
-            elif line.startswith("entEroEnergy =") and "entEro_joulePerKg" in input_config and input_config["entEro_joulePerKg"]:
+            elif (
+                line.startswith("entEroEnergy =")
+                and "entEro_joulePerKg" in input_config
+                and input_config["entEro_joulePerKg"]
+            ):
                 line = f"entEroEnergy = {input_config['entEro_joulePerKg']}"
-            elif line.startswith("entShearResistance =") and "entShear_joulePerSqM" in input_config and input_config["entShear_joulePerSqM"]:
+            elif (
+                line.startswith("entShearResistance =")
+                and "entShear_joulePerSqM" in input_config
+                and input_config["entShear_joulePerSqM"]
+            ):
                 line = f"entShearResistance = {input_config['entShear_joulePerSqM']}"
-            elif line.startswith("entDefResistance =") and "entDef_joulePerKg" in input_config and input_config["entDef_joulePerKg"]:
+            elif (
+                line.startswith("entDefResistance =")
+                and "entDef_joulePerKg" in input_config
+                and input_config["entDef_joulePerKg"]
+            ):
                 line = f"entDefResistance = {input_config['entDef_joulePerKg']}"
-            elif line.startswith("entThFromShp =") and "entTh_m" in input_config and input_config["entTh_m"]:
+            elif (
+                line.startswith("entThFromShp =")
+                and "entTh_m" in input_config
+                and input_config["entTh_m"]
+            ):
                 line = "entThFromShp = False"
-            elif line.startswith("entTh =") and "entTh_m" in input_config and input_config["entTh_m"]:
+            elif (
+                line.startswith("entTh =")
+                and "entTh_m" in input_config
+                and input_config["entTh_m"]
+            ):
                 line = f"entTh = {input_config['entTh_m']}"
 
-            #Resistance
-            elif line.startswith("hRes =") and "hRes_m" in input_config and input_config["hRes_m"]:
+            # Resistance
+            elif (
+                line.startswith("hRes =")
+                and "hRes_m" in input_config
+                and input_config["hRes_m"]
+            ):
                 line = f"hRes = {input_config['hRes_m']}"
-            elif line.startswith("cw =") and "cw" in input_config and input_config["cw"]:
+            elif (
+                line.startswith("cw =") and "cw" in input_config and input_config["cw"]
+            ):
                 line = f"cw = {input_config['cw']}"
-            elif line.startswith("dRes =") and "dRes_m" in input_config and input_config["dRes_m"]:
+            elif (
+                line.startswith("dRes =")
+                and "dRes_m" in input_config
+                and input_config["dRes_m"]
+            ):
                 line = f"dRes = {input_config['dRes_m']}"
-            elif line.startswith("sres =") and "sRes_m" in input_config and input_config["sRes_m"]:
+            elif (
+                line.startswith("sres =")
+                and "sRes_m" in input_config
+                and input_config["sRes_m"]
+            ):
                 line = f"sres = {input_config['sRes_m']}"
-            
-            #https://github.com/avaframe/AvaFrame/blob/master/avaframe/com1DFA/com1DFACfg.ini
+
+            # https://github.com/avaframe/AvaFrame/blob/master/avaframe/com1DFA/com1DFACfg.ini
 
             elif line.startswith("meshCellSize =") and input_config["mesh_cell_size"]:
                 line = f"meshCellSize = {input_config['mesh_cell_size']}"
-            elif line.startswith("sphKernelRadius =") and input_config["mesh_cell_size"]:
+            elif (
+                line.startswith("sphKernelRadius =") and input_config["mesh_cell_size"]
+            ):
                 line = f"sphKernelRadius = {input_config['mesh_cell_size']}"
             elif line.startswith("relThFromShp ="):
                 line = "relThFromShp = False"
             elif line.startswith("relTh ="):
-                if input_config['multipleRelTh_m']:
-                    line = f"relTh = {input_config['multipleRelTh_m'].replace(',', '|')}"
+                if input_config["multipleRelTh_m"]:
+                    line = (
+                        f"relTh = {input_config['multipleRelTh_m'].replace(',', '|')}"
+                    )
                 else:
                     line = "relTh = ValueError"
             cfg_file.write(line + "\n")
@@ -254,7 +299,7 @@ def import_result(asc_path):
 
 
 def convert_result(
-    asc_path, config=None, results_df=None, format="GTiff", directory="/tmp"
+    asc_path, config=None, results_df=None, directory="/tmp"
 ):
     """Convert ascii file to GeoTiff"""
     result_prefix = {
@@ -269,15 +314,9 @@ def convert_result(
         [
             result_prefix[mapname[-3:]],
             str(config["id"]),
-            str(
-                [
-                    results_df.loc[idx]
-                    for idx in results_df.index
-                    if idx in mapname
-                ][0]
-            ),
-            #str(config["rho_kgPerSqM"]),
-            #str(config["relTh"]),
+            str([results_df.loc[idx] for idx in results_df.index if idx in mapname][0]),
+            # str(config["rho_kgPerSqM"]),
+            # str(config["relTh"]),
             str(config["frictionModel"]),
         ]
     )
@@ -307,7 +346,6 @@ def run_com1dfa(config_dict=None):
     avalanche_dir = avalanche_base_dir / gs.tempname(12)
     config_dict["main"]["MAIN"]["avalancheDir"] = str(avalanche_dir)
     config_dict["main"]["MAIN"]["nCPU"] = config_dict["nCPU"]
-    
 
     # Create simulation directory
     (avalanche_dir).mkdir(mode=0o777, parents=True, exist_ok=True)
@@ -337,37 +375,49 @@ def run_com1dfa(config_dict=None):
     log.info("Current avalanche: %s", str(avalanche_dir))
 
     # call com1DFA and perform simulations
-    return com1DFA.com1DFAMain(
-        config_dict["main"], cfgInfo=cfg_ini_file
-    )
+    return com1DFA.com1DFAMain(config_dict["main"], cfgInfo=cfg_ini_file)
+
 
 def get_shape_file_and_config(area_type, module_config, module_options):
     """
     Allowed area_type "RES" and "ENT"
     See avaframe documentation
     """
-    area = "{url}/{layer_id}/query?where=id+%3D+{id}&outFields=*&f=json".format(url = module_options["url"], layer_id = module_options[{"ENT": "entrainment_area_layer_id",  "RES": "resistance_area_layer_id"}[area_type]], id = module_options["id"])
+    area = "{url}/{layer_id}/query?where=id+%3D+{id}&outFields=*&f=json".format(
+        url=module_options["url"],
+        layer_id=module_options[
+            {"ENT": "entrainment_area_layer_id", "RES": "resistance_area_layer_id"}[
+                area_type
+            ]
+        ],
+        id=module_options["id"],
+    )
     ogr_dataset_area = gdal.OpenEx(area, gdal.OF_VECTOR)
     # actinia requires input URLs to be quoted if eg & is used
     if not ogr_dataset_area:
-        ogr_dataset_area = gdal.OpenEx(
-            parse.unquote(area), gdal.OF_VECTOR
-        )
+        ogr_dataset_area = gdal.OpenEx(parse.unquote(area), gdal.OF_VECTOR)
     layer_area = ogr_dataset_area.GetLayerByIndex(0)
-    config_area = dict(layer_area.GetNextFeature())  # first feature contains config attributes
-    entries_to_remove = ('OBJECTID', 'Id', 'Shape__Area', 'Shape__Length')
+    config_area = dict(
+        layer_area.GetNextFeature()
+    )  # first feature contains config attributes
+    entries_to_remove = ("OBJECTID", "Id", "Shape__Area", "Shape__Length")
     for key in entries_to_remove:
         if key in config_area:
             del config_area[key]
     module_config.update(config_area)
-    (module_config["avalanche_dir"] / area_type).mkdir(parents=True, exist_ok = True)
+    (module_config["avalanche_dir"] / area_type).mkdir(parents=True, exist_ok=True)
     gdal.VectorTranslate(
-    str(module_config["avalanche_dir"] / area_type / f"{module_config['release_name']}.shp"),
-    ogr_dataset_area,
-    options='-f "ESRI Shapefile"',
+        str(
+            module_config["avalanche_dir"]
+            / area_type
+            / f"{module_config['release_name']}.shp"
+        ),
+        ogr_dataset_area,
+        options='-f "ESRI Shapefile"',
     )
 
     return module_config
+
 
 def main():
     """Run com1DFA simulation from Avaframe with selected configuration"""
@@ -392,7 +442,9 @@ def main():
             )
 
     # Get release area
-    release_area = "{url}/{layerId}/query?where=id+%3D+{id}&outFields=*&f=json".format(url = options["url"], layerId = options["release_area_layer_id"], id = options["id"])
+    release_area = "{url}/{layerId}/query?where=id+%3D+{id}&outFields=*&f=json".format(
+        url=options["url"], layerId=options["release_area_layer_id"], id=options["id"]
+    )
     ogr_dataset_release_area = gdal.OpenEx(release_area, gdal.OF_VECTOR)
 
     # actinia requires input URLs to be quoted if eg & is used
@@ -401,8 +453,12 @@ def main():
             parse.unquote(release_area), gdal.OF_VECTOR
         )
     layer_release_area = ogr_dataset_release_area.GetLayerByIndex(0)
-    release_extent = layer_release_area.GetExtent()  # Extent is west, east, south, north
-    config = dict(layer_release_area.GetNextFeature())  # first feature contains config attributes
+    release_extent = (
+        layer_release_area.GetExtent()
+    )  # Extent is west, east, south, north
+    config = dict(
+        layer_release_area.GetNextFeature()
+    )  # first feature contains config attributes
 
     release_name = f"com1DFAV2{config['id']}"
 
@@ -438,10 +494,9 @@ def main():
     config["release_name"] = release_name
     config["nCPU"] = options["nprocs"]
 
-     # Get entrainment area
+    # Get entrainment area
     if flags["e"]:
         config = get_shape_file_and_config("ENT", config, options)
-       
 
     # Get resistance area
     if flags["r"]:
@@ -466,7 +521,7 @@ def main():
     )
 
     com1dfa_results_pd = pd.DataFrame(run_com1dfa(config_dict=config)[3])
-  
+
     if options["format"]:
 
         if options["format"] == "json":
