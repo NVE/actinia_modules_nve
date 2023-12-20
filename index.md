@@ -7,6 +7,7 @@
 - [i.sentinel1.gdargeocode](./i.sentinel1.gdargeocode.html)
 - [i.sentinel1.pyrosargeocode](./i.sentinel1.pyrosargeocode.html)
 - [r.avaframe.com1dfa](./r.avaframe.com1dfa.html)
+- [r.avaframe.com1dfa_v2](./r.avaframe.com1dfa_v2.html)
 - [r.timeseries.locations](./r.timeseries.locations.html)
 - [t.import.hrsi](./t.import.hrsi.html)
 - [t.rast.reclass](./t.rast.reclass.html)

@@ -5,8 +5,8 @@
  <meta name="Author" content="GRASS Development Team">
  <meta http-equiv="content-language" content="en-us">
  <meta name="viewport" content="width=device-width, initial-scale=1">
- <title>r.avaframe.com1dfa - GRASS GIS manual</title>
- <meta name="description" content="r.avaframe.com1dfa: Run com1dfa avalanche simulations using AvaFrame">
+ <title>r.avaframe.com1dfa_v2 - GRASS GIS manual</title>
+ <meta name="description" content="r.avaframe.com1dfa_v2: Run com1dfa avalanche simulations using AvaFrame">
  <meta name="keywords" content="avalanche, simulation, avaframe, com1dfa, raster, terrain, dtm">
  <link rel="stylesheet" href="grassdocs.css" type="text/css">
 </head>
@@ -19,7 +19,12 @@
 let temp = document.createElement('template');
 const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
 '<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#entrainment-area">Entrainment area</a>' + 
 '</li>' + 
+'<li><a class="toc-item" href="#resistance-area">Resistance area</a>' + 
+'</li>' + 
+'</ul></li>' + 
 '<li><a class="toc-item" href="#notes">NOTES</a>' + 
 '</li>' + 
 '<li><a class="toc-item" href="#references">REFERENCES</a>' + 
@@ -47,13 +52,13 @@ grassLogoLink.after(temp.content);
 <hr class="header">
 
 <h2>NAME</h2>
-<em><b>r.avaframe.com1dfa</b></em>  - Run com1dfa avalanche simulations using AvaFrame
+<em><b>r.avaframe.com1dfa_v2</b></em>  - Run com1dfa avalanche simulations using AvaFrame
 <h2>KEYWORDS</h2>
 <a href="file:///usr/lib/grass83/docs/html/avalanche.html">avalanche</a>, <a href="file:///usr/lib/grass83/docs/html/topic_simulation.html">simulation</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#avaframe">avaframe</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#com1dfa">com1dfa</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#raster">raster</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#terrain">terrain</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#dtm">dtm</a>
 <h2>SYNOPSIS</h2>
-<div id="name"><b>r.avaframe.com1dfa</b><br></div>
-<b>r.avaframe.com1dfa --help</b><br>
-<div id="synopsis"><b>r.avaframe.com1dfa</b> [-<b>l</b>] <b>release_area</b>=<em>string</em> <b>elevation</b>=<em>name</em>  [<b>buffer</b>=<em>integer</em>]   [<b>export_directory</b>=<em>name</em>]   [<b>ppr</b>=<em>string</em>]   [<b>pft</b>=<em>string</em>]   [<b>pfv</b>=<em>string</em>]   [<b>format</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="name"><b>r.avaframe.com1dfa_v2</b><br></div>
+<b>r.avaframe.com1dfa_v2 --help</b><br>
+<div id="synopsis"><b>r.avaframe.com1dfa_v2</b> [-<b>ler</b>] <b>id</b>=<em>string</em> <b>url</b>=<em>string</em> <b>release_area_layer_id</b>=<em>string</em>  [<b>entrainment_area_layer_id</b>=<em>string</em>]   [<b>resistance_area_layer_id</b>=<em>string</em>]  <b>elevation</b>=<em>name</em>  [<b>buffer</b>=<em>integer</em>]   [<b>export_directory</b>=<em>name</em>]   [<b>ppr</b>=<em>string</em>]   [<b>pft</b>=<em>string</em>]   [<b>pfv</b>=<em>string</em>]   [<b>format</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -61,6 +66,12 @@ grassLogoLink.after(temp.content);
 <dl>
 <dt><b>-l</b></dt>
 <dd>Link temporary results (do not import)</dd>
+
+<dt><b>-e</b></dt>
+<dd>Use entrainment area in model</dd>
+
+<dt><b>-r</b></dt>
+<dd>Use resistance area in model</dd>
 
 <dt><b>--help</b></dt>
 <dd>Print usage summary</dd>
@@ -76,8 +87,20 @@ grassLogoLink.after(temp.content);
 <div id="parameters">
 <h3>Parameters:</h3>
 <dl>
-<dt><b>release_area</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
-<dd>Path or URL to OGR readable vector dataset with release area(s)</dd>
+<dt><b>id</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Id of release area</dd>
+
+<dt><b>url</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>URL to the featureservice of the input data (release, entrainment and resistance area)</dd>
+
+<dt><b>release_area_layer_id</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Layer ID for the release area on the feature service.</dd>
+
+<dt><b>entrainment_area_layer_id</b>=<em>string</em></dt>
+<dd>Layer ID for the entrainment area on the feature service.</dd>
+
+<dt><b>resistance_area_layer_id</b>=<em>string</em></dt>
+<dd>Layer ID for the resistance area on the feature service.</dd>
 
 <dt><b>elevation</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
 <dd>Name of input elevation raster map</dd>
@@ -111,7 +134,11 @@ grassLogoLink.after(temp.content);
 <div class="toc">
 <h4 class="toc">Table of contents</h4>
 <ul class="toc">
-    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a>
+    <ul class="toc">
+        <li class="toc"><a href="#entrainment-area" class="toc">Entrainment area</a></li>
+        <li class="toc"><a href="#resistance-area" class="toc">Resistance area</a></li>
+    </ul></li>
     <li class="toc"><a href="#notes" class="toc">NOTES</a></li>
     <li class="toc"><a href="#references" class="toc">REFERENCES</a></li>
     <li class="toc"><a href="#examples" class="toc">EXAMPLES</a>
@@ -124,7 +151,7 @@ grassLogoLink.after(temp.content);
 </div>
 <h2><a name="description">DESCRIPTION</a></h2>
 
-<em>r.avaframe.com1dfa</em> runs Dense flow avalanche kernel (com1DFA)
+<em>r.avaframe.com1dfa_v2</em> runs Dense flow avalanche kernel (com1DFA)
 simulations using the Open Avalanche Framework
 <a href="https://github.com/avaframe/AvaFrame">AvaFrame</a>.
 
@@ -143,27 +170,124 @@ Currently, the following parameters for com1DFA simulations are supported:
     <th>Parameter description</th>
   </tr>
   <tr>
-    <td>relTh</td>
-    <td>snowDepth_cm</td>
-    <td>Release thickness</td>
+    <td>frictModel</td>
+    <td>frictionModel</td>
+    <td>Friction models can be samosAT (1), Coulomb (2), Voellmy (2) or Wetsnow (3).</td>
   </tr>
   <tr>
+    <td>relTh</td>
+    <td>multipleRelTh_m</td>
+    <td>Release thicknesses in meter. Comma seperated string if you want to run the model several times with different inputs.</td>
+  </tr>
+  
+  <tr>
     <td>rho</td>
-    <td>rho_kgPerSqM</td>
+    <td>rho_kgPerCubicM</td>
     <td>Density of snow in <var>kg</var>/<var>m</var><sup>3</sup></td>
   </tr>
   <tr>
-    <td>rhoEnt</td>
-    <td>rhoEnt_kgPerSqM</td>
-    <td>Density of entrained snow in <var>kg</var>/<var>m</var><sup>3</sup></td>
+    <td>cpIce</td>
+    <td>cpIce_joulePerKg</td>
+    <td>Ice in <var>J</var>/<var>kg</var></td>
   </tr>
   <tr>
-    <td>frictModel</td>
-    <td>frictModel</td>
-    <td>Friction models can be samosAT (1), Coulomb (2), and Voellmy (2)</td>
+    <td>TIni</td>
+    <td>tIni_degreeCelcius</td>
+    <td>Initial temperature in <sup>0</sup><var>C</var></td>
+  </tr>
+  <tr>
+    <td>entTempRef</td>
+    <td>entTemp_degreeCelcius</td>
+    <td>Initial temperature for entrainment in <sup>0</sup><var>C</var></td>
+  </tr>
+  <tr>
+    <td>enthRef</td>
+    <td>enthalpy_joulePerKg</td>
+    <td>Reference enthalpy in <var>J</var>/<var>kg</var></td>
   </tr>
 </table>
 
+<h3><a name="entrainment-area">Entrainment area</a></h3>
+<p>
+An entrainment area can be used in the model. To do so, set the <em>e-flag</em> and provide 
+an OGR readable vector data source for the <em>entrainment_area</em>
+<p>
+Parameters for the simulation need to be provided in the attribute table of the
+<em>entrainment_area</em> data source, according to the table below.
+
+<table>
+  <tr>
+    <th>com1DFA parameter name</th>
+    <th>Column name in attribute table</th>
+    <th>Parameter description</th>
+  </tr>
+  <tr>
+    <td>rhoEnt</td>
+    <td>rhoEnt_kgPerCubicM</td>
+    <td>density of entrained snow in <var>kg</var>/<var>m</var><sup>3</sup></td>
+  </tr>
+  <tr>
+    <td>entEroEnergy</td>
+    <td>entEro_joulePerKg</td>
+    <td>Entrainment erosion energy in <var>J</var>/<var>kg</var></td>
+  </tr>
+  
+  <tr>
+    <td>entShearResistance</td>
+    <td>entShear_joulePerSqM</td>
+    <td><var>J</var>/<var>m</var><sup>2</sup></td>
+  </tr>
+  <tr>
+    <td>entDefResistance</td>
+    <td>entDef_joulePerKg</td>
+    <td><var>J</var>/<var>kg</var></td>
+  </tr>
+  <tr>
+    <td>entTh</td>
+    <td>entTh_m</td>
+    <td>Entrainment thickness in <var>meter</var></td>
+  </tr>
+</table>
+
+<h3><a name="resistance-area">Resistance area</a></h3>
+<p>
+An resistance area can be used in the model. To do so, set the <em>e-flag</em> and provide 
+an OGR readable vector data source for the <em>resistance_area</em>
+<p>
+Parameters for the simulation need to be provided in the attribute table of the
+<em>resistance_area</em> data source, according to the table below.
+
+<table>
+  <tr>
+    <th>com1DFA parameter name</th>
+    <th>Column name in attribute table</th>
+    <th>Parameter description</th>
+  </tr>
+  <tr>
+    <td>hRes</td>
+    <td>hRes_m</td>
+    <td>Height of the obstacles in <var>meter</var></td>
+  </tr>
+  <tr>
+    <td>cw</td>
+    <td>cw</td>
+    <td>Resistance coefficient [0-1]</td>
+  </tr>
+  
+  <tr>
+    <td>dRes</td>
+    <td>dRes_m</td>
+    <td>Diameter of obstacles in <var>meter</var></td>
+  </tr>
+  <tr>
+    <td>sres</td>
+    <td>sRes_m</td>
+    <td>Spacing between obstacles in <var>meter</var></td>
+  </tr>
+</table>
+
+
+<p>
 The ASCII-raster files resulting from the AvaFrame simulations are either
 linked to the current mapset (if the <em>l-flag</em> is set),
 otherwise they ar imported into the GRASS GIS database.
@@ -193,8 +317,9 @@ values to simulate for.
 <h3><a name="run-com1dfa-simulations-for-a-release-area-registered-in-nve-database">Run com1DFA simulations for a release area registered in NVE database</a></h3>
 
 <div class="code"><pre>
-r.avaframe.com1dfa --o -l elevation="DTM_10m@DTM" nprocs=8 format="csv" buffer=1500 \
-    release_area="https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmSamosAT/MapServer/0/query?where=objectid+%3D+1&amp;outFields=*&amp;f=json" \
+r.avaframe.com1dfa_v2 --o -l elevation="DTM_10m@DTM" nprocs=8 format="csv" buffer=1500 \
+    url="https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer" \
+    release_area_layer_id="0" id="1" \
     ppr="ppr" pft="pft" pfv="pfv"
 
 </pre></div>
@@ -208,14 +333,14 @@ r.avaframe.com1dfa --o -l elevation="DTM_10m@DTM" nprocs=8 format="csv" buffer=1
 
 <h2><a name="author">AUTHOR</a></h2>
 
-Stefan Blumentrath<h2>SOURCE CODE</h2>
+Stefan Blumentrath and Yngve Antonsen<h2>SOURCE CODE</h2>
 <p>
   Available at:
-  <a href="">r.avaframe.com1dfa source code</a>
+  <a href="">r.avaframe.com1dfa_v2 source code</a>
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Wednesday Dec 20 13:27:09 2023
+  Accessed: Wednesday Dec 20 13:27:08 2023
 </p>
 <hr class="header">
 <p>
