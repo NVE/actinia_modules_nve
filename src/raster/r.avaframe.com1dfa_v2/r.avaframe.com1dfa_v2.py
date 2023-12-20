@@ -298,9 +298,8 @@ def import_result(asc_path):
     return 0
 
 
-def convert_result(
-    asc_path, config=None, results_df=None, directory="/tmp"
-):
+def convert_result(asc_path, config=None, results_df=None, directory="/tmp"):
+
     """Convert ascii file to GeoTiff"""
     result_prefix = {
         "pft": "MaxFlowThickness",
