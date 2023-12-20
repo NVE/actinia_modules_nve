@@ -8,13 +8,17 @@ for details.
 :authors: Stefan Blumentrath
 """
 import os
+from subprocess import PIPE
 
 import grass.pygrass.modules as pymod
 from grass.gunittest.case import TestCase
 from grass.gunittest.gmodules import SimpleModule
+from grass.pygrass.modules import Module
+import grass.script as gs
 
 
-class TestAggregationAbsolute(TestCase):
+
+class TestAvaframeV2(TestCase):
     @classmethod
     def setUpClass(cls):
         """Initiate the temporal GIS and set the region"""
@@ -40,9 +44,10 @@ class TestAggregationAbsolute(TestCase):
         """Remove generated data"""
         pass
 
-    def test_reclass_with_null_maps(self):
-        """Reclassify and register also maps with only NoData"""
-        self.assertModule(
+    def test_avaframe_v2(self):
+        """Test avaframe v2 with entrainment, resistance and 
+        multiple release thicknesses"""
+        avaframe_run = gs.start_command(
             "r.avaframe.com1dfa_v2",
             flags="er",
             id="1",
@@ -53,10 +58,17 @@ class TestAggregationAbsolute(TestCase):
             elevation="DTM_10m",
             buffer=3000,
             nprocs=2,
-            ppr="ppr",
-            pft="pft",
-            pfv="pfv",
+            #ppr="ppr",
+            #pft="pft",
+            #pfv="pfv",
+            export_directory="./",
+            stderr=PIPE,
+            stdout=PIPE,
         )
+        stdout, stderr = avaframe_run.communicate()
+        stderr = stderr.decode("utf8").lower()
+        print(stderr)
+        self.assertFalse("error" in stderr or "traceback" in stderr)
 
 
 if __name__ == "__main__":

@@ -141,6 +141,10 @@
 # %rules
 # % excludes: export_directory,pft,pfv,ppr
 # % required: export_directory,pft,pfv,ppr
+# % requires: resistance_area_layer_id,-r
+# % requires: entrainment_area_layer_id,-e
+# % requires: -r,resistance_area_layer_id
+# % requires: -e,entrainment_area_layer_id
 # % collective: pft,pfv,ppr
 # %end
 
@@ -159,7 +163,6 @@ import grass.script as gs
 def write_avaframe_config(
     config_file_path,
     input_config,
-    release_thickness="0.5",
 ):
     """Write Avaframe config file"""
     with open(config_file_path, "w", encoding="utf8") as cfg_file:
@@ -218,8 +221,10 @@ def write_avaframe_config(
             elif line.startswith("relThFromShp ="):
                 line = "relThFromShp = False"
             elif line.startswith("relTh ="):
-                line = f"relTh = {release_thickness}"
-
+                if input_config['multipleRelTh_m']:
+                    line = f"relTh = {input_config['multipleRelTh_m'].replace(',', '|')}"
+                else:
+                    line = "relTh = ValueError"
             cfg_file.write(line + "\n")
     return 0
 
@@ -258,6 +263,7 @@ def convert_result(
         "ppr": "MaxPressure",
     }
     mapname = asc_path.stem
+
     # {Produktnavn}_{objectid}_{snowDepth_cm}_{rho_kgPerSqM}_{rhoEnt_kgPerSqM}_{frictModel}.tif
     gtiff_name = "_".join(
         [
@@ -265,13 +271,13 @@ def convert_result(
             str(config["id"]),
             str(
                 [
-                    int(results_df.loc[idx] * 100)
+                    results_df.loc[idx]
                     for idx in results_df.index
                     if idx in mapname
                 ][0]
             ),
-            str(config["rho_kgPerSqM"]),
-            str(config["rhoEnt_kgPerSqM"]),
+            #str(config["rho_kgPerSqM"]),
+            #str(config["relTh"]),
             str(config["frictionModel"]),
         ]
     )
@@ -284,7 +290,7 @@ def convert_result(
     )
     Module(
         "r.out.gdal",
-        flags="f",
+        flags="cfm",
         input=mapname,
         output=str(Path(directory) / f"{gtiff_name}.tif"),
         format="GTiff",
@@ -294,9 +300,8 @@ def convert_result(
     return 0
 
 
-def run_com1dfa(thickness, config_dict=None):
+def run_com1dfa(config_dict=None):
     """Run com1DFA for given thickness"""
-    thickness_str = str(thickness).replace(".", ".")
 
     avalanche_base_dir = config_dict["avalanche_dir"]
     avalanche_dir = avalanche_base_dir / gs.tempname(12)
@@ -320,11 +325,10 @@ def run_com1dfa(thickness, config_dict=None):
     )
 
     # Create ini-file with configuration
-    cfg_ini_file = avalanche_dir / f"cfg_{thickness_str}.ini"
+    cfg_ini_file = avalanche_dir / "cfg_avaframe_v2.ini"
     write_avaframe_config(
         cfg_ini_file,
         config_dict,
-        release_thickness=thickness,
     )
 
     # Start logging
@@ -400,15 +404,6 @@ def main():
     release_extent = layer_release_area.GetExtent()  # Extent is west, east, south, north
     config = dict(layer_release_area.GetNextFeature())  # first feature contains config attributes
 
-    # Currently hardcoded settings
-    if config["multipleRelTh_m"]:
-        release_thicknesses = [
-            float(RelTh)
-            for RelTh in config["multipleRelTh_m"].split(",")
-            ]
-    else:
-        release_thicknesses = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]
-
     release_name = f"com1DFAV2{config['id']}"
 
     # Define directory for simulations
@@ -452,8 +447,6 @@ def main():
     if flags["r"]:
         config = get_shape_file_and_config("RES", config, options)
 
-    run_com1dfa_thickness = partial(run_com1dfa, config_dict=config)
-
     # Write release area to shape
     gdal.VectorTranslate(
         str(avalanche_dir / f"{release_name}.shp"),
@@ -472,11 +465,7 @@ def main():
         verbose=True,
     )
 
-    com1dfa_results_list = [run_com1dfa_thickness(thickness) for thickness in release_thicknesses]
-
-    com1dfa_results_pd = pd.concat(
-        [com1dfa_results[3] for com1dfa_results in com1dfa_results_list]
-    )
+    com1dfa_results_pd = pd.DataFrame(run_com1dfa(config_dict=config)[3])
   
     if options["format"]:
 
