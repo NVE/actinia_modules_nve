@@ -34,16 +34,6 @@
 # % description: Link temporary results (do not import)
 # %end
 
-# %flag
-# % key: e
-# % description: Use entrainment area in model
-# %end
-
-# %flag
-# % key: r
-# % description: Use resistance area in model
-# %end
-
 # %option
 # % key: id
 # % type: string
@@ -141,10 +131,6 @@
 # %rules
 # % excludes: export_directory,pft,pfv,ppr
 # % required: export_directory,pft,pfv,ppr
-# % requires: resistance_area_layer_id,-r
-# % requires: entrainment_area_layer_id,-e
-# % requires: -r,resistance_area_layer_id
-# % requires: -e,entrainment_area_layer_id
 # % collective: pft,pfv,ppr
 # %end
 
@@ -494,11 +480,11 @@ def main():
     config["nCPU"] = options["nprocs"]
 
     # Get entrainment area
-    if flags["e"]:
+    if options["entrainment_area_layer_id"]:
         config = get_shape_file_and_config("ENT", config, options)
 
     # Get resistance area
-    if flags["r"]:
+    if options["resistance_area_layer_id"]:
         config = get_shape_file_and_config("RES", config, options)
 
     # Write release area to shape
