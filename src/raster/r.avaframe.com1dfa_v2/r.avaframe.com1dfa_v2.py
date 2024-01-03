@@ -536,7 +536,6 @@ def main():
                 convert_result,
                 results_df=com1dfa_results_pd["relTh"],
                 config=config,
-                format="GTiff",
                 directory=options["export_directory"],
             )
             pool.map(convert_result_gtiff, result_files)
