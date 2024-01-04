@@ -60,7 +60,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>i.asf.download</b><br></div>
 <b>i.asf.download --help</b><br>
-<div id="synopsis"><b>i.asf.download</b> [-<b>lsw</b>]  [<b>output_directory</b>=<em>string</em>]   [<b>aoi</b>=<em>name</em>]   [<b>token</b>=<em>string</em>]  <b>start</b>=<em>string</em>  [<b>end</b>=<em>string</em>]  <b>platform</b>=<em>string</em> <b>beam_mode</b>=<em>string</em>  [<b>processinglevel</b>=<em>string</em>]   [<b>check_scenes</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>i.asf.download</b> [-<b>lsw</b>]  [<b>output_directory</b>=<em>string</em>]   [<b>aoi</b>=<em>name</em>]   [<b>token</b>=<em>string</em>]  <b>start</b>=<em>string</em>  [<b>end</b>=<em>string</em>]  <b>platform</b>=<em>string</em> <b>beam_mode</b>=<em>string</em>  [<b>processinglevel</b>=<em>string</em>]   [<b>check_scenes</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>scenes</b>=<em>string</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -133,6 +133,10 @@ grassLogoLink.after(temp.content);
 <dt><b>nprocs</b>=<em>integer</em></dt>
 <dd>Number of threads for parallel computing</dd>
 <dd>Default: <em>1</em></dd>
+
+<dt><b>scenes</b>=<em>string</em></dt>
+<dd>Selected scenes to download from ASF</dd>
+<dd>Comma separated list of scenes or file with scenes (one per row)</dd>
 
 </dl>
 </div>
@@ -228,7 +232,7 @@ Stefan Blumentrath (parallelization and additional checks)<h2>SOURCE CODE</h2>
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Wednesday Jan 03 12:23:51 2024
+  Accessed: Thursday Jan 04 08:24:06 2024
 </p>
 <hr class="header">
 <p>
