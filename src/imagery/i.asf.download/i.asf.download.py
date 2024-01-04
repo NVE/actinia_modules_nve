@@ -108,6 +108,15 @@
 # %option G_OPT_M_NPROCS
 # %end
 
+# %option
+# % key: scenes
+# % type: string
+# % required: no
+# % multiple: no
+# % description: Comma separated list of scenes or file with scenes (one per row)
+# % label: Selected scenes to download from ASF
+# %end
+
 # %flag
 # % key: l
 # % description: Only list scenes available
@@ -419,7 +428,16 @@ def main():
     }
 
     # Search ASF
-    results = asf.geo_search(**opts)
+    if options["scenes"]:
+        # Check if scenes is file input
+        scenes_input = Path(options["scenes"])
+        if scenes_input.exists() and scenes_input.is_file():
+            scenes = scenes_input.read_text(encoding="UTF8").strip().split("\n")
+        else:
+            scenes = options["scenes"].split(",")
+        results = asf.granule_search(scenes)
+    else:
+        results = asf.geo_search(**opts)
     checkout_results(results)
     initial_scene_number = len(results)
 
