@@ -310,7 +310,7 @@ def gdar_geocode(
 
     # Check if correct polarization is selected for the given product
     for pol in polarizations:
-        if pol in s1_file[mode]:
+        if pol not in s1_file[mode]:
             gs.fatal(
                 _("File {s1_file} does not contain the {pol} polarization").format(
                     s1_file=str(s1_file_path), pol=pol
