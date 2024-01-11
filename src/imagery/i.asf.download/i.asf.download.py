@@ -436,6 +436,10 @@ def main():
         else:
             scenes = options["scenes"].split(",")
         results = asf.granule_search(scenes)
+        # Remove metadata from download
+        for file in results:
+            if file.properties['fileName'].endswith('iso.xml') and file.properties['processingLevel'] == 'METADATA_GRD_HD':
+                results.remove(file)
     else:
         results = asf.geo_search(**opts)
     checkout_results(results)
