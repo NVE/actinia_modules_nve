@@ -301,7 +301,7 @@ def gdar_geocode(
     s1_file = reader(str(s1_file_path))
 
     # Check if correct mode is selected for the given product
-    if mode not in s1_file:
+    if mode not in s1_file.trait_names():
         gs.fatal(
             _("File {s1_file} does not contain {mode} data").format(
                 s1_file=str(s1_file_path), mode=mode
