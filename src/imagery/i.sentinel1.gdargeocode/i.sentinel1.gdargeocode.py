@@ -50,6 +50,7 @@ COPYRIGHT:	(C) 2023 by NVE, Stefan Blumentrath
 
 # %option G_OPT_F_INPUT
 # %key: register_file
+# % required: no
 # % description: Path to register file for registering results in TGIS
 # %end
 
