@@ -48,6 +48,11 @@ COPYRIGHT:	(C) 2023 by NVE, Stefan Blumentrath
 # % label: Path to GeoJSON file with the Area Of Interest (aoi)
 # %end
 
+# %option G_OPT_F_INPUT
+# %key: register_file
+# % description: Path to register file for registering results in TGIS
+# %end
+
 # %option
 # % key: polarization
 # % type: string
@@ -94,11 +99,6 @@ COPYRIGHT:	(C) 2023 by NVE, Stefan Blumentrath
 # %flag
 # % key: a
 # % description: Apply precision orbit information if available
-# %end
-
-# %flag
-# % key: t
-# % description: Write register file for registering results in TGIS
 # %end
 
 # Todo:
@@ -195,7 +195,8 @@ def check_files_list(file_path_list):
                         "Format of file {} not supported.\nOnly SAFE format is accepted."
                     ).format(file_path)
                 )
-        gs.warning(_("File {} not found").format(file_path))
+        else:
+            gs.warning(_("File {} not found").format(file_path))
     return existing_paths
 
 
@@ -297,6 +298,25 @@ def gdar_geocode(
 
     # Read Sentinel-1 file
     s1_file = reader(str(s1_file_path))
+
+    # Check if correct mode is selected for the given product
+    if mode not in s1_file:
+        gs.fatal(
+            _("File {s1_file} does not contain {mode} data").format(
+                s1_file=str(s1_file_path), mode=mode
+            )
+        )
+
+    # Check if correct polarization is selected for the given product
+    for pol in polarizations:
+        if pol in s1_file[mode]:
+            gs.fatal(
+                _("File {s1_file} does not contain the {pol} polarization").format(
+                    s1_file=str(s1_file_path), pol=pol
+                )
+            )
+
+    # Use precision orbit if requested
     if use_precision_orbit:
         gs.debug(_("Accessing precision orbits from remote..."))
         try:
@@ -379,11 +399,19 @@ def gdar_geocode(
         output_file = output_directory / f"{map_name}.tif"
         # Write file
         write_crs(gec[mode][polarization], str(output_file))
-        # Link resulting GeoTiff
-        gs.run_command("r.external", flags="om", input=output_file, output=map_name)
-        register_strings.append(
-            f"{map_name}|{sensing_time}|s1_{polarization}_backscatter_{out_type}_{track}_{direction}"
-        )
+        # Link resulting GeoTiff (may be empty)
+        try:
+            gs.run_command("r.external", flags="om", input=output_file, output=map_name)
+            register_strings.append(
+                f"{map_name}|{sensing_time}|s1_{polarization}_backscatter_{out_type}_{track}_{direction}"
+            )
+        except Exception:
+            gs.warning(
+                _(
+                    "No valid pixels after geocoding {file_name}.\nPlease check the area of interest or DEM."
+                ).format(file_name=str(s1_file_path))
+            )
+            return None
 
     return "\n".join(register_strings)
 
@@ -426,13 +454,18 @@ def main():
         for s1_file in file_input:
             geocoded_files.append(_geocode(s1_file))
 
-    if flags["t"]:
-        # Write registration files
-        Path(options["register_file"]).write_text(
-            "\n".join(geocoded_files), encoding="UTF8"
+    # Filter out empty results and merge
+    geocoded_files = (
+        "\n".join(
+            [register_string for register_string in geocoded_files if register_string]
         )
+        + "\n"
+    )
+    if options["register_file"]:
+        # Write registration files
+        Path(options["register_file"]).write_text(geocoded_files, encoding="UTF8")
     else:
-        print("\n".join(geocoded_files))
+        print(geocoded_files)
 
 
 if __name__ == "__main__":
