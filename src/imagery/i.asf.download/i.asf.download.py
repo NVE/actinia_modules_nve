@@ -143,6 +143,7 @@ import hashlib
 import json
 import os
 import sys
+import requests
 
 from datetime import datetime
 from functools import partial
@@ -436,10 +437,16 @@ def main():
         else:
             scenes = options["scenes"].split(",")
         results = asf.granule_search(scenes)
-        # Remove metadata from download
+        # Remove metadata and urls with 502 error from download
         for file in results:
             if file.properties['fileName'].endswith('iso.xml') and file.properties['processingLevel'] == 'METADATA_GRD_HD':
                 results.remove(file)
+                continue
+            file_url = file.properties['url']
+            resp_head = requests.head(file_url)
+            if resp_head.status_code == 502:
+                results.remove(file)
+                gs.warning(_("{0} returned status code 502. Unable to download this file.".format(file_url)))
     else:
         results = asf.geo_search(**opts)
     checkout_results(results)
