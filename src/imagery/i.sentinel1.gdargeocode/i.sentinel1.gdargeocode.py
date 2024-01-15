@@ -226,7 +226,7 @@ def get_aoi_geometry(geojson_file):
     if ogr_dataset.GetLayerCount() > 1:
         gs.warning(_("Input file contains more than one layer"))
     ogr_layer = ogr_dataset.GetLayerByIndex(0)
-    if ogr_layer.GetGeomType() != 3:
+    if "polygon" not in ogr.GeometryTypeToName(ogr_layer.GetGeomType()).lower():
         gs.warning(_("GeoJSON does not contain polygons"))
     if ogr_layer.GetFeatureCount() > 1:
         gs.warning(
