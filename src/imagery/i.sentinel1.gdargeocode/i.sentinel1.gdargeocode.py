@@ -272,15 +272,31 @@ def get_target_geometry(bpol, geojson_file=None, crs_wkt=None):
             return None
         bpol = bpol.Intersection(aoi.geometry())
     if isinstance(bpol, ogr.Geometry):
-        return np.array(
-            [
-                crs_transformer.TransformPoint(
-                    bpol.GetGeometryRef(0).GetY(vertex_id),
-                    bpol.GetGeometryRef(0).GetX(vertex_id),
+        # Handle Multi-Geometries
+        if bpol.GetGeometryCount() <= 0:
+            bpol = [bpol]
+        point_arrays = []
+        for bpol_geom in bpol:
+            if bpol_geom.GetGeometryCount() <= 0:
+                bpol_geom = [bpol_geom]
+            for geom_n in bpol_geom:
+                point_arrays.append(
+                    np.array(
+                        [
+                            crs_transformer.TransformPoint(
+                                geom_n.GetY(vertex_id),
+                                geom_n.GetX(vertex_id),
+                            )
+                            for vertex_id in range(geom_n.GetPointCount())
+                        ]
+                    )[:, 0:2]
                 )
-                for vertex_id in range(bpol.GetGeometryRef(0).GetPointCount())
-            ]
-        )[:, 0:2]
+        if len(point_arrays) > 1:
+            point_arrays = np.concatenate(point_arrays, axis=0)
+        else:
+            point_arrays = point_arrays[0]
+        return point_arrays
+
     return np.array([crs_transformer.TransformPoint(*point) for point in bpol])[:, 0:2]
 
 
