@@ -258,7 +258,7 @@ def get_target_geometry(bpol, geojson_file=None, crs_wkt=None):
         if ogr_dataset.GetLayerCount() > 1:
             gs.warning(_("Input file contains more than one layer"))
         ogr_layer = ogr_dataset.GetLayerByIndex(0)
-        if ogr_layer.GetGeomType() != 3:
+        if "polygon" not in ogr.GeometryTypeToName(ogr_layer.GetGeomType()).lower():
             gs.warning(_("GeoJSON does not contain polygons"))
         if ogr_layer.GetFeatureCount() > 1:
             gs.warning(
@@ -316,6 +316,20 @@ def gdar_geocode(
     # Read Sentinel-1 file
     s1_file = reader(str(s1_file_path))
 
+    # Read DEM into GDAR raster (resulting object cannot be pickled)
+    dem = grass2gdar(module_options["elevation"])[0]
+
+    # Get footprint within AOI in current location CRS
+    bounding_polygon = get_target_geometry(
+        s1_file.get_boundingpolygon(),
+        geojson_file=module_options["aoi"],
+        crs_wkt=dem.meta.grid.refsys.wkt,
+    )
+
+    if bounding_polygon is None:
+        gs.warning("AOI and scene footprint do not overlap.")
+        sys.exit(0)
+
     # Check if correct mode is selected for the given product
     if mode not in s1_file.trait_names():
         gs.fatal(
@@ -345,9 +359,6 @@ def gdar_geocode(
                 ).format(file_path=s1_file_path, error=connection_error)
             )
 
-    # Read DEM into GDAR raster (resulting object cannot be pickled)
-    dem = grass2gdar(module_options["elevation"])[0]
-
     # Gety sensing time
     sensing_time = datetime.fromisoformat(
         np.datetime_as_string(
@@ -363,13 +374,6 @@ def gdar_geocode(
         "descending"
         if is_descending(s1_file[mode][polarizations[0]].meta.grid)
         else "ascending"
-    )
-
-    # Get footprint within AOI in current location CRS
-    bounding_polygon = get_target_geometry(
-        s1_file.get_boundingpolygon(),
-        geojson_file=module_options["aoi"],
-        crs_wkt=dem.meta.grid.refsys.wkt,
     )
 
     # Set region aligned to DEM
