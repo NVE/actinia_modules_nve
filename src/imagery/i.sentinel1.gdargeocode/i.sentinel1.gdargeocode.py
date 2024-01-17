@@ -106,6 +106,7 @@ COPYRIGHT:	(C) 2023 by NVE, Stefan Blumentrath
 # - harmonize with i.sentinel1.pyrosargeocode
 # - read geojson to geometry string and pass that to get_target_geometry
 
+import sys
 from datetime import datetime
 from functools import partial
 from multiprocessing import Pool
