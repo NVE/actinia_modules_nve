@@ -300,7 +300,8 @@ def compute_statistics_of_temporal_map(
             )
             for raster_map in map_list
         ]
-    return output_list
+    # Return result list without empty results
+    return [output for output in output_list if output is not None]
 
 
 def main():
@@ -351,6 +352,7 @@ def main():
     if not map_list:
         dbif.close()
         gs.warning(_("Space time raster dataset <{}> is empty".format(input)))
+        sys.exit(0)
 
     # Extract flags for r.stats
     rstats_flags = [flag for flag in flags if flag in "acpl1gxArnNCi" and flags[flag]]
