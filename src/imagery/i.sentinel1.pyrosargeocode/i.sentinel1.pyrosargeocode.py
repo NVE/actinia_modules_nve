@@ -526,7 +526,7 @@ def main():
         if options["speckle_filter"]
         else None,
         "spacing": float(dem_info["nsres"]),
-        "externalDEMFile": dem_info["GDAL_path"],
+        "externalDEMFile": str(dem_info["GDAL_path"]),
         "externalDEMNoDataValue": -2147483678.0
         if dem_info["datatype"] == "DCELL"
         else None,
