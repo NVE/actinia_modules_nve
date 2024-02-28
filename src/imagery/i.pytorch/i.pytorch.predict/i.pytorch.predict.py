@@ -411,18 +411,11 @@ def read_bands(raster_map_dict, bbox, null_value=0):
     data_cube = []
     for band_number in sorted(raster_map_dict.keys()):
         npa = raster2numpy(raster_map_dict[band_number][0])
+
         # Set null to nan
         if raster_map_dict[band_number][1] == "CELL":
             npa = np.where(npa == -2147483648, np.nan, npa)
-        # Abort if (any) map only contains nan
-        if np.nansum(npa) == 0:
-            return None
-        # Add offset ???
-        if raster_map_dict[band_number][2]["offset"] != 0:
-            npa = npa + np.array(raster_map_dict[band_number][2]["offset"])
-        # Apply scale ???
-        if raster_map_dict[band_number][2]["scale"] != 1:
-            npa = npa * np.array(raster_map_dict[band_number][2]["scale"])
+
         # Clip to valid range ???
         if raster_map_dict[band_number][2]["valid_range"]:
             min = raster_map_dict[band_number][2]["valid_range"][0]
@@ -432,6 +425,19 @@ def read_bands(raster_map_dict, bbox, null_value=0):
             if not max:
                 max = np.inf
             npa = np.clip(npa, *raster_map_dict[band_number][2]["valid_range"])
+
+        # Abort if (any) map only contains nan
+        if np.nansum(npa) == 0:
+            return None
+
+        # Add offset ???
+        if raster_map_dict[band_number][2]["offset"] != 0:
+            npa = npa + np.array(raster_map_dict[band_number][2]["offset"])
+
+        # Apply scale ???
+        if raster_map_dict[band_number][2]["scale"] != 1:
+            npa = npa * np.array(raster_map_dict[band_number][2]["scale"])
+
         data_cube.append(npa)
     data_cube = np.stack(data_cube, axis=-1)
     data_cube[np.isnan(data_cube)] = null_value
