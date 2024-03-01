@@ -1,0 +1,89 @@
+<h2>DESCRIPTION</h2>
+
+<em>t.sentinel3.import</em> is a wrapper around the <em>i.sentinel3.import</em>
+module and supports all relevant flags and options of that module.
+<em>t.sentinel3.import</em> takes a directory or a list of files as
+<b>input</b>, groups those files by day and track and, processes
+each group with <em>i.sentinel3.import</em> and registers all resulting
+maps in the <b>output</b> SpaceTimeRasterDataset (STRDS).
+If multiple cores are given in the <b>nprocs</b> option, groups are
+processed in parallel. If more cores than groups are available, multiple
+cores may be made available to each <em>i.sentinel3.import</em> process.
+<p>
+For more information on pre-prcessing Sentinel-3 data, please consult
+the manual of <em>i.sentinel3.import</em>.
+
+<h2>EXAMPLES</h2>
+
+<h3>Import all Sentinel-3 data in a given directory</h3>
+
+<div class="code"><pre>
+t.sentinel3.import input=/data/Sentinel3/SLSTR/ output=Sentinel_3_SLSTR_RBT_L2 \
+  nprocs=8 product_type=S3SL1RBT -erj \
+  title="Sentinel-3 SLSTR RBT Level 2 pre-processed to reflectance" \
+  description="Sentinel-3 SLSTR RBT product pre-processed to Level 2, reflectance"
+
+t.info Sentinel_3_SLSTR_RBT_L2
++-------------------- Space Time Raster Dataset -----------------------------+
+|                                                                            |
++-------------------- Basic information -------------------------------------+
+| Id: ........................ Sentinel_3_SLSTR_RBT_L2@PERMANENT
+| Name: ...................... Sentinel_3_SLSTR_RBT_L2
+| Mapset: .................... PERMANENT
+| Creator: ................... ninsbl
+| Temporal type: ............. absolute
+| Creation time: ............. 2024-03-01 14:50:10.495161
+| Modification time:.......... 2024-03-01 14:50:10.644547
+| Semantic type:.............. mean
++-------------------- Absolute time -----------------------------------------+
+| Start time:................. 2024-01-29 10:58:39
+| End time:................... 2024-01-29 11:07:39
+| Granularity:................ 540 seconds
+| Temporal type of maps:...... interval
++-------------------- Spatial extent ----------------------------------------+
+| North:...................... 8555600.0
+| South:...................... 6888600.0
+| East:.. .................... 1347700.0
+| West:....................... -459300.0
+| Top:........................ 0.0
+| Bottom:..................... 0.0
++-------------------- Metadata information ----------------------------------+
+| Raster register table:...... raster_map_register_7df298e5fb2f4a6a9c3414b917eaa0f1
+| North-South resolution min:. 500.0
+| North-South resolution max:. 500.0
+| East-west resolution min:... 500.0
+| East-west resolution max:... 500.0
+| Minimum value min:.......... -23099.853079
+| Minimum value max:.......... 1026.0
+| Maximum value min:.......... 280.167206
+| Maximum value max:.......... 58014.404187
+| Aggregation type:........... None
+| Number of semantic labels:.. 17
+| Semantic labels:............ S3_F1_BT_fn,S3_F2_BT_in,S3_S1_reflectance_an,S3_S2_reflectance_an,S3_S3_reflectance_an,S3_S4_reflectance_an,S3_S5_reflectance_an,S3_S6_reflectance_an,S3_S7_BT_in,S3_S8_BT_in,S3_S9_BT_in,S3_bayes_an,S3_cloud_an,S3_confidence_an,S3_pointing_an,S3_probability_cloud_dual_in,S3_probability_cloud_single_in
+| Number of registered maps:.. 17
+|
+| Title:
+| Sentinel-3 SLSTR RBT Level 2 pre-processed to reflectance
+| Description:
+| Sentinel-3 SLSTR RBT product pre-processed to Level 2, reflectance
+| Command history:
+| # 2024-03-01 14:50:10
+| t.sentinel3.import.py -rj input="/c/data/S3/Raw"
+|     output="Sentinel_3_SLSTR_RBT_L2" product_type="S3SL1RBT" nprocs="8" --o
+|     --v title="Sentinel-3 SLSTR RBT Level 2 pre-processed to reflectance"
+|     description="Sentinel-3 SLSTR RBT product pre-processed to Level 2, reflectance"
+|
++----------------------------------------------------------------------------+</pre></div>
+
+<h2>SEE ALSO</h2>
+
+<em>
+<a href="i.sentinel3.import.html">i.sentinel3.import</a>,
+<a href="i.sentinel.download.html">i.sentinel.download</a>,
+</em>
+<p>
+<a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath, NVE
