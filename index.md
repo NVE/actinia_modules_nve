@@ -13,3 +13,4 @@
 - [t.rast.reclass](./t.rast.reclass.html)
 - [t.rast.stats](./t.rast.stats.html)
 - [t.register.local](./t.register.local.html)
+- [t.sentinel3.import](./t.sentinel3.import.html)
