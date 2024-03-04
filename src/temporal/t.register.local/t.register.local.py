@@ -56,6 +56,11 @@
 # %end
 
 # %flag
+# % key: s
+# % description: Second time stamp in file name represents the stop time
+# %end
+
+# %flag
 # % key: f
 # % description: Filter files using modification time (default is logical time stamp in file name)
 # %end
@@ -88,6 +93,15 @@
 # %end
 
 # %option
+# % key: semantic_label_pattern
+# % type: string
+# % required: no
+# % multiple: no
+# % key_desc: Pattern for reading semantic labels from file name (e.g.: "(VV|VH)_dbi_[0-9]+_(ascending|descending)")
+# % description: Pattern for reading semantic labels from file name (e.g.: "(VV|VH)_dbi_[0-9]+_(ascending|descending)")
+# %end
+
+# %option
 # % key: long_name
 # % label: Descriptive long name of the phenomenon the raster maps represent
 # % type: string
@@ -98,6 +112,7 @@
 # %option
 # % key: suffix
 # % label: Suffix of files to register
+# % description: Suffix of files to register
 # % type: string
 # % required: yes
 # % multiple: no
@@ -171,6 +186,7 @@
 
 # %rules
 # % excludes: input,files
+# % excludes: semantic_labels,semantic_label_pattern
 # % required: input,files
 # %end
 
@@ -313,10 +329,19 @@ def map_semantic_labels(
     """
     Map semantic labels from config file to band(s) or subdataset(s) / variable(s) in input raster maps
     :param raster_dataset:
-    :param semantic_labels:
+    :param semantic_labels_dict: a dictionary with semantic labels parsed from config file
     :return: List of tuples
     """
     raster_dataset = str(raster_dataset)
+    if not semantic_label_dict and input_option_dict["semantic_label_pattern"]:
+        semantic_label = re.search(
+            f".*({input_option_dict['semantic_label_pattern']})", raster_dataset
+        ).group(1)
+        # Assuming no reprojection or other transformation is needed and only one band
+        if not semantic_label:
+            return []
+        return [[raster_dataset, 1, legalize_name_string(semantic_label)]]
+
     ds = gdal.Open(raster_dataset)
     if not ds:
         gs.warning(_("Cannot open dataset <{}>".format(raster_dataset)))
@@ -493,7 +518,7 @@ def create_vrt(subdataset, gisenv, nodata, geotransform, recreate=False):
     return vrt
 
 
-def timestamp_from_filename(file_path, pattern):
+def timestamp_from_filename(file_path, pattern, second_is_stop=False):
     """Extracts a timestamp as a datetime object from a file name using
     a pattern
     :param file_path: a pathlib Path object
@@ -502,12 +527,29 @@ def timestamp_from_filename(file_path, pattern):
     :return: datetime object of the time stamp extracted from file name
     :rtype: datetime
     """
-    date_pattern = f".*({strftime_to_regex(pattern)}).*"
-    time_string = re.match(date_pattern, str(file_path)).groups()[0]
-    return datetime.strptime(time_string, pattern)
+    date_pattern = f"({strftime_to_regex(pattern)})"
+    time_string_match = re.findall(date_pattern, str(file_path))
+    if second_is_stop:
+        if len(time_string_match) >= 2:
+            return (
+                datetime.strptime(time_string_match[0], pattern),
+                datetime.strptime(time_string_match[1], pattern),
+            )
+        else:
+            gs.warning(
+                _(
+                    "No second time stamp found in file <{path}> with pattern {pattern}"
+                ).format(path=file_path, pattern=pattern)
+            )
+    return (
+        datetime.strptime(time_string_match[0], pattern),
+        None,
+    )
 
 
-def import_data(import_tuple, metadata_dict=None, modules_dict=None):
+def import_data(
+    import_tuple, metadata_dict=None, modules_dict=None, second_is_stop=False
+):
     """
     Link (import) external raster data and set relevant metadata
     Implemented as a sequence of modules to run
@@ -519,9 +561,18 @@ def import_data(import_tuple, metadata_dict=None, modules_dict=None):
     :rtype: str
     """
     file_path = Path(import_tuple[0])
-    time_stamp = timestamp_from_filename(file_path, metadata_dict["time_format"])
-    time_stamp_iso = time_stamp.isoformat(sep=" ")
-    suffix = f"_{import_tuple[2]}" if import_tuple[2] else ""
+    time_stamps = timestamp_from_filename(
+        file_path, metadata_dict["time_format"], second_is_stop=second_is_stop
+    )
+    time_stamp_start_iso = time_stamps[0].isoformat(sep=" ")
+    time_stamp_end_iso = (
+        time_stamps[1].isoformat(sep=" ") if time_stamps[1] else time_stamp_start_iso
+    )
+    suffix = (
+        f"_{import_tuple[2]}"
+        if import_tuple[2] and not import_tuple[2] in import_tuple[0]
+        else ""
+    )
     output_name = (
         f"map_{file_path.stem}{suffix}"
         if file_path.stem[0].isdigit()
@@ -536,14 +587,16 @@ def import_data(import_tuple, metadata_dict=None, modules_dict=None):
     mods["metadata"].inputs.title = metadata_dict["long_name"]
     mods["metadata"].inputs.semantic_label = import_tuple[2]
     mods["timestamp"].inputs.map = output_name
-    mods["timestamp"].inputs.date = time_stamp.strftime("%-d %b %Y")
+    mods["timestamp"].inputs.date = time_stamps[0].strftime("%-d %b %Y")
     try:
         MultiModule(list(mods.values())).run()
     except:
         gs.warning(_("Cannot register file <{}>".format(import_tuple[0])))
         return None
 
-    return f"{output_name},{time_stamp_iso},{time_stamp_iso},{import_tuple[2]}"
+    return (
+        f"{output_name},{time_stamp_start_iso},{time_stamp_end_iso},{import_tuple[2]}"
+    )
 
 
 def main():
@@ -613,14 +666,22 @@ def main():
                     nc_file
                     for nc_file in raster_files
                     if end_timestamp
-                    >= timestamp_from_filename(
-                        str(nc_file), options["time_format"]
-                    ).timestamp()
+                    >= timestamp_from_filename(str(nc_file), options["time_format"])[
+                        0
+                    ].timestamp()
                     >= start_timestamp
                 ]
-
         else:
             raster_files = list(raster_files)
+
+        if options["semantic_label_pattern"]:
+            raster_files = [
+                raster_file
+                for raster_file in raster_files
+                if re.match(
+                    f".*({options['semantic_label_pattern']})", str(raster_file)
+                )
+            ]
 
     # Abort if no files to import are found
     if not raster_files:
@@ -683,7 +744,12 @@ def main():
     )
 
     # Pre-define kwargs for import-function
-    run_import = partial(import_data, metadata_dict=options, modules_dict=modules)
+    run_import = partial(
+        import_data,
+        metadata_dict=options,
+        modules_dict=modules,
+        second_is_stop=flags["s"],
+    )
 
     # Get GRASS GIS environment info
     options.update(dict(gs.gisenv()))
