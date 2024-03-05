@@ -49,7 +49,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>t.register.local</b><br></div>
 <b>t.register.local --help</b><br>
-<div id="synopsis"><b>t.register.local</b> [-<b>eamorf</b>] <b>input</b>=<em>name</em>  [<b>files</b>=<em>Comma separated list of files to register</em>[,<i>Comma separated list of files to register</i>,...]]  <b>output</b>=<em>name</em>  [<b>semantic_labels</b>=<em>Input file with configuration for semantic labels ("-" = stdin)</em>]   [<b>long_name</b>=<em>string</em>]  <b>suffix</b>=<em>string</em>  [<b>time_format</b>=<em>string</em>]   [<b>file_pattern</b>=<em>string</em>]   [<b>start_time</b>=<em>string</em>]   [<b>end_time</b>=<em>string</em>]   [<b>color</b>=<em>style</em>]   [<b>nodata</b>=<em>Source nodata</em>]  <b>units</b>=<em>string</em>  [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>t.register.local</b> [-<b>eamorsf</b>] <b>input</b>=<em>name</em>  [<b>files</b>=<em>Comma separated list of files to register</em>[,<i>Comma separated list of files to register</i>,...]]  <b>output</b>=<em>name</em>  [<b>semantic_labels</b>=<em>Input file with configuration for semantic labels ("-" = stdin)</em>]   [<b>semantic_label_pattern</b>=<em>Pattern for reading semantic labels from file name (e.g.: "(VV|VH)_dbi_[0-9]+_(ascending|descending)")</em>]   [<b>long_name</b>=<em>string</em>]  <b>suffix</b>=<em>string</em>  [<b>time_format</b>=<em>string</em>]   [<b>file_pattern</b>=<em>string</em>]   [<b>start_time</b>=<em>string</em>]   [<b>end_time</b>=<em>string</em>]   [<b>color</b>=<em>style</em>]   [<b>nodata</b>=<em>Source nodata</em>]  <b>units</b>=<em>string</em>  [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -69,6 +69,9 @@ grassLogoLink.after(temp.content);
 
 <dt><b>-r</b></dt>
 <dd>Create fast link without data range</dd>
+
+<dt><b>-s</b></dt>
+<dd>Second time stamp in file name represents the stop time</dd>
 
 <dt><b>-f</b></dt>
 <dd>Filter files using modification time (default is logical time stamp in file name)</dd>
@@ -101,10 +104,14 @@ grassLogoLink.after(temp.content);
 <dt><b>semantic_labels</b>=<em>Input file with configuration for semantic labels ("-" = stdin)</em></dt>
 <dd>File with mapping of band numbers, variables or subdatasets to semantic labels</dd>
 
+<dt><b>semantic_label_pattern</b>=<em>Pattern for reading semantic labels from file name (e.g.: "(VV|VH)_dbi_[0-9]+_(ascending|descending)")</em></dt>
+<dd>Pattern for reading semantic labels from file name (e.g.: "(VV|VH)_dbi_[0-9]+_(ascending|descending)")</dd>
+
 <dt><b>long_name</b>=<em>string</em></dt>
 <dd>Descriptive long name of the phenomenon the raster maps represent</dd>
 
 <dt><b>suffix</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Suffix of files to register</dd>
 <dd>Suffix of files to register</dd>
 
 <dt><b>time_format</b>=<em>string</em></dt>
@@ -325,7 +332,7 @@ Stefan Blumentrath<h2>SOURCE CODE</h2>
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Friday Mar 01 15:52:02 2024
+  Accessed: Tuesday Mar 05 09:47:26 2024
 </p>
 <hr class="header">
 <p>
