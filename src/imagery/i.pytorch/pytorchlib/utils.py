@@ -168,6 +168,16 @@ def predict_torch(data_cube, config_dict=None, device=None, dl_model=None):
         data = numpy2torch(data_cube).to(device)
         torch_out = dl_model(data)
 
+        # Apply extra ouptut transformations
+        if "extra_ouptut_transformations" in config_dict["model"]:
+            if "apply_softmax" in config_dict["model"]["extra_ouptut_transformations"]:
+                torch_out = F.softmax(torch_out, dim=1)
+            if (
+                "apply_classifier"
+                in config_dict["model"]["extra_ouptut_transformations"]
+            ):
+                _, torch_out = torch.max(torch_out, dim=1, keepdims=True)
+
     if config_dict["model"]["model_dimensions"]["output_dimensions"] != "HWC":
         return transform_axes(
             torch2numpy(torch_out),
