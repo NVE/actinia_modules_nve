@@ -89,7 +89,6 @@
 # % description: Use CPU as device for prediction, default is use cuda (GPU) if detected
 # %end
 
-
 # To do:
 # optimize tiling (shape) to minimize number of tiles and overlap between them within max size
 # Handle divisible by x (e.g. 8) for tile size to avoid:
@@ -97,11 +96,11 @@
 
 
 import atexit
-import os
 import sys
 
 from copy import deepcopy
 from functools import partial
+from itertools import product
 from pathlib import Path
 from multiprocessing import Pool
 
@@ -229,172 +228,89 @@ def read_config(module_options):
     return config, backbone, model_kwargs, input_group_dict
 
 
-def align_bbox_region(bbox, reference_region=None, overlap=0):
-    """Align a boundig box to the current or a reference region"""
-    if not reference_region:
-        reference_region = gs.region()
-    bbox["w"] = (
-        np.floor((bbox["w"] - reference_region["w"]) / reference_region["ewres"])
-        * reference_region["ewres"]
-        + reference_region["w"]
-        - overlap * reference_region["ewres"]
-    )
-    bbox["e"] = (
-        np.ceil((bbox["e"] - reference_region["e"]) / reference_region["ewres"])
-        * reference_region["ewres"]
-        + reference_region["e"]
-        + overlap * reference_region["ewres"]
-    )
-    bbox["s"] = (
-        np.floor((bbox["s"] - reference_region["s"]) / reference_region["nsres"])
-        * reference_region["nsres"]
-        + reference_region["s"]
-        - overlap * reference_region["nsres"]
-    )
-    bbox["n"] = (
-        np.ceil((bbox["n"] - reference_region["n"]) / reference_region["nsres"])
-        * reference_region["nsres"]
-        + reference_region["n"]
-        + overlap * reference_region["nsres"]
-    )
-    bbox["ewres"] = reference_region["ewres"]
-    bbox["nsres"] = reference_region["nsres"]
-    return bbox
-
-
 def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
     """Create tiling aligned to a given or current region with
     tiles of a fixed number of rows and column and at least
     overlap number of pixels around
     Returns a dictionary with inner and outer region of a tile
     """
-    gs.verbose(_("Setting up tiling ..."))
     reg = region or gs.region()
-    env = os.environ.copy()
-    env["GRASS_REGION"] = gs.region_env(grow=overlap)
-    reg_buffer = gs.region(env=env)
-    # gs.parse_command(
-    #     "g.region", flags="ug", grow=overlap, overwrite=True, quiet=True
-    # )
 
-    tile_cols_n = np.ceil(float(reg_buffer["cols"]) / tile_cols).astype(int)
-    tile_rows_n = np.ceil(float(reg_buffer["rows"]) / tile_rows).astype(int)
-
-    if tile_rows_n * tile_cols_n == 1:
-        reg["cat"] = 1
-        return {1: {"inner": reg, "outer": reg_buffer}}
-
-    gs.run_command(
-        "v.mkgrid",
-        quiet=True,
-        grid=[tile_rows_n, tile_cols_n],
-        map=TMP_NAME,
-        overwrite=True,
-        env=env,
-    )
-    tile_setup = np.genfromtxt(
-        gs.read_command(
-            "v.to.db", option="bbox", flags="p", map=TMP_NAME, overwrite=True
-        )
-        .strip("\n")
-        .lower()
-        .split("\n"),
-        names=True,
-        delimiter="|",
-        dtype=None,
-    )
-
-    dtype_names = tile_setup.dtype.names
     tiling_dict = {}
-    for tile_coords in tile_setup:
-        inner_tile_bbox = align_bbox_region(
-            {dtype_name: tile_coords[dtype_name] for dtype_name in dtype_names},
-            overlap=0,
-        )
-        tile_bbox = align_bbox_region(
-            {dtype_name: tile_coords[dtype_name] for dtype_name in dtype_names},
-            overlap=overlap,
-        )
-        if tile_bbox["n"] >= reg_buffer["n"]:
-            # Top row
-            tile_bbox["n"] = reg_buffer["n"]
-            tile_bbox["s"] = np.max(
-                [reg_buffer["n"] - (tile_rows * reg_buffer["nsres"]), reg_buffer["s"]]
-            )
-            inner_tile_bbox["n"] = reg["n"]
-            inner_tile_bbox["s"] = np.max(
-                [
-                    reg_buffer["n"] - ((tile_rows * reg_buffer["nsres"]) - overlap),
-                    reg["s"],
-                ]
-            )
-        elif tile_bbox["s"] <= reg_buffer["s"]:
-            # Bottom row
-            tile_bbox["s"] = reg_buffer["s"]
-            tile_bbox["n"] = np.min(
-                [reg_buffer["s"] + (tile_rows * reg_buffer["nsres"]), reg_buffer["n"]]
-            )
-            inner_tile_bbox["s"] = reg["s"]
-            inner_tile_bbox["n"] = np.min(
-                [
-                    reg_buffer["s"] + ((tile_rows * reg_buffer["nsres"]) - overlap),
-                    reg["n"],
-                ]
-            )
-        else:
-            missing_rows = tile_rows - (tile_bbox["n"] - tile_bbox["s"]) / reg["nsres"]
-            if missing_rows % 2 > 0.0:
-                add_rows = [np.floor(missing_rows / 2), np.floor(missing_rows / 2) + 1]
-            else:
-                add_rows = [missing_rows / 2] * 2
-            tile_bbox["s"] = tile_bbox["s"] - (add_rows[0] * reg["nsres"])
-            tile_bbox["n"] = tile_bbox["n"] + (add_rows[1] * reg["nsres"])
-        tile_bbox["rows"] = int((tile_bbox["n"] - tile_bbox["s"]) / reg["nsres"])
-        inner_tile_bbox["rows"] = int(
-            (inner_tile_bbox["n"] - inner_tile_bbox["s"]) / reg["nsres"]
-        )
-        if tile_bbox["e"] >= reg_buffer["e"]:
-            # Right column
-            tile_bbox["e"] = reg_buffer["e"]
-            tile_bbox["w"] = np.max(
-                [reg_buffer["e"] - (tile_cols * reg_buffer["ewres"]), reg_buffer["w"]]
-            )
-            inner_tile_bbox["e"] = reg["e"]
-            inner_tile_bbox["w"] = np.max(
-                [
-                    reg_buffer["e"] - ((tile_cols * reg_buffer["ewres"]) - overlap),
-                    reg["w"],
-                ]
-            )
-        elif tile_bbox["w"] <= reg_buffer["w"]:
-            # Left column
-            tile_bbox["w"] = reg_buffer["w"]
-            tile_bbox["e"] = np.min(
-                [reg_buffer["w"] + (tile_cols * reg_buffer["ewres"]), reg_buffer["e"]]
-            )
-            inner_tile_bbox["w"] = reg["w"]
-            inner_tile_bbox["e"] = np.min(
-                [
-                    reg_buffer["w"] + ((tile_cols * reg_buffer["ewres"]) - overlap),
-                    reg["e"],
-                ]
-            )
-        else:
-            missing_cols = tile_cols - (tile_bbox["e"] - tile_bbox["w"]) / reg["ewres"]
-            if missing_cols % 2 > 0.0:
-                add_cols = [np.floor(missing_cols / 2), np.floor(missing_cols / 2) + 1]
-            else:
-                add_cols = [missing_cols / 2] * 2
-            tile_bbox["w"] = tile_bbox["w"] - (add_cols[0] * reg["ewres"])
-            tile_bbox["e"] = tile_bbox["e"] + (add_cols[1] * reg["ewres"])
-        tile_bbox["cols"] = int((tile_bbox["e"] - tile_bbox["w"]) / reg["ewres"])
-        inner_tile_bbox["cols"] = int(
-            (inner_tile_bbox["e"] - inner_tile_bbox["w"]) / reg["ewres"]
-        )
-        tiling_dict[tile_bbox["cat"]] = {}
-        tiling_dict[tile_bbox["cat"]]["inner"] = inner_tile_bbox
-        tiling_dict[tile_bbox["cat"]]["outer"] = tile_bbox
 
+    overlap_distance_x = overlap * float(reg["ewres"])
+    overlap_distance_y = overlap * float(reg["nsres"])
+
+    inner_tile_cols = tile_cols - 2.0 * overlap
+    inner_tile_rows = tile_rows - 2.0 * overlap
+
+    inner_tile_extent_x = inner_tile_cols * float(reg["ewres"])
+    inner_tile_extent_y = inner_tile_rows * float(reg["nsres"])
+
+    tile_cols_n = float(reg["cols"]) / inner_tile_cols
+    tile_rows_n = float(reg["rows"]) / inner_tile_rows
+
+    gs.verbose(
+        _("Setting up tiling {rows} rows and {columns} columns ...").format(
+            rows=np.ceil(tile_rows_n).astype(int),
+            columns=np.ceil(tile_cols_n).astype(int),
+        )
+    )
+
+    x_offset = ((np.ceil(tile_cols_n) - tile_cols_n) * (inner_tile_cols)) / 2.0
+    y_offset = ((np.ceil(tile_rows_n) - tile_rows_n) * (inner_tile_rows)) / 2.0
+
+    for cat, tile_idx in enumerate(
+        list(
+            product(
+                range(np.ceil(tile_cols_n).astype(int)),
+                range(np.ceil(tile_rows_n).astype(int)),
+            )
+        )
+    ):
+        tiling_dict[cat + 1] = {
+            "inner": {
+                "cat": cat + 1,
+                "n": float(reg["n"])
+                + np.ceil(y_offset) * float(reg["nsres"])
+                - tile_idx[1] * inner_tile_extent_y,
+                "s": float(reg["n"])
+                + np.ceil(y_offset) * float(reg["nsres"])
+                - (tile_idx[1] + 1) * inner_tile_extent_y,
+                "w": float(reg["w"])
+                - np.ceil(x_offset) * float(reg["ewres"])
+                + tile_idx[0] * inner_tile_extent_x,
+                "e": float(reg["w"])
+                - np.ceil(x_offset) * float(reg["ewres"])
+                + (tile_idx[0] + 1) * inner_tile_extent_x,
+                "rows": int(inner_tile_rows),
+                "cols": int(inner_tile_cols),
+                "ewres": reg["ewres"],
+                "nsres": reg["nsres"],
+            },
+            "outer": {
+                "n": float(reg["n"])
+                + np.ceil(y_offset) * float(reg["nsres"])
+                + overlap_distance_y
+                - tile_idx[1] * inner_tile_extent_y,
+                "s": float(reg["n"])
+                + np.ceil(y_offset) * float(reg["nsres"])
+                - overlap_distance_y
+                - (tile_idx[1] + 1) * inner_tile_extent_y,
+                "w": float(reg["w"])
+                - np.ceil(x_offset) * float(reg["ewres"])
+                - overlap_distance_x
+                + tile_idx[0] * inner_tile_extent_x,
+                "e": float(reg["w"])
+                - np.ceil(x_offset) * float(reg["ewres"])
+                + overlap_distance_x
+                + (tile_idx[0] + 1) * inner_tile_extent_x,
+                "rows": int(inner_tile_rows + 2 * overlap),
+                "cols": int(inner_tile_cols + 2 * overlap),
+                "ewres": reg["ewres"],
+                "nsres": reg["nsres"],
+            },
+        }
     return tiling_dict
 
 
@@ -411,30 +327,29 @@ def read_bands(raster_map_dict, bbox, null_value=0):
     data_cube = []
     for band_number in sorted(raster_map_dict.keys()):
         npa = raster2numpy(raster_map_dict[band_number][0])
-
         # Set null to nan
         if raster_map_dict[band_number][1] == "CELL":
             npa = np.where(npa == -2147483648, np.nan, npa)
 
-        # Clip to valid range ???
+        # Clip to valid range
         if raster_map_dict[band_number][2]["valid_range"]:
-            min = raster_map_dict[band_number][2]["valid_range"][0]
-            if not min:
-                min = -np.inf
-            max = raster_map_dict[band_number][2]["valid_range"][1]
-            if not max:
-                max = np.inf
-            npa = np.clip(npa, *raster_map_dict[band_number][2]["valid_range"])
+            min_value = raster_map_dict[band_number][2]["valid_range"][0]
+            if not min_value:
+                min_value = -np.inf
+            max_value = raster_map_dict[band_number][2]["valid_range"][1]
+            if not max_value:
+                max_value = np.inf
+            npa = np.clip(npa, min_value, max_value)
 
         # Abort if (any) map only contains nan
         if np.nansum(npa) == 0:
             return None
 
-        # Add offset ???
+        # Add offset
         if raster_map_dict[band_number][2]["offset"] != 0:
             npa = npa + np.array(raster_map_dict[band_number][2]["offset"])
 
-        # Apply scale ???
+        # Apply scale
         if raster_map_dict[band_number][2]["scale"] != 1:
             npa = npa * np.array(raster_map_dict[band_number][2]["scale"])
 
@@ -446,7 +361,7 @@ def read_bands(raster_map_dict, bbox, null_value=0):
 
 
 def write_result(np_array, map_name, bbox):
-    """"""
+    """Write prediction results to raster"""
     dtype2grass = {
         "uint8": "CELL",
         "int8": "CELL",
@@ -633,13 +548,22 @@ def main():
 
 def cleanup():
     """Remove all temporary data"""
+    # Remove Raster map files
     gs.run_command(
         "g.remove",
-        type=["raster", "vector"],
+        type=["raster"],
         pattern=f"{TMP_NAME}*",
         flags="f",
         quiet=True,
     )
+    # Remove external data if mapset uses r.external.out
+    external = gs.parse_key_val(gs.read_command("r.external.out", flags="p"), sep=": ")
+    if "directory" in external:
+        for map_file in Path(external["directory"]).glob(
+            f"{TMP_NAME}_*{external['extension']}"
+        ):
+            if map_file.is_file():
+                map_file.unlink()
 
 
 if __name__ == "__main__":
@@ -658,10 +582,10 @@ if __name__ == "__main__":
     gs.utils.set_path(modulename="i.pytorch", dirname="", path="..")
     try:
         from pytorchlib.utils import (
-            numpy2torch,
-            torch2numpy,
+            # numpy2torch,
+            # torch2numpy,
             validate_config,
-            transform_axes,
+            # transform_axes,
             load_model,
             predict_torch,
         )
