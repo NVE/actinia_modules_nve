@@ -59,7 +59,7 @@
 # % type: integer
 # % required: no
 # % multiple: yes
-# % description: Number of cows and columns in tiles
+# % description: Number of rows and columns in tiles
 # %end
 
 # %option
@@ -67,7 +67,14 @@
 # % type: integer
 # % required: no
 # % multiple: no
-# % description: Number of cows and columns of overlap in tiles
+# % description: Number of rows and columns of overlap in tiles
+# %end
+
+# %option G_OPT_F_INPUT
+# %key: mask_json
+# % required: no
+# % multiple: no
+# % description: JSON file with one or more mask band or map name(s) and reclass rules for masking, e.g. {"mask_band": "1 thru 12 36 = 1", "mask_map": "0"}
 # %end
 
 # %option G_OPT_F_INPUT
@@ -89,6 +96,11 @@
 # % description: Use CPU as device for prediction, default is use cuda (GPU) if detected
 # %end
 
+# %flag
+# %key: l
+# % description: Limit output to valid range (data outside the valid range is set to valid min/max)
+# %end
+
 # To do:
 # optimize tiling (shape) to minimize number of tiles and overlap between them within max size
 # Handle divisible by x (e.g. 8) for tile size to avoid:
@@ -96,13 +108,15 @@
 
 
 import atexit
+import json
 import sys
 
 from copy import deepcopy
 from functools import partial
 from itertools import product
 from pathlib import Path
-from multiprocessing import Pool
+
+# from multiprocessing import Pool
 
 import grass.script as gs
 from grass.pygrass.raster import raster2numpy, numpy2raster
@@ -195,9 +209,17 @@ def read_config(module_options):
 
     input_group_dict = {}
     semantic_labels = []
+    mask_rules = None
+    if module_options["mask_json"]:
+        mask_rules = {}
+        with open(module_options["mask_json"]) as mask_json:
+            masks = json.load(mask_json)
+
     for raster_map in maps_in_group:
         raster_map_info = gs.raster_info(raster_map)
         semantic_label = raster_map_info["semantic_label"]
+        if masks and semantic_label in masks:
+            mask_rules[semantic_label] = {raster_map: masks[semantic_label]}
         if semantic_label not in config["input_bands"]:
             continue
         semantic_labels.append(semantic_label)
@@ -225,7 +247,49 @@ def read_config(module_options):
             gs.fatal(
                 _("Band {0} is missing in input group {1}").format(band, input_group)
             )
-    return config, backbone, model_kwargs, input_group_dict
+
+    if masks:
+        for mask_entry in masks:
+            if gs.find_file(mask_entry)["fullname"]:
+                mask_rules[mask_entry] = {mask_entry: masks[mask_entry]}
+        # Check if all required masks are found:
+        for mask_entry in masks:
+            if mask_entry not in mask_rules:
+                gs.fatal(
+                    _("No raster map found for requested mask {}").format(mask_entry)
+                )
+        mask_rules_list = []
+        for idx, mask_config in enumerate(mask_rules.values()):
+            raster_map, rules = list(mask_config.items())[0]
+            if any([symbol in rules for symbol in "<>=,"]):
+                mask_rules_list.extend(
+                    [f"{raster_map}{rule}" for rule in rules.split(",")]
+                )
+            else:
+                reclass_map = f"{TMP_NAME}_mask_{idx}"
+                gs.write_command(
+                    "r.reclass",
+                    input=raster_map,
+                    output=reclass_map,
+                    rules="-",
+                    stdin=f"{rules} = 1\n",
+                )
+                mask_rules_list.append(reclass_map)
+        mask_rules = " && ".join(mask_rules_list)
+
+    return config, backbone, model_kwargs, input_group_dict, mask_rules
+
+
+def apply_mask(input_map, output_map, fill_value, masking):
+    """Apply mask(s) to the input map, and replace fill_value
+    to produce the output map"""
+    masked_pixels = f"if({masking}, {input_map}, null())" if masking else input_map
+    valid_pixels = (
+        f"if({input_map}=={fill_value}, null(),{masked_pixels}"
+        if fill_value
+        else input_map
+    )
+    gs.mapcalc(f"{output_map}={valid_pixels}")
 
 
 def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
@@ -325,12 +389,16 @@ def read_bands(raster_map_dict, bbox, null_value=0):
     raster_region.set_raster_region()
     # Clip to valid range
     data_cube = []
+    mask = None
     for band_number in sorted(raster_map_dict.keys()):
         npa = raster2numpy(raster_map_dict[band_number][0])
         # Set null to nan
         if raster_map_dict[band_number][1] == "CELL":
             npa = np.where(npa == -2147483648, np.nan, npa)
-
+        if mask is None:
+            mask = np.where(np.isnan(npa), True, False)
+        else:
+            mask = np.where(np.logical_or(mask, np.isnan(npa)), True, False)
         # Clip to valid range
         if raster_map_dict[band_number][2]["valid_range"]:
             min_value = raster_map_dict[band_number][2]["valid_range"][0]
@@ -343,7 +411,7 @@ def read_bands(raster_map_dict, bbox, null_value=0):
 
         # Abort if (any) map only contains nan
         if np.nansum(npa) == 0:
-            return None
+            return None, None
 
         # Add offset
         if raster_map_dict[band_number][2]["offset"] != 0:
@@ -357,7 +425,7 @@ def read_bands(raster_map_dict, bbox, null_value=0):
     data_cube = np.stack(data_cube, axis=-1)
     data_cube[np.isnan(data_cube)] = null_value
 
-    return data_cube
+    return data_cube, mask
 
 
 def write_result(np_array, map_name, bbox):
@@ -395,37 +463,69 @@ def write_result(np_array, map_name, bbox):
     return 0
 
 
-def tiled_rediction(
+def tiled_prediction(
     idx,
     bboxes,
     group_dict=None,
     dl_config=None,
     dl_model=None,
     device=None,
+    limit=False,
 ):
     """Predict function to be parallelized"""
-    data_cube = read_bands(group_dict, bboxes["outer"], null_value=0)
+    data_cube, mask = read_bands(group_dict, bboxes["outer"], null_value=0)
     if data_cube is None:
         return None
     prediction_result = predict_torch(
         data_cube, config_dict=dl_config, device=device, dl_model=dl_model
     )
-
+    if np.issubdtype(prediction_result.dtype, np.floating):
+        prediction_result[mask, :] = np.nan
+    else:
+        prediction_result[mask, :] = 255
     prediction_result = get_inner_bbox(
         prediction_result, bboxes["outer"], bboxes["inner"]
     )
 
     # Write each output band
     for idx, output_band in enumerate(dl_config["output_bands"]):
+        output_dtype = dl_config["output_bands"][output_band]["dtype"]
         # Clip result to valid output range
         if dl_config["output_bands"][output_band]["valid_output_range"]:
-            out_numpy = np.clip(
-                prediction_result[..., idx],
-                *dl_config["output_bands"][output_band]["valid_output_range"],
-            )
+            if limit:
+                out_numpy = prediction_result[..., idx]
+                # Limit to valid min
+                out_numpy[
+                    out_numpy
+                    < dl_config["output_bands"][output_band]["valid_output_range"][0]
+                ] = dl_config["output_bands"][output_band]["valid_output_range"][0]
+                # Limit to valid max
+                out_numpy[
+                    out_numpy
+                    > dl_config["output_bands"][output_band]["valid_output_range"][1]
+                    & out_numpy
+                    < 255
+                ] = dl_config["output_bands"][output_band]["valid_output_range"][1]
+            else:
+                out_numpy = np.clip(
+                    prediction_result[..., idx],
+                    *dl_config["output_bands"][output_band]["valid_output_range"],
+                )
         else:
             out_numpy = prediction_result[..., idx]
+        if not output_dtype.startswith("float"):
+            out_numpy[np.isnan(out_numpy)] = dl_config["output_bands"][output_band][
+                "fill_value"
+            ]
+            # out_numpy[np.isnan(out_numpy)] = dl_config["output_bands"][output_band]["fill_value"]
 
+        if out_numpy.dtype != np.dtype(output_dtype):
+            if output_dtype.startswith("float"):
+                out_numpy = np.round(
+                    out_numpy, np.finfo(output_dtype).precision
+                ).astype(output_dtype)
+            else:
+                out_numpy = np.round(out_numpy).astype(output_dtype)
         # Write data for inner tile
         write_result(
             out_numpy,
@@ -435,10 +535,13 @@ def tiled_rediction(
     return 0
 
 
-def patch_results(output_map, output_band, dl_config=None, nprocs=1):
+def patch_results(
+    output_map, output_band, masking=None, fill_value=None, dl_config=None, nprocs=1
+):
     """Patch resulting raster maps"""
     output_band_config = dl_config["output_bands"][output_band]
     output_map_name = f"{output_map}_{output_band}"
+    patch_map_name = output_map_name if not masking else f"{TMP_NAME}_{output_map_name}"
     input_maps = (
         gs.read_command("g.list", type="raster", pattern=f"{TMP_NAME}_{output_band}*")
         .strip()
@@ -454,11 +557,14 @@ def patch_results(output_map, output_band, dl_config=None, nprocs=1):
         gs.run_command(
             "r.patch",
             input=input_maps,
-            output=output_map_name,
+            output=patch_map_name,
             overwrite=gs.overwrite(),
             quiet=True,
             nprocs=nprocs,
         )
+    if masking:
+        apply_mask(patch_map_name, output_map_name, fill_value, masking)
+
     gs.raster_history(output_map_name, overwrite=True)
     gs.run_command(
         "r.support",
@@ -497,7 +603,7 @@ def main():
     region = gs.parse_command("g.region", flags="ug")
 
     # Parse and check configuration
-    dl_config, dl_backbone, dl_model_kwargs, group_dict = read_config(options)
+    dl_config, dl_backbone, dl_model_kwargs, group_dict, masking = read_config(options)
 
     # Load model
     dl_model = load_model(Path(options["model"]), dl_backbone, dl_model_kwargs)
@@ -519,11 +625,12 @@ def main():
         tile_set = create_tiling(tile_size, overlap=overlap, region=None)
 
     tiled_group_rediction = partial(
-        tiled_rediction,
+        tiled_prediction,
         group_dict=group_dict,
         dl_config=dl_config,
         dl_model=dl_model,
         device=device,
+        limit=flags["l"],
     )
     nprocs = np.min([int(options["nprocs"]), len(tile_set)])
 
@@ -542,7 +649,12 @@ def main():
     # Patch or rename results and write metadata
     for output_band in dl_config["output_bands"]:
         patch_results(
-            options["output"], output_band, dl_config=dl_config, nprocs=nprocs
+            options["output"],
+            output_band,
+            masking=masking,
+            fill_value=dl_config["output_bands"][output_band]["fill_value"],
+            dl_config=dl_config,
+            nprocs=nprocs,
         )
 
 
