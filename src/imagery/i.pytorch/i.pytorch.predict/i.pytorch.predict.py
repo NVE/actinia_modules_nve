@@ -479,10 +479,7 @@ def tiled_prediction(
     prediction_result = predict_torch(
         data_cube, config_dict=dl_config, device=device, dl_model=dl_model
     )
-    if np.issubdtype(prediction_result.dtype, np.floating):
-        prediction_result[mask, :] = np.nan
-    else:
-        prediction_result[mask, :] = 255
+    inner_mask = get_inner_bbox(mask, bboxes["outer"], bboxes["inner"])
     prediction_result = get_inner_bbox(
         prediction_result, bboxes["outer"], bboxes["inner"]
     )
@@ -514,10 +511,13 @@ def tiled_prediction(
         else:
             out_numpy = prediction_result[..., idx]
         if not output_dtype.startswith("float"):
+            out_numpy[inner_mask] = dl_config["output_bands"][output_band]["fill_value"]
             out_numpy[np.isnan(out_numpy)] = dl_config["output_bands"][output_band][
                 "fill_value"
             ]
             # out_numpy[np.isnan(out_numpy)] = dl_config["output_bands"][output_band]["fill_value"]
+        else:
+            out_numpy[inner_mask] = np.nan
 
         if out_numpy.dtype != np.dtype(output_dtype):
             if output_dtype.startswith("float"):
@@ -590,7 +590,9 @@ def get_inner_bbox(data_cube, outer_bbox, inner_bbox):
     bound_s = offset_n + inner_bbox["rows"]
     bound_e = offset_w + inner_bbox["cols"]
 
-    return data_cube[offset_n:bound_s, offset_w:bound_e, :]
+    if data_cube.ndim == 3:
+        return data_cube[offset_n:bound_s, offset_w:bound_e, :]
+    return data_cube[offset_n:bound_s, offset_w:bound_e]
 
 
 def main():
