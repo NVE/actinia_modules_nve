@@ -285,7 +285,7 @@ def apply_mask(input_map, output_map, fill_value, masking):
     to produce the output map"""
     masked_pixels = f"if({masking}, {input_map}, null())" if masking else input_map
     valid_pixels = (
-        f"if({input_map}=={fill_value}, null(),{masked_pixels}"
+        f"if({input_map}=={fill_value}, null(),{masked_pixels})"
         if fill_value
         else input_map
     )
