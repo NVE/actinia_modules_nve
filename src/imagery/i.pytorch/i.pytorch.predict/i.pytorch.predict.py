@@ -209,6 +209,7 @@ def read_config(module_options):
 
     input_group_dict = {}
     semantic_labels = []
+    masks = None
     mask_rules = None
     if module_options["mask_json"]:
         mask_rules = {}
@@ -218,7 +219,7 @@ def read_config(module_options):
     for raster_map in maps_in_group:
         raster_map_info = gs.raster_info(raster_map)
         semantic_label = raster_map_info["semantic_label"]
-        if masks and semantic_label in masks:
+        if mask_rules is not None and masks and semantic_label in masks:
             mask_rules[semantic_label] = {raster_map: masks[semantic_label]}
         if semantic_label not in config["input_bands"]:
             continue
@@ -564,6 +565,20 @@ def patch_results(
         )
     if masking:
         apply_mask(patch_map_name, output_map_name, fill_value, masking)
+
+    if dl_config["output_bands"][output_band]["classes"]:
+        gs.write_command(
+            "r.category",
+            map=output_map_name,
+            rules="-",
+            stdin="\n".join(
+                f"{key}:{val}"
+                for key, val in dl_config["output_bands"][output_band][
+                    "classes"
+                ].items()
+            ),
+            separator=":",
+        )
 
     gs.raster_history(output_map_name, overwrite=True)
     gs.run_command(
