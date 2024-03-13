@@ -87,6 +87,13 @@
 # %end
 
 # %option
+# % key: maximum_solar_angle
+# % type: double
+# % description: Import only pixels where solar angle is lower or equal to the given maximum
+# % required: no
+# %end
+
+# %option
 # % key: basename
 # % description: Basename used as prefix for map names (default is derived from the input file(s))
 # % required: no
@@ -367,6 +374,7 @@ def main():
             "anxillary_bands",
             "flag_bands",
             "basename",
+            "maximum_solar_angle",
         ]
     }
     module_options["nprocs"] = nprocs_inner
