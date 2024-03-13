@@ -48,7 +48,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>i.pytorch.predict</b><br></div>
 <b>i.pytorch.predict --help</b><br>
-<div id="synopsis"><b>i.pytorch.predict</b> [-<b>c</b>] <b>input</b>=<em>name</em> <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]  <b>configuration</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]  <b>output</b>=<em>name</em>  [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>i.pytorch.predict</b> [-<b>cl</b>] <b>input</b>=<em>name</em> <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]   [<b>mask_json</b>=<em>name</em>]  <b>configuration</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]  <b>output</b>=<em>name</em>  [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -56,6 +56,9 @@ grassLogoLink.after(temp.content);
 <dl>
 <dt><b>-c</b></dt>
 <dd>Use CPU as device for prediction, default is use cuda (GPU) if detected</dd>
+
+<dt><b>-l</b></dt>
+<dd>Limit output to valid range (data outside the valid range is set to valid min/max)</dd>
 
 <dt><b>--overwrite</b></dt>
 <dd>Allow output files to overwrite existing files</dd>
@@ -83,10 +86,13 @@ grassLogoLink.after(temp.content);
 <dd>Path to input deep learning model code (.py)</dd>
 
 <dt><b>tile_size</b>=<em>integer[,<i>integer</i>,...]</em></dt>
-<dd>Number of cows and columns in tiles</dd>
+<dd>Number of rows and columns in tiles</dd>
 
 <dt><b>overlap</b>=<em>integer</em></dt>
-<dd>Number of cows and columns of overlap in tiles</dd>
+<dd>Number of rows and columns of overlap in tiles</dd>
+
+<dt><b>mask_json</b>=<em>name</em></dt>
+<dd>JSON file with one or more mask band or map name(s) and reclass rules for masking, e.g. {"mask_band": "1 thru 12 36 = 1", "mask_map": "0"}</dd>
 
 <dt><b>configuration</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
 <dd>Path to JSON file with band configuration in the input deep learning model</dd>
@@ -235,7 +241,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Wednesday Mar 13 14:36:32 2024
+  Accessed: Wednesday Mar 13 14:37:36 2024
 </p>
 <hr class="header">
 <p>

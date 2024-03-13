@@ -5,9 +5,9 @@
  <meta name="Author" content="GRASS Development Team">
  <meta http-equiv="content-language" content="en-us">
  <meta name="viewport" content="width=device-width, initial-scale=1">
- <title>t.sentinel3.import - GRASS GIS manual</title>
- <meta name="description" content="t.sentinel3.import: Import and pre-process Sentinel-3 data from the Copernicus program into a Space Time Raster Dataset (STRDS)">
- <meta name="keywords" content="imagery, satellite, Sentinel, temporal, import, optical, thermal">
+ <title>t.pytorch.predict - GRASS GIS manual</title>
+ <meta name="description" content="t.pytorch.predict: Apply a pytorch model to imagery groups in a Space Time Raster Dataset (STRDS)">
+ <meta name="keywords" content="raster, imagery, deep learning, pytorch, unet, GPU, predict">
  <link rel="stylesheet" href="grassdocs.css" type="text/css">
 </head>
 <body bgcolor="white">
@@ -43,13 +43,13 @@ grassLogoLink.after(temp.content);
 <hr class="header">
 
 <h2>NAME</h2>
-<em><b>t.sentinel3.import</b></em>  - Import and pre-process Sentinel-3 data from the Copernicus program into a Space Time Raster Dataset (STRDS)
+<em><b>t.pytorch.predict</b></em>  - Apply a pytorch model to imagery groups in a Space Time Raster Dataset (STRDS)
 <h2>KEYWORDS</h2>
-<a href="file:///usr/lib/grass83/docs/html/imagery.html">imagery</a>, <a href="file:///usr/lib/grass83/docs/html/topic_satellite.html">satellite</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#Sentinel">Sentinel</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#temporal">temporal</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#import">import</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#optical">optical</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#thermal">thermal</a>
+<a href="file:///usr/lib/grass83/docs/html/raster.html">raster</a>, <a href="file:///usr/lib/grass83/docs/html/topic_imagery.html">imagery</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#deep learning">deep learning</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#pytorch">pytorch</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#unet">unet</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#GPU">GPU</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#predict">predict</a>
 <h2>SYNOPSIS</h2>
-<div id="name"><b>t.sentinel3.import</b><br></div>
-<b>t.sentinel3.import --help</b><br>
-<div id="synopsis"><b>t.sentinel3.import</b> [-<b>ecdjkonr</b>] <b>input</b>=<em>string</em>[,<i>string</i>,...] <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>product_type</b>=<em>string</em> <b>bands</b>=<em>string</em>[,<i>string</i>,...]  [<b>anxillary_bands</b>=<em>string</em>[,<i>string</i>,...]]   [<b>flag_bands</b>=<em>string</em>[,<i>string</i>,...]]   [<b>maximum_solar_angle</b>=<em>float</em>]   [<b>basename</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="name"><b>t.pytorch.predict</b><br></div>
+<b>t.pytorch.predict --help</b><br>
+<div id="synopsis"><b>t.pytorch.predict</b> [-<b>ecl</b>] <b>input</b>=<em>name</em> <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]  <b>configuration</b>=<em>name</em>  [<b>mask_json</b>=<em>name</em>]  <b>semantic_label</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]   [<b>basename</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -59,25 +59,10 @@ grassLogoLink.after(temp.content);
 <dd>Extend existing STRDS (requires overwrite flag)</dd>
 
 <dt><b>-c</b></dt>
-<dd>Import LST in degree celsius (default is kelvin)</dd>
+<dd>Use CPU as device for prediction, default is use cuda (GPU) if detected</dd>
 
-<dt><b>-d</b></dt>
-<dd>Import data with decimals as double precision</dd>
-
-<dt><b>-j</b></dt>
-<dd>Write metadata json for each band to LOCATION/MAPSET/cell_misc/BAND/description.json</dd>
-
-<dt><b>-k</b></dt>
-<dd>Keep original cell values during interpolation (see: r.fill.stats)</dd>
-
-<dt><b>-o</b></dt>
-<dd>Process oblique view (default is nadir)</dd>
-
-<dt><b>-n</b></dt>
-<dd>Import data at native resolution of the bands (default is use current region)</dd>
-
-<dt><b>-r</b></dt>
-<dd>Rescale radiance bands to reflectance</dd>
+<dt><b>-l</b></dt>
+<dd>Limit output to valid range (data outside the valid range is set to valid min/max)</dd>
 
 <dt><b>--overwrite</b></dt>
 <dd>Allow output files to overwrite existing files</dd>
@@ -95,12 +80,11 @@ grassLogoLink.after(temp.content);
 <div id="parameters">
 <h3>Parameters:</h3>
 <dl>
-<dt><b>input</b>=<em>string[,<i>string</i>,...]</em>&nbsp;<b>[required]</b></dt>
-<dd>Sentinel-3 input data</dd>
-<dd>Either a (comma separated list of) path(s) to Sentinel-3 zip files or a textfile with such paths (one per row)</dd>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the input space time raster dataset</dd>
 
 <dt><b>output</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
-<dd>Name of the output space time raster dataset (STRDS)</dd>
+<dd>Name of the output space time raster dataset</dd>
 
 <dt><b>title</b>=<em>string</em></dt>
 <dd>Title of the resulting STRDS</dd>
@@ -108,32 +92,33 @@ grassLogoLink.after(temp.content);
 <dt><b>description</b>=<em>string</em></dt>
 <dd>Description of the resulting STRDS</dd>
 
-<dt><b>product_type</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
-<dd>Sentinel-3 product type to import (currently, only S3SL1RBT and S3SL2LST are supported)</dd>
-<dd>Options: <em>S3SL1RBT, S3SL2LST</em></dd>
-<dd>Default: <em>S3SL2LST</em></dd>
+<dt><b>model</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to input deep learning model file (.pt)</dd>
 
-<dt><b>bands</b>=<em>string[,<i>string</i>,...]</em>&nbsp;<b>[required]</b></dt>
-<dd>Data bands to import (e.g. LST, default is all available)</dd>
-<dd>Default: <em>all</em></dd>
+<dt><b>model_code</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to input deep learning model code (.py)</dd>
 
-<dt><b>anxillary_bands</b>=<em>string[,<i>string</i>,...]</em></dt>
-<dd>Anxillary data bands to import (e.g. LST_uncertainty, default is all available)</dd>
-<dd>Default: <em>all</em></dd>
+<dt><b>tile_size</b>=<em>integer[,<i>integer</i>,...]</em></dt>
+<dd>Number of rows and columns in tiles (rows, columns)</dd>
 
-<dt><b>flag_bands</b>=<em>string[,<i>string</i>,...]</em></dt>
-<dd>Quality flag bands to import (e.g. bayes_in, default is all available)</dd>
-<dd>Default: <em>all</em></dd>
+<dt><b>overlap</b>=<em>integer</em></dt>
+<dd>Number of rows and columns of overlap in tiles</dd>
 
-<dt><b>maximum_solar_angle</b>=<em>float</em></dt>
-<dd>Import only pixels where solar angle is lower or equal to the given maximum</dd>
+<dt><b>configuration</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to JSON file with band configuration in the input deep learning model</dd>
 
-<dt><b>basename</b>=<em>string</em></dt>
-<dd>Basename used as prefix for map names (default is derived from the input file(s))</dd>
+<dt><b>mask_json</b>=<em>name</em></dt>
+<dd>JSON file with one or more mask band or map name(s) and reclass rules for masking, e.g. {"mask_band": "1 thru 12 36 = 1", "mask_map": "0"}</dd>
+
+<dt><b>semantic_label</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Semantic label to assign to the output maps</dd>
 
 <dt><b>nprocs</b>=<em>integer</em></dt>
 <dd>Number of threads for parallel computing</dd>
 <dd>Default: <em>1</em></dd>
+
+<dt><b>basename</b>=<em>string</em></dt>
+<dd>Name for output raster map</dd>
 
 </dl>
 </div>
@@ -241,11 +226,11 @@ Stefan Blumentrath, NVE
 <h2>SOURCE CODE</h2>
 <p>
   Available at:
-  <a href="">t.sentinel3.import source code</a>
+  <a href="">t.pytorch.predict source code</a>
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Wednesday Mar 13 14:37:41 2024
+  Accessed: Wednesday Mar 13 14:37:40 2024
 </p>
 <hr class="header">
 <p>
