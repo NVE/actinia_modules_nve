@@ -10,7 +10,6 @@
 - [r.avaframe.com1dfa_v2](./r.avaframe.com1dfa_v2.html)
 - [r.timeseries.locations](./r.timeseries.locations.html)
 - [t.import.hrsi](./t.import.hrsi.html)
-- [t.pytorch.predict](./t.pytorch.predict.html)
 - [t.rast.reclass](./t.rast.reclass.html)
 - [t.rast.stats](./t.rast.stats.html)
 - [t.register.local](./t.register.local.html)
