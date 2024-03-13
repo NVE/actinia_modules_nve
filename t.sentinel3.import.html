@@ -49,7 +49,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>t.sentinel3.import</b><br></div>
 <b>t.sentinel3.import --help</b><br>
-<div id="synopsis"><b>t.sentinel3.import</b> [-<b>ecdjkonr</b>] <b>input</b>=<em>string</em>[,<i>string</i>,...] <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>product_type</b>=<em>string</em> <b>bands</b>=<em>string</em>[,<i>string</i>,...]  [<b>anxillary_bands</b>=<em>string</em>[,<i>string</i>,...]]   [<b>flag_bands</b>=<em>string</em>[,<i>string</i>,...]]   [<b>basename</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>t.sentinel3.import</b> [-<b>ecdjkonr</b>] <b>input</b>=<em>string</em>[,<i>string</i>,...] <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>product_type</b>=<em>string</em> <b>bands</b>=<em>string</em>[,<i>string</i>,...]  [<b>anxillary_bands</b>=<em>string</em>[,<i>string</i>,...]]   [<b>flag_bands</b>=<em>string</em>[,<i>string</i>,...]]   [<b>maximum_solar_angle</b>=<em>float</em>]   [<b>basename</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -124,6 +124,9 @@ grassLogoLink.after(temp.content);
 <dt><b>flag_bands</b>=<em>string[,<i>string</i>,...]</em></dt>
 <dd>Quality flag bands to import (e.g. bayes_in, default is all available)</dd>
 <dd>Default: <em>all</em></dd>
+
+<dt><b>maximum_solar_angle</b>=<em>float</em></dt>
+<dd>Import only pixels where solar angle is lower or equal to the given maximum</dd>
 
 <dt><b>basename</b>=<em>string</em></dt>
 <dd>Basename used as prefix for map names (default is derived from the input file(s))</dd>
@@ -234,14 +237,15 @@ t.info Sentinel_3_SLSTR_RBT_L2
 
 <h2><a name="author">AUTHOR</a></h2>
 
-Stefan Blumentrath, NVE<h2>SOURCE CODE</h2>
+Stefan Blumentrath, NVE
+<h2>SOURCE CODE</h2>
 <p>
   Available at:
   <a href="">t.sentinel3.import source code</a>
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Tuesday Mar 05 09:47:25 2024
+  Accessed: Wednesday Mar 13 14:36:36 2024
 </p>
 <hr class="header">
 <p>
@@ -253,9 +257,9 @@ Stefan Blumentrath, NVE<h2>SOURCE CODE</h2>
 <a href="file:///usr/lib/grass83/docs/html/full_index.html">Full index</a>
 </p>
 <p>
-&copy; 2003-2023
+&copy; 2003-2024
 <a href="https://grass.osgeo.org">GRASS Development Team</a>,
-GRASS GIS 8.3.1 Reference Manual
+GRASS GIS 8.3.2 Reference Manual
 </p>
 
 </div>
