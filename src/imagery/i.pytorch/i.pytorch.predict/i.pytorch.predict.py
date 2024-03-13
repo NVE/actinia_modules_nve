@@ -59,7 +59,7 @@
 # % type: integer
 # % required: no
 # % multiple: yes
-# % description: Number of cows and columns in tiles
+# % description: Number of rows and columns in tiles
 # %end
 
 # %option
@@ -67,7 +67,14 @@
 # % type: integer
 # % required: no
 # % multiple: no
-# % description: Number of cows and columns of overlap in tiles
+# % description: Number of rows and columns of overlap in tiles
+# %end
+
+# %option G_OPT_F_INPUT
+# %key: mask_json
+# % required: no
+# % multiple: no
+# % description: JSON file with one or more mask band or map name(s) and reclass rules for masking, e.g. {"mask_band": "1 thru 12 36 = 1", "mask_map": "0"}
 # %end
 
 # %option G_OPT_F_INPUT
@@ -89,6 +96,10 @@
 # % description: Use CPU as device for prediction, default is use cuda (GPU) if detected
 # %end
 
+# %flag
+# %key: l
+# % description: Limit output to valid range (data outside the valid range is set to valid min/max)
+# %end
 
 # To do:
 # optimize tiling (shape) to minimize number of tiles and overlap between them within max size
@@ -97,13 +108,15 @@
 
 
 import atexit
-import os
+import json
 import sys
 
 from copy import deepcopy
 from functools import partial
+from itertools import product
 from pathlib import Path
-from multiprocessing import Pool
+
+# from multiprocessing import Pool
 
 import grass.script as gs
 from grass.pygrass.raster import raster2numpy, numpy2raster
@@ -196,9 +209,18 @@ def read_config(module_options):
 
     input_group_dict = {}
     semantic_labels = []
+    masks = None
+    mask_rules = None
+    if module_options["mask_json"]:
+        mask_rules = {}
+        with open(module_options["mask_json"]) as mask_json:
+            masks = json.load(mask_json)
+
     for raster_map in maps_in_group:
         raster_map_info = gs.raster_info(raster_map)
         semantic_label = raster_map_info["semantic_label"]
+        if mask_rules is not None and masks and semantic_label in masks:
+            mask_rules[semantic_label] = {raster_map: masks[semantic_label]}
         if semantic_label not in config["input_bands"]:
             continue
         semantic_labels.append(semantic_label)
@@ -226,40 +248,49 @@ def read_config(module_options):
             gs.fatal(
                 _("Band {0} is missing in input group {1}").format(band, input_group)
             )
-    return config, backbone, model_kwargs, input_group_dict
+
+    if masks:
+        for mask_entry in masks:
+            if gs.find_file(mask_entry)["fullname"]:
+                mask_rules[mask_entry] = {mask_entry: masks[mask_entry]}
+        # Check if all required masks are found:
+        for mask_entry in masks:
+            if mask_entry not in mask_rules:
+                gs.fatal(
+                    _("No raster map found for requested mask {}").format(mask_entry)
+                )
+        mask_rules_list = []
+        for idx, mask_config in enumerate(mask_rules.values()):
+            raster_map, rules = list(mask_config.items())[0]
+            if any([symbol in rules for symbol in "<>=,"]):
+                mask_rules_list.extend(
+                    [f"{raster_map}{rule}" for rule in rules.split(",")]
+                )
+            else:
+                reclass_map = f"{TMP_NAME}_mask_{idx}"
+                gs.write_command(
+                    "r.reclass",
+                    input=raster_map,
+                    output=reclass_map,
+                    rules="-",
+                    stdin=f"{rules} = 1\n",
+                )
+                mask_rules_list.append(reclass_map)
+        mask_rules = " && ".join(mask_rules_list)
+
+    return config, backbone, model_kwargs, input_group_dict, mask_rules
 
 
-def align_bbox_region(bbox, reference_region=None, overlap=0):
-    """Align a boundig box to the current or a reference region"""
-    if not reference_region:
-        reference_region = gs.region()
-    bbox["w"] = (
-        np.floor((bbox["w"] - reference_region["w"]) / reference_region["ewres"])
-        * reference_region["ewres"]
-        + reference_region["w"]
-        - overlap * reference_region["ewres"]
+def apply_mask(input_map, output_map, fill_value, masking):
+    """Apply mask(s) to the input map, and replace fill_value
+    to produce the output map"""
+    masked_pixels = f"if({masking}, {input_map}, null())" if masking else input_map
+    valid_pixels = (
+        f"if({input_map}=={fill_value}, null(),{masked_pixels})"
+        if fill_value
+        else input_map
     )
-    bbox["e"] = (
-        np.ceil((bbox["e"] - reference_region["e"]) / reference_region["ewres"])
-        * reference_region["ewres"]
-        + reference_region["e"]
-        + overlap * reference_region["ewres"]
-    )
-    bbox["s"] = (
-        np.floor((bbox["s"] - reference_region["s"]) / reference_region["nsres"])
-        * reference_region["nsres"]
-        + reference_region["s"]
-        - overlap * reference_region["nsres"]
-    )
-    bbox["n"] = (
-        np.ceil((bbox["n"] - reference_region["n"]) / reference_region["nsres"])
-        * reference_region["nsres"]
-        + reference_region["n"]
-        + overlap * reference_region["nsres"]
-    )
-    bbox["ewres"] = reference_region["ewres"]
-    bbox["nsres"] = reference_region["nsres"]
-    return bbox
+    gs.mapcalc(f"{output_map}={valid_pixels}")
 
 
 def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
@@ -268,133 +299,83 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
     overlap number of pixels around
     Returns a dictionary with inner and outer region of a tile
     """
-    gs.verbose(_("Setting up tiling ..."))
     reg = region or gs.region()
-    env = os.environ.copy()
-    env["GRASS_REGION"] = gs.region_env(grow=overlap)
-    reg_buffer = gs.region(env=env)
-    # gs.parse_command(
-    #     "g.region", flags="ug", grow=overlap, overwrite=True, quiet=True
-    # )
 
-    tile_cols_n = np.ceil(float(reg_buffer["cols"]) / tile_cols).astype(int)
-    tile_rows_n = np.ceil(float(reg_buffer["rows"]) / tile_rows).astype(int)
-
-    if tile_rows_n * tile_cols_n == 1:
-        reg["cat"] = 1
-        return {1: {"inner": reg, "outer": reg_buffer}}
-
-    gs.run_command(
-        "v.mkgrid",
-        quiet=True,
-        grid=[tile_rows_n, tile_cols_n],
-        map=TMP_NAME,
-        overwrite=True,
-        env=env,
-    )
-    tile_setup = np.genfromtxt(
-        gs.read_command(
-            "v.to.db", option="bbox", flags="p", map=TMP_NAME, overwrite=True
-        )
-        .strip("\n")
-        .lower()
-        .split("\n"),
-        names=True,
-        delimiter="|",
-        dtype=None,
-    )
-
-    dtype_names = tile_setup.dtype.names
     tiling_dict = {}
-    for tile_coords in tile_setup:
-        inner_tile_bbox = align_bbox_region(
-            {dtype_name: tile_coords[dtype_name] for dtype_name in dtype_names},
-            overlap=0,
-        )
-        tile_bbox = align_bbox_region(
-            {dtype_name: tile_coords[dtype_name] for dtype_name in dtype_names},
-            overlap=overlap,
-        )
-        if tile_bbox["n"] >= reg_buffer["n"]:
-            # Top row
-            tile_bbox["n"] = reg_buffer["n"]
-            tile_bbox["s"] = np.max(
-                [reg_buffer["n"] - (tile_rows * reg_buffer["nsres"]), reg_buffer["s"]]
-            )
-            inner_tile_bbox["n"] = reg["n"]
-            inner_tile_bbox["s"] = np.max(
-                [
-                    reg_buffer["n"] - ((tile_rows * reg_buffer["nsres"]) - overlap),
-                    reg["s"],
-                ]
-            )
-        elif tile_bbox["s"] <= reg_buffer["s"]:
-            # Bottom row
-            tile_bbox["s"] = reg_buffer["s"]
-            tile_bbox["n"] = np.min(
-                [reg_buffer["s"] + (tile_rows * reg_buffer["nsres"]), reg_buffer["n"]]
-            )
-            inner_tile_bbox["s"] = reg["s"]
-            inner_tile_bbox["n"] = np.min(
-                [
-                    reg_buffer["s"] + ((tile_rows * reg_buffer["nsres"]) - overlap),
-                    reg["n"],
-                ]
-            )
-        else:
-            missing_rows = tile_rows - (tile_bbox["n"] - tile_bbox["s"]) / reg["nsres"]
-            if missing_rows % 2 > 0.0:
-                add_rows = [np.floor(missing_rows / 2), np.floor(missing_rows / 2) + 1]
-            else:
-                add_rows = [missing_rows / 2] * 2
-            tile_bbox["s"] = tile_bbox["s"] - (add_rows[0] * reg["nsres"])
-            tile_bbox["n"] = tile_bbox["n"] + (add_rows[1] * reg["nsres"])
-        tile_bbox["rows"] = int((tile_bbox["n"] - tile_bbox["s"]) / reg["nsres"])
-        inner_tile_bbox["rows"] = int(
-            (inner_tile_bbox["n"] - inner_tile_bbox["s"]) / reg["nsres"]
-        )
-        if tile_bbox["e"] >= reg_buffer["e"]:
-            # Right column
-            tile_bbox["e"] = reg_buffer["e"]
-            tile_bbox["w"] = np.max(
-                [reg_buffer["e"] - (tile_cols * reg_buffer["ewres"]), reg_buffer["w"]]
-            )
-            inner_tile_bbox["e"] = reg["e"]
-            inner_tile_bbox["w"] = np.max(
-                [
-                    reg_buffer["e"] - ((tile_cols * reg_buffer["ewres"]) - overlap),
-                    reg["w"],
-                ]
-            )
-        elif tile_bbox["w"] <= reg_buffer["w"]:
-            # Left column
-            tile_bbox["w"] = reg_buffer["w"]
-            tile_bbox["e"] = np.min(
-                [reg_buffer["w"] + (tile_cols * reg_buffer["ewres"]), reg_buffer["e"]]
-            )
-            inner_tile_bbox["w"] = reg["w"]
-            inner_tile_bbox["e"] = np.min(
-                [
-                    reg_buffer["w"] + ((tile_cols * reg_buffer["ewres"]) - overlap),
-                    reg["e"],
-                ]
-            )
-        else:
-            missing_cols = tile_cols - (tile_bbox["e"] - tile_bbox["w"]) / reg["ewres"]
-            if missing_cols % 2 > 0.0:
-                add_cols = [np.floor(missing_cols / 2), np.floor(missing_cols / 2) + 1]
-            else:
-                add_cols = [missing_cols / 2] * 2
-            tile_bbox["w"] = tile_bbox["w"] - (add_cols[0] * reg["ewres"])
-            tile_bbox["e"] = tile_bbox["e"] + (add_cols[1] * reg["ewres"])
-        tile_bbox["cols"] = int((tile_bbox["e"] - tile_bbox["w"]) / reg["ewres"])
-        inner_tile_bbox["cols"] = int(
-            (inner_tile_bbox["e"] - inner_tile_bbox["w"]) / reg["ewres"]
-        )
-        tiling_dict[tile_bbox["cat"]] = {}
-        tiling_dict[tile_bbox["cat"]]["inner"] = inner_tile_bbox
-        tiling_dict[tile_bbox["cat"]]["outer"] = tile_bbox
 
+    overlap_distance_x = overlap * float(reg["ewres"])
+    overlap_distance_y = overlap * float(reg["nsres"])
+
+    inner_tile_cols = tile_cols - 2.0 * overlap
+    inner_tile_rows = tile_rows - 2.0 * overlap
+
+    inner_tile_extent_x = inner_tile_cols * float(reg["ewres"])
+    inner_tile_extent_y = inner_tile_rows * float(reg["nsres"])
+
+    tile_cols_n = float(reg["cols"]) / inner_tile_cols
+    tile_rows_n = float(reg["rows"]) / inner_tile_rows
+
+    gs.verbose(
+        _("Setting up tiling {rows} rows and {columns} columns ...").format(
+            rows=np.ceil(tile_rows_n).astype(int),
+            columns=np.ceil(tile_cols_n).astype(int),
+        )
+    )
+
+    x_offset = ((np.ceil(tile_cols_n) - tile_cols_n) * (inner_tile_cols)) / 2.0
+    y_offset = ((np.ceil(tile_rows_n) - tile_rows_n) * (inner_tile_rows)) / 2.0
+
+    for cat, tile_idx in enumerate(
+        list(
+            product(
+                range(np.ceil(tile_cols_n).astype(int)),
+                range(np.ceil(tile_rows_n).astype(int)),
+            )
+        )
+    ):
+        tiling_dict[cat + 1] = {
+            "inner": {
+                "cat": cat + 1,
+                "n": float(reg["n"])
+                + np.ceil(y_offset) * float(reg["nsres"])
+                - tile_idx[1] * inner_tile_extent_y,
+                "s": float(reg["n"])
+                + np.ceil(y_offset) * float(reg["nsres"])
+                - (tile_idx[1] + 1) * inner_tile_extent_y,
+                "w": float(reg["w"])
+                - np.ceil(x_offset) * float(reg["ewres"])
+                + tile_idx[0] * inner_tile_extent_x,
+                "e": float(reg["w"])
+                - np.ceil(x_offset) * float(reg["ewres"])
+                + (tile_idx[0] + 1) * inner_tile_extent_x,
+                "rows": int(inner_tile_rows),
+                "cols": int(inner_tile_cols),
+                "ewres": reg["ewres"],
+                "nsres": reg["nsres"],
+            },
+            "outer": {
+                "n": float(reg["n"])
+                + np.ceil(y_offset) * float(reg["nsres"])
+                + overlap_distance_y
+                - tile_idx[1] * inner_tile_extent_y,
+                "s": float(reg["n"])
+                + np.ceil(y_offset) * float(reg["nsres"])
+                - overlap_distance_y
+                - (tile_idx[1] + 1) * inner_tile_extent_y,
+                "w": float(reg["w"])
+                - np.ceil(x_offset) * float(reg["ewres"])
+                - overlap_distance_x
+                + tile_idx[0] * inner_tile_extent_x,
+                "e": float(reg["w"])
+                - np.ceil(x_offset) * float(reg["ewres"])
+                + overlap_distance_x
+                + (tile_idx[0] + 1) * inner_tile_extent_x,
+                "rows": int(inner_tile_rows + 2 * overlap),
+                "cols": int(inner_tile_cols + 2 * overlap),
+                "ewres": reg["ewres"],
+                "nsres": reg["nsres"],
+            },
+        }
     return tiling_dict
 
 
@@ -409,32 +390,35 @@ def read_bands(raster_map_dict, bbox, null_value=0):
     raster_region.set_raster_region()
     # Clip to valid range
     data_cube = []
+    mask = None
     for band_number in sorted(raster_map_dict.keys()):
         npa = raster2numpy(raster_map_dict[band_number][0])
-
         # Set null to nan
         if raster_map_dict[band_number][1] == "CELL":
             npa = np.where(npa == -2147483648, np.nan, npa)
-
-        # Clip to valid range ???
+        if mask is None:
+            mask = np.where(np.isnan(npa), True, False)
+        else:
+            mask = np.where(np.logical_or(mask, np.isnan(npa)), True, False)
+        # Clip to valid range
         if raster_map_dict[band_number][2]["valid_range"]:
-            min = raster_map_dict[band_number][2]["valid_range"][0]
-            if not min:
-                min = -np.inf
-            max = raster_map_dict[band_number][2]["valid_range"][1]
-            if not max:
-                max = np.inf
-            npa = np.clip(npa, *raster_map_dict[band_number][2]["valid_range"])
+            min_value = raster_map_dict[band_number][2]["valid_range"][0]
+            if not min_value:
+                min_value = -np.inf
+            max_value = raster_map_dict[band_number][2]["valid_range"][1]
+            if not max_value:
+                max_value = np.inf
+            npa = np.clip(npa, min_value, max_value)
 
         # Abort if (any) map only contains nan
         if np.nansum(npa) == 0:
-            return None
+            return None, None
 
-        # Add offset ???
+        # Add offset
         if raster_map_dict[band_number][2]["offset"] != 0:
             npa = npa + np.array(raster_map_dict[band_number][2]["offset"])
 
-        # Apply scale ???
+        # Apply scale
         if raster_map_dict[band_number][2]["scale"] != 1:
             npa = npa * np.array(raster_map_dict[band_number][2]["scale"])
 
@@ -442,11 +426,11 @@ def read_bands(raster_map_dict, bbox, null_value=0):
     data_cube = np.stack(data_cube, axis=-1)
     data_cube[np.isnan(data_cube)] = null_value
 
-    return data_cube
+    return data_cube, mask
 
 
 def write_result(np_array, map_name, bbox):
-    """"""
+    """Write prediction results to raster"""
     dtype2grass = {
         "uint8": "CELL",
         "int8": "CELL",
@@ -480,37 +464,69 @@ def write_result(np_array, map_name, bbox):
     return 0
 
 
-def tiled_rediction(
+def tiled_prediction(
     idx,
     bboxes,
     group_dict=None,
     dl_config=None,
     dl_model=None,
     device=None,
+    limit=False,
 ):
     """Predict function to be parallelized"""
-    data_cube = read_bands(group_dict, bboxes["outer"], null_value=0)
+    data_cube, mask = read_bands(group_dict, bboxes["outer"], null_value=0)
     if data_cube is None:
         return None
     prediction_result = predict_torch(
         data_cube, config_dict=dl_config, device=device, dl_model=dl_model
     )
-
+    inner_mask = get_inner_bbox(mask, bboxes["outer"], bboxes["inner"])
     prediction_result = get_inner_bbox(
         prediction_result, bboxes["outer"], bboxes["inner"]
     )
 
     # Write each output band
     for idx, output_band in enumerate(dl_config["output_bands"]):
+        output_dtype = dl_config["output_bands"][output_band]["dtype"]
         # Clip result to valid output range
         if dl_config["output_bands"][output_band]["valid_output_range"]:
-            out_numpy = np.clip(
-                prediction_result[..., idx],
-                *dl_config["output_bands"][output_band]["valid_output_range"],
-            )
+            if limit:
+                out_numpy = prediction_result[..., idx]
+                # Limit to valid min
+                out_numpy[
+                    out_numpy
+                    < dl_config["output_bands"][output_band]["valid_output_range"][0]
+                ] = dl_config["output_bands"][output_band]["valid_output_range"][0]
+                # Limit to valid max
+                out_numpy[
+                    out_numpy
+                    > dl_config["output_bands"][output_band]["valid_output_range"][1]
+                    & out_numpy
+                    < 255
+                ] = dl_config["output_bands"][output_band]["valid_output_range"][1]
+            else:
+                out_numpy = np.clip(
+                    prediction_result[..., idx],
+                    *dl_config["output_bands"][output_band]["valid_output_range"],
+                )
         else:
             out_numpy = prediction_result[..., idx]
+        if not output_dtype.startswith("float"):
+            out_numpy[inner_mask] = dl_config["output_bands"][output_band]["fill_value"]
+            out_numpy[np.isnan(out_numpy)] = dl_config["output_bands"][output_band][
+                "fill_value"
+            ]
+            # out_numpy[np.isnan(out_numpy)] = dl_config["output_bands"][output_band]["fill_value"]
+        else:
+            out_numpy[inner_mask] = np.nan
 
+        if out_numpy.dtype != np.dtype(output_dtype):
+            if output_dtype.startswith("float"):
+                out_numpy = np.round(
+                    out_numpy, np.finfo(output_dtype).precision
+                ).astype(output_dtype)
+            else:
+                out_numpy = np.round(out_numpy).astype(output_dtype)
         # Write data for inner tile
         write_result(
             out_numpy,
@@ -520,10 +536,13 @@ def tiled_rediction(
     return 0
 
 
-def patch_results(output_map, output_band, dl_config=None, nprocs=1):
+def patch_results(
+    output_map, output_band, masking=None, fill_value=None, dl_config=None, nprocs=1
+):
     """Patch resulting raster maps"""
     output_band_config = dl_config["output_bands"][output_band]
     output_map_name = f"{output_map}_{output_band}"
+    patch_map_name = output_map_name if not masking else f"{TMP_NAME}_{output_map_name}"
     input_maps = (
         gs.read_command("g.list", type="raster", pattern=f"{TMP_NAME}_{output_band}*")
         .strip()
@@ -539,11 +558,28 @@ def patch_results(output_map, output_band, dl_config=None, nprocs=1):
         gs.run_command(
             "r.patch",
             input=input_maps,
-            output=output_map_name,
+            output=patch_map_name,
             overwrite=gs.overwrite(),
             quiet=True,
             nprocs=nprocs,
         )
+    if masking:
+        apply_mask(patch_map_name, output_map_name, fill_value, masking)
+
+    if dl_config["output_bands"][output_band]["classes"]:
+        gs.write_command(
+            "r.category",
+            map=output_map_name,
+            rules="-",
+            stdin="\n".join(
+                f"{key}:{val}"
+                for key, val in dl_config["output_bands"][output_band][
+                    "classes"
+                ].items()
+            ),
+            separator=":",
+        )
+
     gs.raster_history(output_map_name, overwrite=True)
     gs.run_command(
         "r.support",
@@ -569,7 +605,9 @@ def get_inner_bbox(data_cube, outer_bbox, inner_bbox):
     bound_s = offset_n + inner_bbox["rows"]
     bound_e = offset_w + inner_bbox["cols"]
 
-    return data_cube[offset_n:bound_s, offset_w:bound_e, :]
+    if data_cube.ndim == 3:
+        return data_cube[offset_n:bound_s, offset_w:bound_e, :]
+    return data_cube[offset_n:bound_s, offset_w:bound_e]
 
 
 def main():
@@ -582,7 +620,7 @@ def main():
     region = gs.parse_command("g.region", flags="ug")
 
     # Parse and check configuration
-    dl_config, dl_backbone, dl_model_kwargs, group_dict = read_config(options)
+    dl_config, dl_backbone, dl_model_kwargs, group_dict, masking = read_config(options)
 
     # Load model
     dl_model = load_model(Path(options["model"]), dl_backbone, dl_model_kwargs)
@@ -604,11 +642,12 @@ def main():
         tile_set = create_tiling(tile_size, overlap=overlap, region=None)
 
     tiled_group_rediction = partial(
-        tiled_rediction,
+        tiled_prediction,
         group_dict=group_dict,
         dl_config=dl_config,
         dl_model=dl_model,
         device=device,
+        limit=flags["l"],
     )
     nprocs = np.min([int(options["nprocs"]), len(tile_set)])
 
@@ -627,19 +666,33 @@ def main():
     # Patch or rename results and write metadata
     for output_band in dl_config["output_bands"]:
         patch_results(
-            options["output"], output_band, dl_config=dl_config, nprocs=nprocs
+            options["output"],
+            output_band,
+            masking=masking,
+            fill_value=dl_config["output_bands"][output_band]["fill_value"],
+            dl_config=dl_config,
+            nprocs=nprocs,
         )
 
 
 def cleanup():
     """Remove all temporary data"""
+    # Remove Raster map files
     gs.run_command(
         "g.remove",
-        type=["raster", "vector"],
+        type=["raster"],
         pattern=f"{TMP_NAME}*",
         flags="f",
         quiet=True,
     )
+    # Remove external data if mapset uses r.external.out
+    external = gs.parse_key_val(gs.read_command("r.external.out", flags="p"), sep=": ")
+    if "directory" in external:
+        for map_file in Path(external["directory"]).glob(
+            f"{TMP_NAME}_*{external['extension']}"
+        ):
+            if map_file.is_file():
+                map_file.unlink()
 
 
 if __name__ == "__main__":
@@ -658,10 +711,10 @@ if __name__ == "__main__":
     gs.utils.set_path(modulename="i.pytorch", dirname="", path="..")
     try:
         from pytorchlib.utils import (
-            numpy2torch,
-            torch2numpy,
+            # numpy2torch,
+            # torch2numpy,
             validate_config,
-            transform_axes,
+            # transform_axes,
             load_model,
             predict_torch,
         )
