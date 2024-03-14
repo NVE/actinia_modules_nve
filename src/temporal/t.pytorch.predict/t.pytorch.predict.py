@@ -34,9 +34,8 @@
 # # % multiple: no
 # # %end
 
-# # %option
-# # % key: where
-# # %end
+# %option G_OPT_T_WHERE
+# %end
 
 # %option G_OPT_STRDS_OUTPUT
 # %end
@@ -152,7 +151,6 @@ import grass.script as gs
 TMP_NAME = gs.tempname(12)
 # Get GRASS GIS environment
 GISENV = dict(gs.gisenv())
-OVERWRITE = gs.overwrite()
 
 
 def distribute_cores(nprocs, groups_n):
@@ -182,9 +180,9 @@ def process_scene_group(
     """Create an imagery group from semantic labels of a temporal extent and
     run a pytorch prediction on the imagery group"""
     if not basename:
-        output_name = f"{os.path.commonprefix(map_list)}{semantic_label}"
+        output_name = os.path.commonprefix(map_list).rstrip("_")
     else:
-        output_name = f"{basename}_{temporal_extent[0].isoformat()}_{temporal_extent[1].isoformat()}_{semantic_label}"
+        output_name = f"{basename}_{temporal_extent[0].isoformat()}_{temporal_extent[1].isoformat()}"
     gs.verbose(_("Processing group {}...").format(output_name))
     Module("i.group", group=f"{TMP_NAME}_{output_name}", input=map_list)
     Module(
@@ -196,7 +194,7 @@ def process_scene_group(
         flags=torch_flags,
         quiet=True,
     )
-    return f"{output_name}@{GISENV['MAPSET']}|{temporal_extent[0].isoformat()}|{temporal_extent[1].isoformat()}|{semantic_label}"
+    return f"{output_name}_{semantic_label}@{GISENV['MAPSET']}|{temporal_extent[0].isoformat()}|{temporal_extent[1].isoformat()}|{semantic_label}"
 
 
 def main():
@@ -209,11 +207,12 @@ def main():
     strds_long_name = f"{options['output']}@{GISENV['MAPSET']}"
     output_strds = tgis.SpaceTimeRasterDataset(strds_long_name)
     output_strds_in_db = output_strds.is_in_db()
+    overwrite = gs.overwrite()
 
     # Check if input is complete and valid
     # Check if target STRDS exists and create it if not or abort if overwriting is not allowed
     if output_strds_in_db:
-        if not OVERWRITE:
+        if not overwrite:
             gs.fatal(
                 _(
                     "Output STRDS <{}> exists."
@@ -289,7 +288,7 @@ def main():
         ]
 
     # Create STRDS if needed
-    if not output_strds_in_db or (OVERWRITE and not flags["e"]):
+    if not output_strds_in_db or (overwrite and not flags["e"]):
         tgis.open_new_stds(
             options["output"],
             "strds",
@@ -298,7 +297,7 @@ def main():
             options["description"],
             "mean",
             None,
-            OVERWRITE,
+            overwrite,
         )
 
     # Write registration file with unique lines
