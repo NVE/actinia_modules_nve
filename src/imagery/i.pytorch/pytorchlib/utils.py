@@ -129,7 +129,7 @@ def load_model_code(package_dir, object_name):
         )
 
 
-def load_model(dl_model_path, dl_backbone, dl_kwargs):
+def load_model(dl_model_path, dl_backbone, dl_kwargs, device="gpu"):
     """The following should be included in a predict function"""
     # load pytorch model
     if not dl_model_path.exists():
@@ -141,11 +141,19 @@ def load_model(dl_model_path, dl_backbone, dl_kwargs):
         gs.fatal(_("Configuration does not match model backbone code"))
 
     try:
-        dl_model.load_state_dict(
-            torch.load(
-                str(dl_model_path),
+        if device != "cpu":
+            dl_model.load_state_dict(
+                torch.load(
+                    str(dl_model_path),
+                )
             )
-        )
+        else:
+            dl_model.load_state_dict(
+                torch.load(
+                    str(dl_model_path),
+                    map_location=torch.device("cpu"),
+                )
+            )
     except ValueError:
         gs.fatal(_("Model backbone and model file do not match"))
 

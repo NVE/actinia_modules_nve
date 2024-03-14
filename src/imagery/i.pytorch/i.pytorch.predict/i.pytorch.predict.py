@@ -623,7 +623,12 @@ def main():
     dl_config, dl_backbone, dl_model_kwargs, group_dict, masking = read_config(options)
 
     # Load model
-    dl_model = load_model(Path(options["model"]), dl_backbone, dl_model_kwargs)
+    dl_model = load_model(
+        Path(options["model"]),
+        dl_backbone,
+        dl_model_kwargs,
+        device="cpu" if flags["c"] else "gpu",
+    )
 
     overlap = int(options["overlap"]) or 0
 

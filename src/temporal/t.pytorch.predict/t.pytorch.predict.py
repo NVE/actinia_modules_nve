@@ -180,11 +180,11 @@ def process_scene_group(
     """Create an imagery group from semantic labels of a temporal extent and
     run a pytorch prediction on the imagery group"""
     if not basename:
-        output_name = os.path.commonprefix(map_list).rstrip("_")
+        output_name = os.path.commonprefix(list(map_list.values())).rstrip("_")
     else:
         output_name = f"{basename}_{temporal_extent[0].isoformat()}_{temporal_extent[1].isoformat()}"
     gs.verbose(_("Processing group {}...").format(output_name))
-    Module("i.group", group=f"{TMP_NAME}_{output_name}", input=map_list)
+    Module("i.group", group=f"{TMP_NAME}_{output_name}", input=list(map_list.values()))
     Module(
         "i.pytorch.predict",
         input=f"{TMP_NAME}_{output_name}",
@@ -254,7 +254,9 @@ def main():
 
     # Collect basic module_options for i.pytorch.predict
     module_options = {
-        option: options[option]
+        option: list(map(int, options[option].split(",")))
+        if option == "tile_size"
+        else options[option]
         for option in [
             "model",
             "model_code",
@@ -281,10 +283,10 @@ def main():
     # Run predictions and collect
     if nprocs_outer > 1:
         with Pool(nprocs_outer) as pool:
-            register_strings = pool.map(i_pytorch_predict, map_groups.items())
+            register_strings = pool.starmap(i_pytorch_predict, map_groups.items())
     else:
         register_strings = [
-            i_pytorch_predict(scene_group) for scene_group in map_groups.items()
+            i_pytorch_predict(*scene_group) for scene_group in map_groups.items()
         ]
 
     # Create STRDS if needed
