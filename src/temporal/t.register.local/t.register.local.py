@@ -134,7 +134,6 @@
 # % description: Regular expression for filtering files based on file name
 # % type: string
 # % required: no
-# % answer: *
 # % multiple: no
 # %end
 
