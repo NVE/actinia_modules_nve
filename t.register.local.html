@@ -49,7 +49,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>t.register.local</b><br></div>
 <b>t.register.local --help</b><br>
-<div id="synopsis"><b>t.register.local</b> [-<b>eamorsf</b>] <b>input</b>=<em>name</em>  [<b>files</b>=<em>Comma separated list of files to register</em>[,<i>Comma separated list of files to register</i>,...]]  <b>output</b>=<em>name</em>  [<b>semantic_labels</b>=<em>Input file with configuration for semantic labels ("-" = stdin)</em>]   [<b>semantic_label_pattern</b>=<em>Pattern for reading semantic labels from file name (e.g.: "(VV|VH)_dbi_[0-9]+_(ascending|descending)")</em>]   [<b>long_name</b>=<em>string</em>]  <b>suffix</b>=<em>string</em>  [<b>time_format</b>=<em>string</em>]   [<b>file_pattern</b>=<em>string</em>]   [<b>start_time</b>=<em>string</em>]   [<b>end_time</b>=<em>string</em>]   [<b>color</b>=<em>style</em>]   [<b>nodata</b>=<em>Source nodata</em>]  <b>units</b>=<em>string</em>  [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>t.register.local</b> [-<b>eamorsf</b>] <b>input</b>=<em>name</em>  [<b>files</b>=<em>Comma separated list of files to register</em>[,<i>Comma separated list of files to register</i>,...]]  <b>output</b>=<em>name</em>  [<b>semantic_labels</b>=<em>Input file with configuration for semantic labels ("-" = stdin)</em>]   [<b>semantic_label_pattern</b>=<em>Pattern for reading semantic labels from file name (e.g.: "(VV|VH)_dbi_[0-9]+_(ascending|descending)")</em>]   [<b>long_name</b>=<em>string</em>]   [<b>suffix</b>=<em>string</em>]   [<b>time_format</b>=<em>string</em>]   [<b>file_pattern</b>=<em>string</em>]   [<b>start_time</b>=<em>string</em>]   [<b>end_time</b>=<em>string</em>]   [<b>color</b>=<em>style</em>]   [<b>nodata</b>=<em>Source nodata</em>]  <b>units</b>=<em>string</em>  [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -110,7 +110,7 @@ grassLogoLink.after(temp.content);
 <dt><b>long_name</b>=<em>string</em></dt>
 <dd>Descriptive long name of the phenomenon the raster maps represent</dd>
 
-<dt><b>suffix</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dt><b>suffix</b>=<em>string</em></dt>
 <dd>Suffix of files to register</dd>
 <dd>Suffix of files to register</dd>
 
@@ -122,7 +122,6 @@ grassLogoLink.after(temp.content);
 <dt><b>file_pattern</b>=<em>string</em></dt>
 <dd>Regular expression for filtering files based on file name</dd>
 <dd>Regular expression for filtering files based on file name</dd>
-<dd>Default: <em>*</em></dd>
 
 <dt><b>start_time</b>=<em>string</em></dt>
 <dd>Earliest timestamp of files to register</dd>
@@ -333,7 +332,7 @@ Stefan Blumentrath
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Thursday Mar 14 23:24:50 2024
+  Accessed: Thursday Apr 04 12:04:21 2024
 </p>
 <hr class="header">
 <p>
