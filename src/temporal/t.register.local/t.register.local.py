@@ -114,7 +114,7 @@
 # % label: Suffix of files to register
 # % description: Suffix of files to register
 # % type: string
-# % required: yes
+# % required: no
 # % multiple: no
 # %end
 
@@ -185,13 +185,11 @@
 # %end
 
 # %rules
-# % excludes: input,files
+# % excludes: file_pattern,files
 # % excludes: semantic_labels,semantic_label_pattern
-# % required: input,files
+# % required: file_pattern,files
+# % collective: file_pattern,suffix
 # %end
-
-# ToDo:
-# - add rules to secure consistent user input
 
 import os
 import re
