@@ -284,6 +284,9 @@ def group_scenes(
     groups = {}
     for sfile in s3_files:
         s3_name_dict = parse_s3_file_name(sfile.name)
+        s3_name_dict["level"] = (
+            "2" if s3_name_dict["level"] == "1" else s3_name_dict["level"]
+        )
         group_id = "_".join(
             [s3_name_dict[group_var] for group_var in group_variables]
             + [s3_name_dict["start_time"].strftime("%Y%m%d")]
@@ -298,6 +301,7 @@ def group_scenes(
 def process_scene_group(scene_group, module_options=None, module_flags=None):
     """Import a group of Sentinel3 scenes"""
     gs.verbose(_("Processing scene group {}...").format(scene_group[0]))
+
     i_sentinel3_import = Module(
         "i.sentinel3.import",
         input=",".join(scene_group[1]),
