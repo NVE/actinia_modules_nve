@@ -300,6 +300,8 @@ def process_scene_group(scene_group, module_options=None, module_flags=None):
     """Import a group of Sentinel3 scenes"""
     gs.verbose(_("Processing scene group {}...").format(scene_group[0]))
 
+    module_options["basename"] = module_options["basename"] or scene_group[0]
+
     i_sentinel3_import = Module(
         "i.sentinel3.import",
         input=",".join(scene_group[1]),
