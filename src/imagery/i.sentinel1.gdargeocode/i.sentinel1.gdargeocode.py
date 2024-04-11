@@ -94,6 +94,14 @@ COPYRIGHT:	(C) 2023 by NVE, Stefan Blumentrath
 # % answer: gec
 # %end
 
+# %option
+# % key: overviews
+# % description: Add overviews to resulting GeoTiffs (e.g. 2,3,8,16)
+# % required: no
+# % type: integer
+# % multiple: yes
+# %end
+
 # % option G_OPT_M_NPROCS
 # %end
 
@@ -104,7 +112,6 @@ COPYRIGHT:	(C) 2023 by NVE, Stefan Blumentrath
 
 # Todo:
 # - harmonize with i.sentinel1.pyrosargeocode
-# - read geojson to geometry string and pass that to get_target_geometry
 
 import sys
 from datetime import datetime
@@ -314,8 +321,8 @@ def gdar_geocode(
     polarizations = module_options["polarization"].split(",")
     out_type = module_options["scale"]
 
-    # Read Sentinel-1 file
-    s1_file = reader(str(s1_file_path))
+    # Read Sentinel-1 file and mask nodata (0)
+    s1_file = reader(str(s1_file_path), edges="mask", remove_noise=True)
 
     # Read DEM into GDAR raster (resulting object cannot be pickled)
     dem = grass2gdar(module_options["elevation"])[0]
@@ -421,6 +428,13 @@ def gdar_geocode(
         output_file = output_directory / f"{map_name}.tif"
         # Write file
         write_crs(gec[mode][polarization], str(output_file))
+        # Add overviews if requested
+        if module_options["overviews"]:
+            gdal_ds = gdal.Open(str(output_file), gdal.GA_ReadOnly)
+            gdal.SetConfigOption("COMPRESS_OVERVIEW", "LZW")
+            gdal_ds.BuildOverviews("AVERAGE", module_options["overviews"])
+            del gdal_ds
+
         # Link resulting GeoTiff (may be empty)
         try:
             gs.run_command("r.external", flags="om", input=output_file, output=map_name)
@@ -451,7 +465,8 @@ def main():
                 options["output_directory"]
             )
         )
-
+    if options["overviews"]:
+        options["overviews"] = [int(level) for level in options["overviews"].split(",")]
     # identify Sentinel-1 SAFE files to geocode
     file_input = check_file_input(options["input"])
 
@@ -507,7 +522,7 @@ if __name__ == "__main__":
         )
 
     try:
-        from osgeo import ogr, osr
+        from osgeo import ogr, osr, gdal
 
     except ImportError:
         gs.fatal(
