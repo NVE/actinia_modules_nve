@@ -393,7 +393,7 @@ def main():
     # Remove empty results
     register_strings = [result.strip() for result in register_strings if result and result.strip()]
     if not register_strings:
-        gs.warning(-("No valid data found in <{}>. Nothing to register in STRDS.").format(options["input"]))
+        gs.warning(_("No valid data found in <{}>. Nothing to register in STRDS.").format(options["input"]))
         sys.exit(0)
 
     # Initialize TGIS
