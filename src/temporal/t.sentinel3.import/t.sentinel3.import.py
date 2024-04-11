@@ -316,17 +316,11 @@ def process_scene_group(scene_group, module_options=None, module_flags=None):
 def distribute_cores(nprocs, groups_n):
     """Distribute cores across inner (parallel processes within
     i.sentinel3.import) and outer (parallel runs of i.sentinel3.import)
-    loop of processes"""
-    nprocs_inner = 1
-    nprocs_outer = 1
-    if nprocs > 1:
-        if groups_n >= nprocs:
-            nprocs_outer = nprocs
-        elif groups_n < nprocs:
-            if floor(nprocs / groups_n) > 1:
-                nprocs_outer = groups_n
-                nprocs_inner = floor(nprocs / groups_n)
-    return nprocs_inner, nprocs_outer
+    loop of processes. At least one core is allocated to inner 
+    (i.sentinel3.import) and outer (group of Sentinel-3 scenes)
+    process.
+    Order if returns is inner, outer."""
+    return max(1, floor(nprocs / groups_n)), min(groups_n, nprocs)
 
 
 def main():
@@ -448,8 +442,3 @@ if __name__ == "__main__":
     from grass.temporal.register import register_maps_in_space_time_dataset
 
     sys.exit(main())
-
-# Check output STRDS
-# Group scenes
-# Import scenes
-# register pre-processed scenes in output STRDS
