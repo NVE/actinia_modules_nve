@@ -155,18 +155,12 @@ GISENV = dict(gs.gisenv())
 
 def distribute_cores(nprocs, groups_n):
     """Distribute cores across inner (parallel processes within
-    i.sentinel3.import) and outer (parallel runs of i.sentinel3.import)
-    loop of processes"""
-    nprocs_inner = 1
-    nprocs_outer = 1
-    if nprocs > 1:
-        if groups_n >= nprocs:
-            nprocs_outer = nprocs
-        elif groups_n < nprocs:
-            if floor(nprocs / groups_n) > 1:
-                nprocs_outer = groups_n
-                nprocs_inner = floor(nprocs / groups_n)
-    return nprocs_inner, nprocs_outer
+    i.pytorch.predict) and outer (parallel runs of i.pytorch.predict)
+    loop of processes. At least one core is allocated to inner 
+    (i.pytorch.predict) and outer (imagery group)
+    process.
+    Order if returns is inner, outer."""
+    return max(1, floor(nprocs / groups_n)), min(groups_n, nprocs)
 
 
 def process_scene_group(
@@ -234,6 +228,10 @@ def main():
         "start_time",
         dbif,
     )
+
+    if not map_rows:
+        gs.warning(_("No data selected from STRDS <{}>").format(options["input"]))
+        sys.exit(0)
 
     # Group maps using granule
     map_groups = {}
