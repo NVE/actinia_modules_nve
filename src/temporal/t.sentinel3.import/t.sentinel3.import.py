@@ -73,17 +73,15 @@
 # %option
 # % key: anxillary_bands
 # % multiple: yes
-# % answer: all
 # % required: no
-# % description: Anxillary data bands to import (e.g. LST_uncertainty, default is all available)
+# % description: Anxillary data bands to import (e.g. LST_uncertainty, default is None, use "all" to import all available)
 # %end
 
 # %option
 # % key: flag_bands
 # % multiple: yes
-# % answer: all
 # % required: no
-# % description: Quality flag bands to import (e.g. bayes_in, default is all available)
+# % description: Quality flag bands to import (e.g. bayes_in, default is None, use "all" to import all available)
 # %end
 
 # %option
