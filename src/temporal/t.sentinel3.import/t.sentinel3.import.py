@@ -390,6 +390,12 @@ def main():
             import_module(scene_group) for scene_group in groups_to_process.items()
         ]
 
+    # Remove empty results
+    register_strings = [result.strip() for result in register_strings if result and result.strip()]
+    if not register_strings:
+        gs.warning(-("No valid data found in <{}>. Nothing to register in STRDS.").format(options["input"]))
+        sys.exit(0)
+
     # Initialize TGIS
     tgis.init()
 
