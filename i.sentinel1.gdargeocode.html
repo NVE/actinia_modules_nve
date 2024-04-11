@@ -48,7 +48,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>i.sentinel1.gdargeocode</b><br></div>
 <b>i.sentinel1.gdargeocode --help</b><br>
-<div id="synopsis"><b>i.sentinel1.gdargeocode</b> [-<b>a</b>] <b>input</b>=<em>name</em> <b>elevation</b>=<em>name</em>  [<b>output_directory</b>=<em>name</em>]  <b>aoi</b>=<em>name</em>  [<b>register_file</b>=<em>name</em>]  <b>polarization</b>=<em>string</em>[,<i>string</i>,...] <b>mode</b>=<em>string</em> <b>scale</b>=<em>string</em> <b>suffix</b>=<em>string</em>  [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>i.sentinel1.gdargeocode</b> [-<b>a</b>] <b>input</b>=<em>name</em> <b>elevation</b>=<em>name</em>  [<b>output_directory</b>=<em>name</em>]  <b>aoi</b>=<em>name</em>  [<b>register_file</b>=<em>name</em>]  <b>polarization</b>=<em>string</em>[,<i>string</i>,...] <b>mode</b>=<em>string</em> <b>scale</b>=<em>string</em> <b>suffix</b>=<em>string</em>  [<b>overviews</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -110,6 +110,9 @@ grassLogoLink.after(temp.content);
 <dt><b>suffix</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
 <dd>Suffix added to geocoded file / map names</dd>
 <dd>Default: <em>gec</em></dd>
+
+<dt><b>overviews</b>=<em>integer[,<i>integer</i>,...]</em></dt>
+<dd>Add overviews to resulting GeoTiffs (e.g. 2,3,8,16)</dd>
 
 <dt><b>nprocs</b>=<em>integer</em></dt>
 <dd>Number of threads for parallel computing</dd>
@@ -204,7 +207,7 @@ Stefan Blumentrath
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Thursday Apr 11 06:59:18 2024
+  Accessed: Thursday Apr 11 07:00:35 2024
 </p>
 <hr class="header">
 <p>
