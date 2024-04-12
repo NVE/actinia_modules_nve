@@ -627,7 +627,7 @@ def main():
         Path(options["model"]),
         dl_backbone,
         dl_model_kwargs,
-        device="cpu" if flags["c"] else "gpu",
+        device="cpu" if flags["c"] or not torch.cuda.is_available() else "gpu",
     )
 
     overlap = int(options["overlap"]) or 0
