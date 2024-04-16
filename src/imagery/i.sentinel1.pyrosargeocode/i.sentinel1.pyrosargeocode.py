@@ -239,7 +239,7 @@ def get_aoi_geometry(geojson_file):
         )
     ogr_layer = ogr_dataset.GetLayerByIndex(0)
     if ogr_layer.GetGeomType() != 3:
-        gs.warning(_("GeoJSON does not contain polygons"))
+        gs.fatal(_("GeoJSON does not contain polygons"))
     if ogr_layer.GetFeatureCount() > 1:
         gs.warning(
             _("GeoJSON contains more than one geometry. Using only the first one.")
