@@ -110,6 +110,11 @@ COPYRIGHT:	(C) 2023 by NVE, Stefan Blumentrath
 # % description: Apply precision orbit information if available
 # %end
 
+# %flag
+# % key: r
+# % description: Remove border noise
+# %end
+
 # Todo:
 # - harmonize with i.sentinel1.pyrosargeocode
 
@@ -310,6 +315,7 @@ def get_target_geometry(bpol, geojson_file=None, crs_wkt=None):
 
 def gdar_geocode(
     s1_file_path,
+    remove_border_noise=True,
     use_precision_orbit=True,
     module_options=None,
     output_directory=None,
@@ -321,8 +327,12 @@ def gdar_geocode(
     polarizations = module_options["polarization"].split(",")
     out_type = module_options["scale"]
 
-    # Read Sentinel-1 file and mask nodata (0)
-    s1_file = reader(str(s1_file_path), edges="mask", remove_noise=True)
+    if remove_border_noise:
+        # Read Sentinel-1 file and mask nodata (0)
+        s1_file = reader(str(s1_file_path), edges="mask", remove_noise=True)
+    else:
+        # Read Sentinel-1 file and mask nodata (0)
+        s1_file = reader(str(s1_file_path))
 
     # Read DEM into GDAR raster (resulting object cannot be pickled)
     dem = grass2gdar(module_options["elevation"])[0]
@@ -478,6 +488,7 @@ def main():
     # Setup function
     _geocode = partial(
         gdar_geocode,
+        remove_border_noise=flags["r"],
         use_precision_orbit=flags["a"],
         module_options=options,
         output_directory=output_directory,
