@@ -92,15 +92,6 @@
 # % description: JSON file with one or more mask band or map name(s) and reclass rules for masking, e.g. {"mask_band": "1 thru 12 36 = 1", "mask_map": "0"}
 # %end
 
-# %option
-# % key: semantic_label
-# % type: string
-# % required: yes
-# % multiple: no
-# % key_desc: name
-# % description: Semantic label to assign to the output maps
-# %end
-
 # %option G_OPT_M_NPROCS
 # %end
 
@@ -134,8 +125,7 @@
 # %end
 
 import os
-
-# import re
+import json
 import sys
 
 # from datetime import datetime
@@ -156,7 +146,7 @@ GISENV = dict(gs.gisenv())
 def distribute_cores(nprocs, groups_n):
     """Distribute cores across inner (parallel processes within
     i.pytorch.predict) and outer (parallel runs of i.pytorch.predict)
-    loop of processes. At least one core is allocated to inner 
+    loop of processes. At least one core is allocated to inner
     (i.pytorch.predict) and outer (imagery group)
     process.
     Order if returns is inner, outer."""
@@ -168,17 +158,27 @@ def process_scene_group(
     map_list,
     basename=None,
     module_options=None,
-    semantic_label=None,
     torch_flags=None,
 ):
     """Create an imagery group from semantic labels of a temporal extent and
     run a pytorch prediction on the imagery group"""
+    # Get the base name
     if not basename:
         output_name = os.path.commonprefix(list(map_list.values())).rstrip("_")
     else:
         output_name = f"{basename}_{temporal_extent[0].isoformat()}_{temporal_extent[1].isoformat()}"
+    # Get semantic labels
+    output_bands = json.loads(
+        Path(module_options["configuration"]).read_text(encoding="UTF8")
+    )["output_bands"]
+
     gs.verbose(_("Processing group {}...").format(output_name))
-    Module("i.group", group=f"{TMP_NAME}_{output_name}", input=list(map_list.values()))
+    Module(
+        "i.group",
+        group=f"{TMP_NAME}_{output_name}",
+        input=list(map_list.values()),
+        quiet=True,
+    )
     Module(
         "i.pytorch.predict",
         input=f"{TMP_NAME}_{output_name}",
@@ -188,7 +188,18 @@ def process_scene_group(
         flags=torch_flags,
         quiet=True,
     )
-    return f"{output_name}_{semantic_label}@{GISENV['MAPSET']}|{temporal_extent[0].isoformat()}|{temporal_extent[1].isoformat()}|{semantic_label}"
+    register_strings = [
+        "|".join(
+            [
+                f"{output_name}_{output_band}@{GISENV['MAPSET']}",
+                temporal_extent[0].isoformat(),
+                temporal_extent[1].isoformat(),
+                band_dict["semantic_label"],
+            ]
+        )
+        for output_band, band_dict in output_bands.items()
+    ]
+    return "\n".join(register_strings)
 
 
 def main():
@@ -252,9 +263,11 @@ def main():
 
     # Collect basic module_options for i.pytorch.predict
     module_options = {
-        option: list(map(int, options[option].split(",")))
-        if option == "tile_size"
-        else options[option]
+        option: (
+            list(map(int, options[option].split(",")))
+            if option == "tile_size"
+            else options[option]
+        )
         for option in [
             "model",
             "model_code",
@@ -274,7 +287,6 @@ def main():
         process_scene_group,
         module_options=module_options,
         basename=options["basename"],
-        semantic_label=options["semantic_label"],
         torch_flags=torch_flags,
     )
 
