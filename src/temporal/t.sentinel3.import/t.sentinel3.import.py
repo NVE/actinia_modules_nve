@@ -316,7 +316,7 @@ def process_scene_group(scene_group, module_options=None, module_flags=None):
 def distribute_cores(nprocs, groups_n):
     """Distribute cores across inner (parallel processes within
     i.sentinel3.import) and outer (parallel runs of i.sentinel3.import)
-    loop of processes. At least one core is allocated to inner 
+    loop of processes. At least one core is allocated to inner
     (i.sentinel3.import) and outer (group of Sentinel-3 scenes)
     process.
     Order if returns is inner, outer."""
@@ -391,9 +391,15 @@ def main():
         ]
 
     # Remove empty results
-    register_strings = [result.strip() for result in register_strings if result and result.strip()]
+    register_strings = [
+        result.strip() for result in register_strings if result and result.strip()
+    ]
     if not register_strings:
-        gs.warning(_("No valid data found in <{}>. Nothing to register in STRDS.").format(options["input"]))
+        gs.warning(
+            _("No valid data found in <{}>. Nothing to register in STRDS.").format(
+                options["input"]
+            )
+        )
         sys.exit(0)
 
     # Initialize TGIS

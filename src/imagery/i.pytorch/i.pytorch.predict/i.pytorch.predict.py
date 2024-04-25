@@ -223,20 +223,36 @@ def read_config(module_options):
             mask_rules[semantic_label] = {raster_map: masks[semantic_label]}
         if semantic_label not in config["input_bands"]:
             continue
+
         semantic_labels.append(semantic_label)
-        valid_range = config["input_bands"][semantic_label]["valid_range"]
-        if valid_range and valid_range[0] and raster_map_info["min"] < valid_range[0]:
+        if raster_map_info["min"] and raster_map_info["max"]:
+            # Check valid range of non-empty input maps
+            valid_range = config["input_bands"][semantic_label]["valid_range"]
+            if (
+                valid_range
+                and valid_range[0]
+                and raster_map_info["min"] < valid_range[0]
+            ):
+                gs.warning(
+                    _(
+                        "Minimum of raster map <{0}> {1} exeeds lower bound ({2}) of valid range"
+                    ).format(raster_map, raster_map_info["min"], valid_range[0])
+                )
+            if (
+                valid_range
+                and valid_range[1]
+                and raster_map_info["max"] > valid_range[1]
+            ):
+                gs.warning(
+                    _(
+                        "Maximum of raster map <{0}> {1} exeeds upper bound ({2}) of valid range"
+                    ).format(raster_map, raster_map_info["max"], valid_range[1])
+                )
+        else:
             gs.warning(
-                _(
-                    "Minimum of raster map <{0}> {1} exeeds lower bound ({2}) of valid range"
-                ).format(raster_map, raster_map_info["min"], valid_range[0])
+                _("Input map <{}> does not contain valid data").format(raster_map)
             )
-        if valid_range and valid_range[1] and raster_map_info["max"] > valid_range[1]:
-            gs.warning(
-                _(
-                    "Maximum of raster map <{0}> {1} exeeds upper bound ({2}) of valid range"
-                ).format(raster_map, raster_map_info["max"], valid_range[1])
-            )
+
         input_group_dict[config["input_bands"][semantic_label]["order"]] = (
             raster_map,
             raster_map_info["datatype"],
