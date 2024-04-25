@@ -49,7 +49,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>t.pytorch.predict</b><br></div>
 <b>t.pytorch.predict --help</b><br>
-<div id="synopsis"><b>t.pytorch.predict</b> [-<b>ecl</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]  <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]  <b>configuration</b>=<em>name</em>  [<b>mask_json</b>=<em>name</em>]  <b>semantic_label</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]   [<b>basename</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>t.pytorch.predict</b> [-<b>ecl</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]  <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]  <b>configuration</b>=<em>name</em>  [<b>mask_json</b>=<em>name</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>basename</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -113,9 +113,6 @@ grassLogoLink.after(temp.content);
 
 <dt><b>mask_json</b>=<em>name</em></dt>
 <dd>JSON file with one or more mask band or map name(s) and reclass rules for masking, e.g. {"mask_band": "1 thru 12 36 = 1", "mask_map": "0"}</dd>
-
-<dt><b>semantic_label</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
-<dd>Semantic label to assign to the output maps</dd>
 
 <dt><b>nprocs</b>=<em>integer</em></dt>
 <dd>Number of threads for parallel computing</dd>
@@ -234,7 +231,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Wednesday Apr 24 20:54:04 2024
+  Accessed: Thursday Apr 25 12:44:34 2024
 </p>
 <hr class="header">
 <p>
