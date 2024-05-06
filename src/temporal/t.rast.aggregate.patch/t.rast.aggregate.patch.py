@@ -177,9 +177,6 @@ def patch_by_topology(
     sort="asc",
     dbif=None,
     patch_flags="",
-    # map_order=["start_time", "asc"],
-    # spatial_extent=None,
-    # spatial_relation=None,
     overwrite=False,
 ):
     """Aggregate a list of raster input maps with r.series
@@ -312,7 +309,11 @@ def patch_by_topology(
                     suffix = create_numeric_suffix(
                         "", count + int(offset), time_suffix
                     ).removeprefix("_")
-                output_name = f"{basename}_{suffix}"
+                output_name = (
+                    f"{basename}_{semantic_label}_{suffix}"
+                    if semantic_label
+                    else f"{basename}_{suffix}"
+                )
 
                 map_layer = RasterDataset(f"{output_name}@{current_mapset}")
                 map_layer.set_temporal_extent(granule.get_temporal_extent())
@@ -382,11 +383,6 @@ def main():
         spatial_extent=spatial_extent,
         spatial_relation=options["region_relation"],
     )
-
-    # map_list = sp.get_registered_maps(["id", "semantic_label"],
-    #     where=options["where"], order=options["sort"], dbif=None,
-    #     spatial_extent=spatial_extent,
-    #     spatial_relation=options["region_relation"])
 
     if not map_list:
         gs.warning(
