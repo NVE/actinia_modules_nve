@@ -149,6 +149,16 @@
 # % description: Link resulting data and do not read statistics
 # %end
 
+# %flag
+# % key: a
+# % description: Fetch aoi and pixel spacing from current region
+# %end
+
+# %rules
+# % exclusive: aoi,-a
+# %end
+
+import atexit
 import os
 import shutil
 import sys
@@ -161,6 +171,19 @@ from subprocess import PIPE
 
 import grass.script as gs
 
+
+rm_vec = []
+rm_files = []
+def cleanup():
+    """Cleanup fuction (can be extended)"""
+    nulldev = open(os.devnull, "w", encoding="utf-8")
+    kwargs = {"flags": "f", "quiet": True, "stderr": nulldev}
+    for rmvec in rm_vec:
+        if gs.find_file(name=rmvec, element="vector")["file"]:
+            gs.run_command("g.remove", type="vector", name=rmvec, **kwargs)
+    for rmfile in rm_files:
+        if os.path.isfile(rmfile):
+            os.remove(rmfile)
 
 def get_raster_gdalpath(map_name, check_linked=True):
     """Get get the path to a raster map that can be opened by GDAL
@@ -248,7 +271,6 @@ def get_target_geometry(s1_file, aoi=None):
     bpol_geom.FlattenTo2D()
 
     aoi = ogr.CreateGeometryFromWkt(aoi, s_srs)
-
     if bpol_geom.Within(aoi):
         return True
     if not bpol_geom.Intersect(aoi):
@@ -436,7 +458,7 @@ def check_files_list(file_path_list):
 
 def main():
     """Do the main work"""
-
+    global rm_vec, rm_files
     # Check if gpt is available
     if not shutil.which("gpt"):
         gs.fatal(_("gpt commandline tool from ESA SNAP not found on current PATH"))
@@ -514,6 +536,35 @@ def main():
     # Check if gpt is available
     gpt_options = get_gpt_options(nprocs_inner)
 
+    # use spacing from DEM or region
+    spacing = float(dem_info["nsres"])
+    aoi = options["aoi"] if options["aoi"] else None
+    if flags["a"]:
+        region = gs.region()
+        if region["nsres"] != region["ewres"]:
+            gs.warning(
+                _(
+                    "Region nsres {nsres} differs from ewres {ewres}. "
+                    "Using {nsres}..."
+                ).format(nsres=region["nsres"], ewres=region["ewres"])
+            )
+        spacing = float(region["nsres"])
+
+        # save current region as geojson
+        region_vect = f"cur_region_{os.getpid()}"
+        rm_vec.append(region_vect)
+        gs.run_command("v.in.region", output=region_vect, quiet=True)
+        cur_reg_json = f"{gs.tempfile(create=False)}.geojson"
+        rm_files.append(cur_reg_json)
+        gs.run_command("v.out.ogr", input=region_vect, output=cur_reg_json,
+                       format="GeoJSON", quiet=True)
+        # reproject to 4326
+        reg_json_4326 = f"{gs.tempfile(create=False)}_4326.geojson"
+        rm_files.append(reg_json_4326)
+        ds = gdal.VectorTranslate(reg_json_4326, cur_reg_json, reproject=True, dstSRS="EPSG:4326")
+        ds = None
+        aoi = reg_json_4326
+
     # Setup function for geocoding
     geocode_kwargs = {
         "t_srs": location_crs_wkt,
@@ -525,7 +576,7 @@ def main():
         "speckleFilter": speckle_filter_dict[options["speckle_filter"]]
         if options["speckle_filter"]
         else None,
-        "spacing": float(dem_info["nsres"]),
+        "spacing": spacing,
         "externalDEMFile": str(dem_info["GDAL_path"]),
         "externalDEMNoDataValue": -2147483678.0
         if dem_info["datatype"] == "DCELL"
@@ -543,7 +594,6 @@ def main():
         "gpt_args": gpt_options[1],
         "tmpdir": options["temporary_directory"] or tempfile.gettempdir(),
     }
-
     if export_extra and "gammaSigmaRatio" in export_extra:
         geocode_kwargs["refarea"] = ["sigma0", "gamma0"]
 
@@ -551,7 +601,7 @@ def main():
     _geocode_snap = partial(
         process_image_file,
         kwargs=geocode_kwargs,
-        aoi=get_aoi_geometry(options["aoi"]) if options["aoi"] else None,
+        aoi=get_aoi_geometry(aoi) if aoi else None,
         import_flags=flags,
     )
 
@@ -602,4 +652,5 @@ if __name__ == "__main__":
             )
         )
 
+    atexit.register(cleanup)
     sys.exit(main())

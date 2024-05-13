@@ -30,8 +30,10 @@ then either imported into the GRASS GIS database <em>r.in.gdal</em> or linked us
 the <b>l-flag</b>, <b>m-flag</b>, or <b>r-flag</b> are given.
 
 <p>
-If only a specifc extent of the Sentinel-1 images is supposed to be geocoded, the user can define
-the Area of Interest <b>aoi</b> in form of a GeoJSON with a single geometry.
+If only a specific extent of the Sentinel-1 images is supposed to be geocoded, the user can define
+the Area of Interest <b>aoi</b> in form of a GeoJSON with a single geometry. Alternatively, the
+<b>a-flag</b> can be used to limit the geocoded area to the current computational region. This also
+changes the resolution of the geocoded products to that of the current computational region.
 
 <p>
 In the <b>nprocs</b> option, users can specify the number of parallel process to run. If more than one
