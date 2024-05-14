@@ -144,7 +144,7 @@ GNU General Public License for more details.
 
 import sys
 from copy import deepcopy
-
+from io import StringIO
 import grass.script as gs
 import grass.pygrass.modules as pymod
 import grass.temporal as tgis
@@ -254,6 +254,9 @@ def patch_by_topology(
             msgr.percent(count, len(granularity_list), 1)
             count += 1
 
+            start_time = granule.temporal_extent.get_start_time()
+            end_time = granule.temporal_extent.get_end_time()
+
             aggregation_list = []
 
             # Handle semantic labels (one granule per semantic label)
@@ -292,7 +295,7 @@ def patch_by_topology(
                         " with semantic label '{semantic_label}'"
                     ).format(
                         n=len(aggregation_list),
-                        start=str(granule.temporal_extent.get_start_time()),
+                        start=str(start_time),
                         end=str(granule.temporal_extent.get_end_time()),
                         semantic_label=semantic_label,
                     )
@@ -300,7 +303,7 @@ def patch_by_topology(
 
                 if granule.is_time_absolute() is True and time_suffix == "gran":
                     suffix = create_suffix_from_datetime(
-                        granule.temporal_extent.get_start_time(), granularity
+                        start_time, granularity
                     )
                 elif granule.is_time_absolute() is True and time_suffix == "time":
                     suffix = create_time_suffix(granule)
@@ -316,9 +319,9 @@ def patch_by_topology(
                 )
 
                 map_layer = RasterDataset(f"{output_name}@{current_mapset}")
-                map_layer.set_temporal_extent(granule.get_temporal_extent())
-                map_layer.set_semantic_label(semantic_label)
-
+                # map_layer.set_temporal_extent(granule.get_temporal_extent())
+                # map_layer.set_semantic_label(semantic_label)
+                
                 if map_layer.map_exists() is True and overwrite is False:
                     msgr.fatal(
                         _(
@@ -328,7 +331,12 @@ def patch_by_topology(
                         ).format(name=output_name)
                     )
 
-                output_list.append(map_layer)
+                output_list.append("|".join([
+                    f"{output_name}@{current_mapset}",
+                    start_time.isoformat(),
+                    end_time.isoformat(),
+                    semantic_label,
+                ])
 
                 if sort == "desc":
                     aggregation_list.reverse()
@@ -477,20 +485,20 @@ def main():
                 overwrite,
             )
         else:
-            output_strds = open_old_stds(options["input"], "strds")
+            output_strds = open_old_stds(strds_long_name, "strds")
 
-        tgis.register_map_object_list(
-            "rast",
-            output_list,
-            output_strds,
-            flags["n"] is not True,
-            sp.get_relative_time_unit(),
-            dbif,
+        tgis.register_maps_in_space_time_dataset(
+            "raster",
+            strds_long_name,
+            file=StringIO("\n".join([output_list]),
+            dbif=dbif,
+            fs="|",
+            update_cmd_list=False,
         )
 
         # Update the raster metadata table entries with aggregation type
         # output_strds.set_aggregation_type(method)
-        output_strds.metadata.update(dbif)
+        # output_strds.metadata.update(dbif)
 
     dbif.close()
 
