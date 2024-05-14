@@ -2,137 +2,19 @@
 <html>
 <head>
  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <title>t.rast.aggregate.patch - GRASS GIS Manual</title>
  <meta name="Author" content="GRASS Development Team">
+ <meta name="description" content="t.rast.aggregate.patch: GRASS GIS Reference Manual">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
  <meta http-equiv="content-language" content="en-us">
  <meta name="viewport" content="width=device-width, initial-scale=1">
- <title>t.rast.aggregate.patch - GRASS GIS manual</title>
- <meta name="description" content="t.rast.aggregate.patch: Aggregate multiple space time raster maps into mosaics with the given granualrity using r.patch or r.buildvrt.">
- <meta name="keywords" content="temporal, aggregation, patch, raster, merge, patching, granularity, strds">
- <link rel="stylesheet" href="grassdocs.css" type="text/css">
 </head>
 <body bgcolor="white">
 <div id="container">
 
 <a href="file:///usr/lib/grass83/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
-<script>
-// Create hamburger menu TOC HTML elements by the JavaScript
-let temp = document.createElement('template');
-const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
-'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
-'</li>' + 
-'<li><a class="toc-item" href="#example">EXAMPLE</a>' + 
-'</li>' + 
-'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
-'</li>' + 
-'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
-'</li>' +
-'<a class="close" href="#">' +
-'<img src="./hamburger_menu_close.svg" alt="close">' +
-'</a>' +
-'</ul>' +
-'<a class="hamburger" href="#toc-mobile-screen">' +
-'<img src="./hamburger_menu.svg" alt="menu">' +
-'</a>';
-temp.innerHTML = toc;
-const grassLogoLink = document.getElementsByTagName("img")[0];
-grassLogoLink.after(temp.content);
-</script>
-<hr class="header">
-
 <h2>NAME</h2>
-<em><b>t.rast.aggregate.patch</b></em>  - Aggregate multiple space time raster maps into mosaics with the given granualrity using r.patch or r.buildvrt.
-<h2>KEYWORDS</h2>
-<a href="file:///usr/lib/grass83/docs/html/temporal.html">temporal</a>, <a href="file:///usr/lib/grass83/docs/html/topic_aggregation.html">aggregation</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#patch">patch</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#raster">raster</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#merge">merge</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#patching">patching</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#granularity">granularity</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#strds">strds</a>
-<h2>SYNOPSIS</h2>
-<div id="name"><b>t.rast.aggregate.patch</b><br></div>
-<b>t.rast.aggregate.patch --help</b><br>
-<div id="synopsis"><b>t.rast.aggregate.patch</b> [-<b>enzsv</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]   [<b>sort</b>=<em>string</em>]  <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]   [<b>basename</b>=<em>string</em>]   [<b>offset</b>=<em>integer</em>]   [<b>suffix</b>=<em>string</em>]  <b>granularity</b>=<em>string</em>  [<b>sampling</b>=<em>name</em>[,<i>name</i>,...]]   [<b>nprocs</b>=<em>integer</em>]   [<b>region_relation</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
-</div>
-
-<div id="flags">
-<h3>Flags:</h3>
-<dl>
-<dt><b>-e</b></dt>
-<dd>Extend existing STRDS (requires overwrite flag)</dd>
-
-<dt><b>-n</b></dt>
-<dd>Register Null maps</dd>
-
-<dt><b>-z</b></dt>
-<dd>Use zero (0) for transparency instead of NULL</dd>
-
-<dt><b>-s</b></dt>
-<dd>Do not create color and category files</dd>
-
-<dt><b>-v</b></dt>
-<dd>Patch to virtual raster map (r.buildvrt)</dd>
-
-<dt><b>--overwrite</b></dt>
-<dd>Allow output files to overwrite existing files</dd>
-<dt><b>--help</b></dt>
-<dd>Print usage summary</dd>
-<dt><b>--verbose</b></dt>
-<dd>Verbose module output</dd>
-<dt><b>--quiet</b></dt>
-<dd>Quiet module output</dd>
-<dt><b>--ui</b></dt>
-<dd>Force launching GUI dialog</dd>
-</dl>
-</div>
-
-<div id="parameters">
-<h3>Parameters:</h3>
-<dl>
-<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
-<dd>Name of the input space time raster dataset</dd>
-
-<dt><b>where</b>=<em>sql_query</em></dt>
-<dd>WHERE conditions of SQL statement without 'where' keyword used in the temporal GIS framework</dd>
-<dd>Example: start_time &gt; '2001-01-01 12:30:00'</dd>
-
-<dt><b>sort</b>=<em>string</em></dt>
-<dd>Sort order of input maps using start_time (default: desc = newest first)</dd>
-<dd>Options: <em>asc, desc</em></dd>
-<dd>Default: <em>desc</em></dd>
-
-<dt><b>output</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
-<dd>Name of the output space time raster dataset</dd>
-
-<dt><b>title</b>=<em>string</em></dt>
-<dd>Title of the resulting STRDS</dd>
-
-<dt><b>description</b>=<em>string</em></dt>
-<dd>Description of the resulting STRDS</dd>
-
-<dt><b>basename</b>=<em>string</em></dt>
-<dd>Basename for output raster maps</dd>
-
-<dt><b>offset</b>=<em>integer</em></dt>
-<dd>Offset that is used to create the output map ids, output map id is generated as: basename_ (count + offset)</dd>
-<dd>Default: <em>0</em></dd>
-
-<dt><b>suffix</b>=<em>string</em></dt>
-<dd>Suffix to add at basename: set 'gran' for granularity, 'time' for the full time format, 'num' for numerical suffix with a specific number of digits (default %05)</dd>
-<dd>Default: <em>gran</em></dd>
-
-<dt><b>granularity</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
-<dd>Aggregation granularity, format absolute time "x years, x months, x weeks, x days, x hours, x minutes, x seconds" or an integer value for relative time</dd>
-
-<dt><b>sampling</b>=<em>name[,<i>name</i>,...]</em></dt>
-<dd>The method to be used for sampling the input dataset</dd>
-<dd>Options: <em>equal, overlaps, overlapped, starts, started, finishes, finished, during, contains</em></dd>
-<dd>Default: <em>contains</em></dd>
-
-<dt><b>nprocs</b>=<em>integer</em></dt>
-<dd>Number of threads for parallel computing</dd>
-<dd>Default: <em>1</em></dd>
-
-<dt><b>region_relation</b>=<em>string</em></dt>
-<dd>Process only maps with this spatial relation to the current computational region</dd>
-<dd>Options: <em>overlaps, contains, is_contained</em></dd>
-
-</dl>
-</div>
+<em><b>t.rast.aggregate.patch</b></em> - GRASS GIS Reference Manual
 <div class="toc">
 <h4 class="toc">Table of contents</h4>
 <ul class="toc">
@@ -246,7 +128,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Monday May 06 06:46:44 2024
+  Accessed: Tuesday May 14 12:27:11 2024
 </p>
 <hr class="header">
 <p>
