@@ -336,7 +336,7 @@ def patch_by_topology(
                     start_time.isoformat(),
                     end_time.isoformat(),
                     semantic_label,
-                ])
+                ]))
 
                 if sort == "desc":
                     aggregation_list.reverse()
