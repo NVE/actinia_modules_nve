@@ -490,7 +490,7 @@ def main():
         tgis.register_maps_in_space_time_dataset(
             "raster",
             strds_long_name,
-            file=StringIO("\n".join([output_list]),
+            file=StringIO("\n".join(output_list)),
             dbif=dbif,
             fs="|",
             update_cmd_list=False,
