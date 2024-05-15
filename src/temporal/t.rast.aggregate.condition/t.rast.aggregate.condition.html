@@ -1,0 +1,94 @@
+<h2>DESCRIPTION</h2>
+<em>t.rast.aggregate.condition</em> aggregates raster maps within a
+space time raster dataset (STRDS) using an <em>r.mapcalc</em> expression.
+It is written oriented on <em>
+<a href="https://grass.osgeo.org/grass-stable/manuals/t.rast.aggregate.html">
+t.rast.aggregate</a></em> and provides many of the same options, to control
+naming of the output raster maps, like:
+<b>basename</b>, <b>offset</b>, <b>suffix</b>
+
+<p>
+Which and how many maps are aggregated can be controled using the
+<b>granularity</b> and <b>sampling</b> options.
+
+<p>
+<em>t.rast.aggregate.condition</em> applies a mask (given in <b>mask_label</b>) while
+selecting values from raster maps with the given <b>aggregation_labels</b> using
+a condition raster map (given in the <b>condition_label</b> option). For aggregation,
+those pixels in the <b>aggregation_labels</b> raster maps are selected, where the
+pixels in the temporally corresponding (=equal) raster maps with the
+<b>condition_label</b> meet the <b>aggregate_condition</b>.
+
+<p>
+The module assumes and requires that the input STRDS is equipped with
+<em>semantic_labels</em>. <em>semantic_labels</em> are used to compile
+mapcalculator expressions for each ganule and temporal extent selected
+for the given granule.
+
+<p>
+Per granule, one raster map is produced for the <b>condition_label</b>,
+aggregated with the <b>aggregate_condition</b>, plus one map for each
+of the <b>aggregation_labels</b>. Semantic labels for the output raster
+maps are <en>condition_label_aggregate_condition</em> for the aggregated
+<b>condition_label</b> maps and <em>aggregation_label</em> for all
+aggregated maps from the <b>aggregation_labels</b>.
+
+<p>
+The use case <em>t.rast.aggregate.condition</em> is written for is to be
+able to aggregate satellite imagery in space and time, where cloudy
+pixels are excluded and only selected values are propagated to the output
+maps. A concrete example, is to aggregate Fractional Sow Cover maps from
+Sentinel-3 where pixels with the lowes solar angle are selected and a
+cloud mask is applied at the same time.
+
+<p>
+Both input and output of this module is a single space time raster dataset.
+A subset of the input space time raster dataset can be selected using the
+<b>where</b> option. In addition, input maps can be filtered spatially using
+the <b>region_relation</b> option.
+
+<p>
+The resulting raster maps can also be registered into an existing
+Space Time Raster Dataset if the <b>e-flag</b> and <b>--overwrite</b> flags
+are set.
+
+
+<h2>EXAMPLE</h2>
+The example uses the North Carolina extra time series of MODIS Land Surface Temperature
+maps (<a href="https://grass.osgeo.org/download/data/">download</a>).
+(The mapset has to be unzip in one of the North Carolina locations.)
+<p>
+Patching the MODIS Land Surface Temperature for 2016 (filling missing pixels by subsequent maps in the time series):
+<div class="code"><pre>
+t.rast.aggregate.condition input=Sentinel_3_SLSTR_FSC output=Sentinel_3_SLSTR_FSC_daily \
+  --overwrite --verbose -e mask_label=S3_SLSTR_cloud_mask mask_value=0 \
+  condition_label=S3_solar_zenith aggregate_condition=nmin \
+  aggregation_labels=S3_SLSTR_fractional_snow_cover \
+  granularity="1 day" basename=S3_SLSTR_FSC \
+  title="Sentinel-3 SLSTR FSC daily" \
+  description="Daily Fractional Snow Cover measurements from Seninel-3 SLSTR instrument" \
+  region_relation=contains \
+  where="start_time >= '2023-01' and start_time <= '2023-12'" \
+  nprocs=8
+t.info Sentinel_3_SLSTR_FSC
+</pre></div>
+
+<h2>SEE ALSO</h2>
+
+<em>
+<a href="https://grass.osgeo.org/grass-stable/manuals/r.mapcalc.html">r.mapcalc</a>,
+<a href="https://grass.osgeo.org/grass-stable/manuals/t.rast.aggregate.html">t.rast.aggregate</a>,
+<a href="https://grass.osgeo.org/grass-stable/manuals/t.rast.algebra.html">t.rast.algebra</a>,
+<a href="https://grass.osgeo.org/grass-stable/manuals/t.rast.mapcalc.html">t.rast.mapcalc</a>,
+<a href="https://grass.osgeo.org/grass-stable/manuals/t.rast.series.html">t.rast.series</a>,
+<a href="https://grass.osgeo.org/grass-stable/manuals/t.create.html">t.create</a>,
+<a href="https://grass.osgeo.org/grass-stable/manuals/t.info.html">t.info</a>,
+<a href="https://grass.osgeo.org/grass-stable/manuals/t.merge.html">t.merge</a>
+<a href="https://grass.osgeo.org/grass-stable/manuals/addons/t.rast.patch.html">t.rast.patch</a>,
+</em>
+<p>
+<a href="http://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath, NVE
