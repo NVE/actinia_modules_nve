@@ -1,6 +1,6 @@
 MODULE_TOPDIR = ../../
 
-PGM = t.rast.aggregate.patch
+PGM = t.rast.aggregate.condition
 
 include $(MODULE_TOPDIR)/include/Make/Script.make
 
