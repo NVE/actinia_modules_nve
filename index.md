@@ -11,6 +11,7 @@
 - [r.timeseries.locations](./r.timeseries.locations.html)
 - [t.import.hrsi](./t.import.hrsi.html)
 - [t.pytorch.predict](./t.pytorch.predict.html)
+- [t.rast.aggregate.condition](./t.rast.aggregate.condition.html)
 - [t.rast.aggregate.patch](./t.rast.aggregate.patch.html)
 - [t.rast.reclass](./t.rast.reclass.html)
 - [t.rast.stats](./t.rast.stats.html)
