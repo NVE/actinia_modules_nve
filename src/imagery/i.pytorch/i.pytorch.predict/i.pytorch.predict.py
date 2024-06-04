@@ -38,6 +38,18 @@
 # % description: Input imagery group
 # %end
 
+# %option G_OPT_I_GROUP
+# %key: auxillary_group
+# % description: Input imagery group with auxillary data
+# % required: no
+# %end
+
+# %option G_OPT_I_GROUP
+# %key: input
+# % description: Reference imagery group (usually a complementary to the input group but from a different point in time)
+# % required: no
+# %end
+
 # %option G_OPT_F_INPUT
 # %key: model
 # % type: string
@@ -105,6 +117,7 @@
 # optimize tiling (shape) to minimize number of tiles and overlap between them within max size
 # Handle divisible by x (e.g. 8) for tile size to avoid:
 #    RuntimeError: Sizes of tensors must match except in dimension 1
+# Allow time series input in group (e.g. the same image group from multiple times)
 
 
 import atexit
@@ -127,7 +140,136 @@ from grass.pygrass.vector import Bbox
 TMP_NAME = gs.tempname(12)
 
 
-# Read and check configuration
+def group_to_dict(
+    imagery_group_name,
+    subgroup=None,
+    dict_keys="semantic_labels",
+    dict_values="map_names",
+    fill_semantic_label=True,
+    env=None,
+):
+    """Create a dictionary to represent an imagery group with metadata.
+
+    Defined by the dict_keys option, the dictionary uses either the names
+    of the raster maps ("map_names"), their row indices in the group
+    ("indices") or their associated semantic_labels ("semantic_labels") as keys.
+    The default is to use semantic_labels. Note that map metadata
+    of the maps in the group have to be read to get the semantic label,
+    in addition to the group file. The same metadata is read when the
+    "metadata" is requested as dict_values. Other supported dict_values
+    are "map_names" (default), "semantic_labels", or "indices".
+
+    The function can also operate on the level of subgroups. In case a
+    non-existing (or empty sub-group) is requested a warning is printed
+    and an empty dictionary is returned (following the behavior of i.group).
+
+    Example::
+
+    >>> run_command("g.copy", raster="lsat7_2000_10,lsat7_2000_10")
+    >>> run_command("r.support", raster="lsat7_2000_10", semantic_label="L8_1")
+    >>> run_command("g.copy", raster="lsat7_2000_20,lsat7_2000_20")
+    >>> run_command("r.support", raster="lsat7_2000_20", semantic_label="L8_2")
+    >>> run_command("g.copy", raster="lsat7_2000_30,lsat7_2000_30")
+    >>> run_command("r.support", raster="lsat7_2000_30", semantic_label="L8_3")
+    >>> run_command("i.group", group="L8_group",
+    >>>             input="lsat7_2000_10,lsat7_2000_20,lsat7_2000_30")
+    >>> group_to_dict("L8_group")  # doctest: +ELLIPSIS
+    {"L8_1": "lsat7_2000_10", ... "L8_3": "lsat7_2000_30"}
+    >>> run_command("g.remove", flags="f", type="group", name="L8_group")
+    >>> run_command("g.remove", flags="f", type="raster",
+    >>>             name="lsat7_2000_10,lsat7_2000_20,lsat7_2000_30")
+
+    :param str imagery_group_name: Name of the imagery group to process (or None)
+    :param str subgroup: Name of the imagery sub-group to process (or None)
+    :param str dict_keys: What to use as key for dictionary. Can bei either
+                         "semantic_labels" (default), "map_names" or "indices"
+    :param str dict_values: What to use as values for dictionary. Can bei either
+                           "map_names" (default), "semanic_labels", "indices" or
+                           "metadata" (to return dictionaries with full map metadata)
+    :param bool fill_semantic_label: If maps in a group do not have a semantic
+                                     label, their index in the group is used
+                                     instead (default). Otherwise None / "none"
+                                     is used.
+    :param dict env: Environment to use when parsing the imagery group
+
+    :return: dictionary representing an imagery group with it's maps and their
+             semantic labels, row indices in the group, or metadata
+    :rtype: dict
+    """
+    group_dict = {}
+    try:
+        maps_in_group = (
+            read_command(
+                "i.group",
+                group=imagery_group_name,
+                subgroup=subgroup,
+                flags="g",
+                quiet=True,
+                env=env,
+            )
+            .strip()
+            .split()
+        )
+    except CalledModuleError as cme:
+        raise cme
+
+    if dict_keys not in ["indices", "map_names", "semantic_labels"]:
+        raise ValueError(f"Invalid dictionary keys <{dict_keys}> requested")
+
+    if dict_values not in ["indices", "map_names", "semantic_labels", "metadata"]:
+        raise ValueError(f"Invalid dictionary values <{dict_values}> requested")
+
+    if subgroup and not maps_in_group:
+        warning(
+            _("Empty result returned for subgroup <{sg}> in group <{g}>").format(
+                sg=subgroup, g=imagery_group_name
+            )
+        )
+
+    for idx, raster_map in enumerate(maps_in_group):
+        raster_map_info = None
+        # Get raster metadata if needed
+        if (
+            dict_values in ["semantic_labels", "metadata"]
+            or dict_keys == "semantic_labels"
+        ):
+            raster_map_info = raster_info(raster_map, env=env)
+
+        # Get key for dictionary
+        if dict_keys == "indices":
+            key = str(idx + 1)
+        elif dict_keys == "map_names":
+            key = raster_map
+        elif dict_keys == "semantic_labels":
+            key = raster_map_info["semantic_label"]
+            if not key or key == '"none"':
+                warning(
+                    _(
+                        "Raster map {m} in group <{g}> does not have a semantic label."
+                    ).format(m=raster_map, g=imagery_group_name)
+                )
+                if fill_semantic_label:
+                    key = str(idx + 1)
+
+        if dict_values == "indices":
+            val = str(idx + 1)
+        elif dict_values == "map_names":
+            val = raster_map
+        elif dict_values == "semantic_labels":
+            val = raster_map_info or raster_map
+        elif dict_values == "metadata":
+            val = raster_map_info
+        if key in group_dict:
+            warning(
+                _(
+                    "Key {k} from raster map {m} already present in group dictionary."
+                    "Overwriting existing entry..."
+                ).format(k=key, r=raster_map)
+            )
+        group_dict[key] = val
+    return group_dict
+
+
 def read_config(module_options):
     """Read band configuration for input deep learning model
     Example for configuration se manual:
@@ -155,12 +297,39 @@ def read_config(module_options):
             "fill_value": 0,  # Value to replace NoData value with
             "description": "Sentinel-3 SLSTR band S1 scaled to reflectance values",  # Human readable description of the band that is expected as input
             },
-        'S2_reflectance_an':  {"order": 2, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S1 in reflectance values"},
-        'S3_reflectance_an':  {"order": 3, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S1 in reflectance values"},
-        'S5_reflectance_an':  {"order": 4, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S1 in reflectance values"},
-        'S6_reflectance_an':  {"order": 5, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S1 in reflectance values"},
-        'S8_BT_in':  {"order": 6, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
-        'S9_BT_in':  {"order": 7, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentine-3 SLSTR band S1 in reflectance values"},
+        'S2_reflectance_an':  {"order": 2, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S2 in reflectance values"},
+        'S3_reflectance_an':  {"order": 3, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S3 in reflectance values"},
+        'S5_reflectance_an':  {"order": 4, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S5 in reflectance values"},
+        'S6_reflectance_an':  {"order": 5, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S6 in reflectance values"},
+        'S8_BT_in':  {"order": 6, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentine-3 SLSTR band S8 in brightness temperature values"},
+        'S9_BT_in':  {"order": 7, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentine-3 SLSTR band S9 in brightness temperature values"},
+        },
+    "reference_bands": {  # dictionary describing the input bands of a reference image expected by the model
+        'S1_reflectance_an':  {  # input band name / key
+            "order": 1,  # position in the input data cube to the DL model
+            "offset": 0,  # Offset to be applied to the values in the input band, (0 means no offset)
+            "scale": 1,  # Scale to be applied to the values in the input band, after offset (1 means no scaling)
+            "valid_range": [None, 2],  # Tuple with valid range (min, max) of the input data with scale and offset applied, (None means inf for max and -inf for min)
+            "fill_value": 0,  # Value to replace NoData value with
+            "description": "Sentinel-3 SLSTR band S1 scaled to reflectance values, temporally preceeding the S1_reflectance_an band in the input bands",  # Human readable description of the band that is expected as input
+            },
+        'S2_reflectance_an':  {"order": 2, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S2 in reflectance values, temporally preceeding the S2_reflectance_an band in the input bands"},
+        'S3_reflectance_an':  {"order": 3, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S3 in reflectance values, temporally preceeding the S3_reflectance_an band in the input bands"},
+        'S5_reflectance_an':  {"order": 4, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S5 in reflectance values, temporally preceeding the S5_reflectance_an band in the input bands"},
+        'S6_reflectance_an':  {"order": 5, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S6 in reflectance values, temporally preceeding the S6_reflectance_an band in the input bands"},
+        'S8_BT_in':  {"order": 6, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentine-3 SLSTR band S8 in brightness temperature values, temporally preceeding the S8_BT_in band in the input bands"},
+        'S9_BT_in':  {"order": 7, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentine-3 SLSTR band S9 in brightness temperature values, temporally preceeding the S9_BT_in band in the input bands"},
+        },
+    "auxillary_bands": {  # dictionary describing the input auxillary bands expected by the model (auxillary bands may have the same semantic labels as the input bands) thus we need to provide them in a separate category / group
+        'DTM_20m':  {  # input band name / key
+            "order": 8,  # position in the input data cube to the DL model
+            "offset": 0,  # Offset to be applied to the values in the input band, (0 means no offset)
+            "scale": 1,  # Scale to be applied to the values in the input band, after offset (1 means no scaling)
+            "valid_range": [0, 2500],  # Tuple with valid range (min, max) of the input data with scale and offset applied, (None means inf for max and -inf for min)
+            "fill_value": 0,  # Value to replace NoData value with
+            "description": "Digital Terrain Model (DTM) with 20m resolution",  # Human readable description of the band that is expected as input
+            },
+        'DTM_20m_solar_radiation':  {"order": 9, "offset": 0, "scale": 1, "valid_range": [0, 65655], "description": "Sentine-3 SLSTR band S2 in reflectance values"},
         },
     "output_bands":  # This section contains meta information about output bands from the DL model, each output band should have a description
         {
@@ -190,9 +359,18 @@ def read_config(module_options):
                 },
         },
     }
+
+    Todo:
+    - implement pattern matching for input (and output!) bands
+    - maybe better to loop over orbits and
+        a) add orbit in where clause to select only a given orbit
+        b) replace an ORBIT and DIRECTION placeholder in JSON file
+           to handle orbit number and direction dynamically
+           (less adjustment in the module code but more wrapper code in
+           Airflow and more processing overhead)
+
     """
     json_path = Path(module_options["configuration"])
-    input_group = module_options["input"]
     if not json_path.exists():
         gs.fatal(_("Could not find configuration file <{}>").format(str(json_path)))
 
@@ -201,14 +379,7 @@ def read_config(module_options):
         json_path, Path(module_options["model_code"])
     )
 
-    maps_in_group = (
-        gs.read_command("i.group", group=input_group, flags="g", quiet=True)
-        .strip()
-        .split()
-    )
-
     input_group_dict = {}
-    semantic_labels = []
     masks = None
     mask_rules = None
     if module_options["mask_json"]:
@@ -216,54 +387,67 @@ def read_config(module_options):
         with open(module_options["mask_json"]) as mask_json:
             masks = json.load(mask_json)
 
-    for raster_map in maps_in_group:
-        raster_map_info = gs.raster_info(raster_map)
-        semantic_label = raster_map_info["semantic_label"]
-        if mask_rules is not None and masks and semantic_label in masks:
-            mask_rules[semantic_label] = {raster_map: masks[semantic_label]}
-        if semantic_label not in config["input_bands"]:
+    for img_group in ["input", "reference_group", "auxillary_group"]:
+        config_key = f"{img_group.split('_')[0]}_bands"
+        if not module_options[img_group]:
+            if config_key in config and config[config_key]:
+                gs.fatal(
+                    _(
+                        "{} required according to model configuration but missing from input."
+                    ).format(img_group)
+                )
             continue
 
-        semantic_labels.append(semantic_label)
-        if raster_map_info["min"] and raster_map_info["max"]:
-            # Check valid range of non-empty input maps
-            valid_range = config["input_bands"][semantic_label]["valid_range"]
-            if (
-                valid_range
-                and valid_range[0]
-                and raster_map_info["min"] < valid_range[0]
-            ):
+        maps_in_group = group_to_dict(module_options[img_group], dict_values="metadata")
+
+        for semantic_label, raster_map_info in maps_in_group.items():
+            raster_map = f"{raster_map_info['map']}@{raster_map_info['mapset']}"
+            if mask_rules is not None and masks and semantic_label in masks:
+                mask_rules[semantic_label] = {raster_map: masks[semantic_label]}
+            if semantic_label not in config[config_key]:
+                continue
+
+            if raster_map_info["min"] and raster_map_info["max"]:
+                # Check valid range of non-empty input maps
+                valid_range = config[config_key][semantic_label]["valid_range"]
+                if (
+                    valid_range
+                    and valid_range[0]
+                    and raster_map_info["min"] < valid_range[0]
+                ):
+                    gs.warning(
+                        _(
+                            "Minimum of raster map <{0}> ({1}) exeeds lower bound ({2}) of valid range"
+                        ).format(raster_map, raster_map_info["min"], valid_range[0])
+                    )
+                if (
+                    valid_range
+                    and valid_range[1]
+                    and raster_map_info["max"] > valid_range[1]
+                ):
+                    gs.warning(
+                        _(
+                            "Maximum of raster map <{0}> ({1}) exeeds upper bound ({2}) of valid range"
+                        ).format(raster_map, raster_map_info["max"], valid_range[1])
+                    )
+            else:
                 gs.warning(
-                    _(
-                        "Minimum of raster map <{0}> {1} exeeds lower bound ({2}) of valid range"
-                    ).format(raster_map, raster_map_info["min"], valid_range[0])
+                    _("Input map <{}> does not contain valid data").format(raster_map)
                 )
-            if (
-                valid_range
-                and valid_range[1]
-                and raster_map_info["max"] > valid_range[1]
-            ):
-                gs.warning(
-                    _(
-                        "Maximum of raster map <{0}> {1} exeeds upper bound ({2}) of valid range"
-                    ).format(raster_map, raster_map_info["max"], valid_range[1])
-                )
-        else:
-            gs.warning(
-                _("Input map <{}> does not contain valid data").format(raster_map)
+
+            input_group_dict[config[config_key][semantic_label]["order"]] = (
+                raster_map,
+                raster_map_info["datatype"],
+                config[config_key][semantic_label],
             )
 
-        input_group_dict[config["input_bands"][semantic_label]["order"]] = (
-            raster_map,
-            raster_map_info["datatype"],
-            config["input_bands"][semantic_label],
-        )
-
-    for band in config["input_bands"]:
-        if band not in semantic_labels:
-            gs.fatal(
-                _("Band {0} is missing in input group {1}").format(band, input_group)
-            )
+        for band in config[config_key]:
+            if band not in input_group_dict:
+                gs.fatal(
+                    _("Band '{0}' is missing in input group <{1}>").format(
+                        band, img_group
+                    )
+                )
 
     if masks:
         for mask_entry in masks:
@@ -646,6 +830,12 @@ def main():
         device="cpu" if flags["c"] or not torch.cuda.is_available() else "gpu",
     )
 
+    gs.verbose(
+        _("Using {device}").format(
+            device="cpu" if flags["c"] or not torch.cuda.is_available() else "gpu"
+        )
+    )
+
     overlap = int(options["overlap"]) or 0
 
     # Check if mask is active
@@ -670,10 +860,10 @@ def main():
         device=device,
         limit=flags["l"],
     )
-    nprocs = np.min([int(options["nprocs"]), len(tile_set)])
+    nprocs = int(options["nprocs"])
 
     if device == "cpu":
-        torch.set_num_threads(int(options["nprocs"]))
+        torch.set_num_threads(nprocs)
     # if nprocs > 1:
     #    with Pool(nprocs) as pool:
     #        pool.starmap(tiled_group_rediction, tile_set.items())

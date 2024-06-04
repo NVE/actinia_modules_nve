@@ -16,7 +16,10 @@ option describing the model together with it`s input and output.
 The imagery group provided in the <b>input</b> option has to contain raster maps for all bands
 required by the deep learning <b>model</b>. Raster maps are matched to the input bands using
 <em>semantic labels</em> and based on the meta information provided in the <b>configuration</b>
-option. The configuration is a JSON file that contains relevant information for initialisation
+option.
+
+<h2>CONFIGURATION</h2>
+The configuration is a JSON file that contains relevant information for initialisation
 of the model and describes all relevant input variables for applying the given deep learning model
 as well as the output.
 
@@ -86,6 +89,11 @@ It is excpected to be structure as follows:
 </pre></div>
 
 <h2>NOTES</h2>
+
+<p>
+All input raster maps are expected to have <em>semantic_labels</em> assigned to them,
+as they are used to match bands to the model.
+
 Processing on GPU may require a smaller <b>tile_size</b> setting in order to fit
 data to available GPU memory. Smaller tile sizes however lead to an increased number
 of temporary data. Users may encounter "Too many open files" error in such cases, esp.
