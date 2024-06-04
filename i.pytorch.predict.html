@@ -20,6 +20,8 @@ let temp = document.createElement('template');
 const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
 '<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
 '</li>' + 
+'<li><a class="toc-item" href="#configuration">CONFIGURATION</a>' + 
+'</li>' + 
 '<li><a class="toc-item" href="#notes">NOTES</a>' + 
 '</li>' + 
 '<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
@@ -48,7 +50,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>i.pytorch.predict</b><br></div>
 <b>i.pytorch.predict --help</b><br>
-<div id="synopsis"><b>i.pytorch.predict</b> [-<b>cl</b>] <b>input</b>=<em>name</em> <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]   [<b>mask_json</b>=<em>name</em>]  <b>configuration</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]  <b>output</b>=<em>name</em>  [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>i.pytorch.predict</b> [-<b>cl</b>] <b>input</b>=<em>name</em>  [<b>auxillary_group</b>=<em>name</em>]   [<b>input</b>=<em>name</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]   [<b>mask_json</b>=<em>name</em>]  <b>configuration</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]  <b>output</b>=<em>name</em>  [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -78,6 +80,12 @@ grassLogoLink.after(temp.content);
 <dl>
 <dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
 <dd>Input imagery group</dd>
+
+<dt><b>auxillary_group</b>=<em>name</em></dt>
+<dd>Input imagery group with auxillary data</dd>
+
+<dt><b>input</b>=<em>name</em></dt>
+<dd>Reference imagery group (usually a complementary to the input group but from a different point in time)</dd>
 
 <dt><b>model</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
 <dd>Path to input deep learning model file (.pt)</dd>
@@ -110,6 +118,7 @@ grassLogoLink.after(temp.content);
 <h4 class="toc">Table of contents</h4>
 <ul class="toc">
     <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#configuration" class="toc">CONFIGURATION</a></li>
     <li class="toc"><a href="#notes" class="toc">NOTES</a></li>
     <li class="toc"><a href="#examples" class="toc">EXAMPLES</a></li>
     <li class="toc"><a href="#requirements" class="toc">REQUIREMENTS</a></li>
@@ -134,7 +143,10 @@ option describing the model together with it`s input and output.
 The imagery group provided in the <b>input</b> option has to contain raster maps for all bands
 required by the deep learning <b>model</b>. Raster maps are matched to the input bands using
 <em>semantic labels</em> and based on the meta information provided in the <b>configuration</b>
-option. The configuration is a JSON file that contains relevant information for initialisation
+option.
+
+<h2><a name="configuration">CONFIGURATION</a></h2>
+The configuration is a JSON file that contains relevant information for initialisation
 of the model and describes all relevant input variables for applying the given deep learning model
 as well as the output.
 
@@ -204,6 +216,11 @@ It is excpected to be structure as follows:
 </pre></div>
 
 <h2><a name="notes">NOTES</a></h2>
+
+<p>
+All input raster maps are expected to have <em>semantic_labels</em> assigned to them,
+as they are used to match bands to the model.
+
 Processing on GPU may require a smaller <b>tile_size</b> setting in order to fit
 data to available GPU memory. Smaller tile sizes however lead to an increased number
 of temporary data. Users may encounter "Too many open files" error in such cases, esp.
@@ -241,7 +258,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Wednesday May 15 07:19:49 2024
+  Accessed: Tuesday Jun 04 12:54:35 2024
 </p>
 <hr class="header">
 <p>

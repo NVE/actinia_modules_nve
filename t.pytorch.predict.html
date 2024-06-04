@@ -7,7 +7,7 @@
  <meta name="viewport" content="width=device-width, initial-scale=1">
  <title>t.pytorch.predict - GRASS GIS manual</title>
  <meta name="description" content="t.pytorch.predict: Apply a pytorch model to imagery groups in a Space Time Raster Dataset (STRDS)">
- <meta name="keywords" content="raster, imagery, deep learning, pytorch, unet, GPU, predict">
+ <meta name="keywords" content="temporal, machine learning, deep learning, pytorch, unet, GPU, predict, imagery, raster, strds">
  <link rel="stylesheet" href="grassdocs.css" type="text/css">
 </head>
 <body bgcolor="white">
@@ -22,7 +22,7 @@ const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' +
 '</li>' + 
 '<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
 '<ul>' + 
-'<li><a class="toc-item" href="#import-all-sentinel-3-data-in-a-given-directory">Import all Sentinel-3 data in a given directory</a>' + 
+'<li><a class="toc-item" href="#predict-fsc-for-a-sentinel-3-time-series">Predict FSC for a Sentinel-3 time series</a>' + 
 '</li>' + 
 '</ul></li>' + 
 '<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
@@ -45,24 +45,27 @@ grassLogoLink.after(temp.content);
 <h2>NAME</h2>
 <em><b>t.pytorch.predict</b></em>  - Apply a pytorch model to imagery groups in a Space Time Raster Dataset (STRDS)
 <h2>KEYWORDS</h2>
-<a href="file:///usr/lib/grass83/docs/html/raster.html">raster</a>, <a href="file:///usr/lib/grass83/docs/html/topic_imagery.html">imagery</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#deep learning">deep learning</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#pytorch">pytorch</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#unet">unet</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#GPU">GPU</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#predict">predict</a>
+<a href="file:///usr/lib/grass83/docs/html/temporal.html">temporal</a>, <a href="file:///usr/lib/grass83/docs/html/topic_machine_learning.html">machine learning</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#deep learning">deep learning</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#pytorch">pytorch</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#unet">unet</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#GPU">GPU</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#predict">predict</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#imagery">imagery</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#raster">raster</a>, <a href="file:///usr/lib/grass83/docs/html/keywords.html#strds">strds</a>
 <h2>SYNOPSIS</h2>
 <div id="name"><b>t.pytorch.predict</b><br></div>
 <b>t.pytorch.predict --help</b><br>
-<div id="synopsis"><b>t.pytorch.predict</b> [-<b>ecl</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]  <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]  <b>configuration</b>=<em>name</em>  [<b>mask_json</b>=<em>name</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>basename</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>t.pytorch.predict</b> [-<b>cels</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]  <b>reference_strds</b>=<em>name</em>  [<b>reference_where</b>=<em>sql_query</em>]   [<b>static_group</b>=<em>name</em>]  <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]  <b>configuration</b>=<em>name</em>  [<b>mask_json</b>=<em>name</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>basename</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
 <h3>Flags:</h3>
 <dl>
-<dt><b>-e</b></dt>
-<dd>Extend existing STRDS (requires overwrite flag)</dd>
-
 <dt><b>-c</b></dt>
 <dd>Use CPU as device for prediction, default is use cuda (GPU) if detected</dd>
 
+<dt><b>-e</b></dt>
+<dd>Extend existing STRDS (requires overwrite flag)</dd>
+
 <dt><b>-l</b></dt>
 <dd>Limit output to valid range (data outside the valid range is set to valid min/max)</dd>
+
+<dt><b>-s</b></dt>
+<dd>Process each semantic label separately</dd>
 
 <dt><b>--overwrite</b></dt>
 <dd>Allow output files to overwrite existing files</dd>
@@ -86,6 +89,16 @@ grassLogoLink.after(temp.content);
 <dt><b>where</b>=<em>sql_query</em></dt>
 <dd>WHERE conditions of SQL statement without 'where' keyword used in the temporal GIS framework</dd>
 <dd>Example: start_time &gt; '2001-01-01 12:30:00'</dd>
+
+<dt><b>reference_strds</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the input space time raster dataset</dd>
+
+<dt><b>reference_where</b>=<em>sql_query</em></dt>
+<dd>WHERE conditions of SQL statement without 'where' keyword used in the temporal GIS framework</dd>
+<dd>Where clause to select reference images</dd>
+
+<dt><b>static_group</b>=<em>name</em></dt>
+<dd>Input imagery group with time independent raster maps</dd>
 
 <dt><b>output</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
 <dd>Name of the output space time raster dataset</dd>
@@ -129,7 +142,7 @@ grassLogoLink.after(temp.content);
     <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
     <li class="toc"><a href="#examples" class="toc">EXAMPLES</a>
     <ul class="toc">
-        <li class="toc"><a href="#import-all-sentinel-3-data-in-a-given-directory" class="toc">Import all Sentinel-3 data in a given directory</a></li>
+        <li class="toc"><a href="#predict-fsc-for-a-sentinel-3-time-series" class="toc">Predict FSC for a Sentinel-3 time series</a></li>
     </ul></li>
     <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
     <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
@@ -137,86 +150,36 @@ grassLogoLink.after(temp.content);
 </div>
 <h2><a name="description">DESCRIPTION</a></h2>
 
-<em>t.sentinel3.import</em> is a wrapper around the <em>i.sentinel3.import</em>
+<em>t.pytorch.predict</em> is a wrapper around the <em>i.pytorch.predict</em>
 module and supports all relevant flags and options of that module.
-<em>t.sentinel3.import</em> takes a directory or a list of files as
-<b>input</b>, groups those files by day and track and, processes
-each group with <em>i.sentinel3.import</em> and registers all resulting
-maps in the <b>output</b> SpaceTimeRasterDataset (STRDS).
-If multiple cores are given in the <b>nprocs</b> option, groups are
-processed in parallel. If more cores than groups are available, multiple
-cores may be made available to each <em>i.sentinel3.import</em> process.
+<em>t.pytorch.predict</em> compiles the input imagery groups to
+<em>i.pytorch.predict</em> from the temporal granules in the
+<b>input</b> STRDS. Those groups pre granule are complemented with raster maps
+from a <b>static_group</b> and/or another <b>reference_strds</b>, where maps
+in the reference STRDS are matched with the input STRDS in space and time
+using the user-defined <b>sampling</b>. If a reference STRDS or a
+static group is used it often makes sense to provide a <b>basename</b>
+for the resulting raster maps.
 <p>
-For more information on pre-prcessing Sentinel-3 data, please consult
-the manual of <em>i.sentinel3.import</em>.
+For more information on how machine learning models are applied to the imagery
+groups, please consult the manual of <em>i.pytorch.predict</em>.
 
 <h2><a name="examples">EXAMPLES</a></h2>
 
-<h3><a name="import-all-sentinel-3-data-in-a-given-directory">Import all Sentinel-3 data in a given directory</a></h3>
+<h3><a name="predict-fsc-for-a-sentinel-3-time-series">Predict FSC for a Sentinel-3 time series</a></h3>
 
 <div class="code"><pre>
-t.sentinel3.import input=/data/Sentinel3/SLSTR/ output=Sentinel_3_SLSTR_RBT_L2 \
-  nprocs=8 product_type=S3SL1RBT -erj \
-  title="Sentinel-3 SLSTR RBT Level 2 pre-processed to reflectance" \
-  description="Sentinel-3 SLSTR RBT product pre-processed to Level 2, reflectance"
+  t.pytorch.predict input=/data/Sentinel3/SLSTR/ output=Sentinel_3_SLSTR_RBT_L2 \
+  nprocs=8 (...)
 
 t.info Sentinel_3_SLSTR_RBT_L2
-+-------------------- Space Time Raster Dataset -----------------------------+
-|                                                                            |
-+-------------------- Basic information -------------------------------------+
-| Id: ........................ Sentinel_3_SLSTR_RBT_L2@PERMANENT
-| Name: ...................... Sentinel_3_SLSTR_RBT_L2
-| Mapset: .................... PERMANENT
-| Creator: ................... ninsbl
-| Temporal type: ............. absolute
-| Creation time: ............. 2024-03-01 14:50:10.495161
-| Modification time:.......... 2024-03-01 14:50:10.644547
-| Semantic type:.............. mean
-+-------------------- Absolute time -----------------------------------------+
-| Start time:................. 2024-01-29 10:58:39
-| End time:................... 2024-01-29 11:07:39
-| Granularity:................ 540 seconds
-| Temporal type of maps:...... interval
-+-------------------- Spatial extent ----------------------------------------+
-| North:...................... 8555600.0
-| South:...................... 6888600.0
-| East:.. .................... 1347700.0
-| West:....................... -459300.0
-| Top:........................ 0.0
-| Bottom:..................... 0.0
-+-------------------- Metadata information ----------------------------------+
-| Raster register table:...... raster_map_register_7df298e5fb2f4a6a9c3414b917eaa0f1
-| North-South resolution min:. 500.0
-| North-South resolution max:. 500.0
-| East-west resolution min:... 500.0
-| East-west resolution max:... 500.0
-| Minimum value min:.......... -23099.853079
-| Minimum value max:.......... 1026.0
-| Maximum value min:.......... 280.167206
-| Maximum value max:.......... 58014.404187
-| Aggregation type:........... None
-| Number of semantic labels:.. 17
-| Semantic labels:............ S3_F1_BT_fn,S3_F2_BT_in,S3_S1_reflectance_an,S3_S2_reflectance_an,S3_S3_reflectance_an,S3_S4_reflectance_an,S3_S5_reflectance_an,S3_S6_reflectance_an,S3_S7_BT_in,S3_S8_BT_in,S3_S9_BT_in,S3_bayes_an,S3_cloud_an,S3_confidence_an,S3_pointing_an,S3_probability_cloud_dual_in,S3_probability_cloud_single_in
-| Number of registered maps:.. 17
-|
-| Title:
-| Sentinel-3 SLSTR RBT Level 2 pre-processed to reflectance
-| Description:
-| Sentinel-3 SLSTR RBT product pre-processed to Level 2, reflectance
-| Command history:
-| # 2024-03-01 14:50:10
-| t.sentinel3.import.py -rj input="/c/data/S3/Raw"
-|     output="Sentinel_3_SLSTR_RBT_L2" product_type="S3SL1RBT" nprocs="8" --o
-|     --v title="Sentinel-3 SLSTR RBT Level 2 pre-processed to reflectance"
-|     description="Sentinel-3 SLSTR RBT product pre-processed to Level 2, reflectance"
-|
-+----------------------------------------------------------------------------+</pre></div>
+(...)
+</pre></div>
 
 <h2><a name="see-also">SEE ALSO</a></h2>
 
 <em>
-<a href="file:///usr/lib/grass83/docs/html/i.sentinel3.import.html">i.sentinel3.import</a>,
-<a href="file:///usr/lib/grass83/docs/html/i.sentinel.download.html">i.sentinel.download</a>,
+<a href="file:///usr/lib/grass83/docs/html/i.pytorch.predict.html">i.pytorch.predict</a>,
 </em>
 <p>
 <a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
@@ -231,7 +194,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Wednesday May 15 07:19:46 2024
+  Accessed: Tuesday Jun 04 12:54:23 2024
 </p>
 <hr class="header">
 <p>
