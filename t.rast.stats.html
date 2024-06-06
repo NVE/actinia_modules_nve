@@ -51,14 +51,14 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>t.rast.stats</b><br></div>
 <b>t.rast.stats --help</b><br>
-<div id="synopsis"><b>t.rast.stats</b> [-<b>Rhacpl1gxArCinN</b>] <b>input</b>=<em>name</em>  [<b>zone</b>=<em>name</em>[,<i>name</i>,...]]   [<b>where</b>=<em>sql_query</em>]   [<b>output</b>=<em>name</em>]   [<b>separator</b>=<em>character</em>]   [<b>null_value</b>=<em>string</em>]   [<b>nsteps</b>=<em>integer</em>]   [<b>sort</b>=<em>string</em>]   [<b>region_relation</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>t.rast.stats</b> [-<b>Rhacpl1gxArCinN</b>] <b>input</b>=<em>name</em>  [<b>zone</b>=<em>name</em>[,<i>name</i>,...]]   [<b>where</b>=<em>sql_query</em>]   [<b>output</b>=<em>name</em>]   [<b>columns</b>=<em>string</em>[,<i>string</i>,...]]   [<b>separator</b>=<em>character</em>]   [<b>null_value</b>=<em>string</em>]   [<b>nsteps</b>=<em>integer</em>]   [<b>sort</b>=<em>string</em>]   [<b>region_relation</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
 <h3>Flags:</h3>
 <dl>
 <dt><b>-R</b></dt>
-<dd>Use the raster map regions for univar statistical calculation instead of the current region</dd>
+<dd>Use the raster map regions for statistic calculation instead of the current region</dd>
 
 <dt><b>-h</b></dt>
 <dd>Print header</dd>
@@ -131,6 +131,10 @@ grassLogoLink.after(temp.content);
 
 <dt><b>output</b>=<em>name</em></dt>
 <dd>Name for output file</dd>
+
+<dt><b>columns</b>=<em>string[,<i>string</i>,...]</em></dt>
+<dd>Map metadata columns to be written to the utput</dd>
+<dd>Options: <em>creator, ctime, semantic_label, min, max, nsres, ewres, rows, cols, number_of_cells</em></dd>
 
 <dt><b>separator</b>=<em>character</em></dt>
 <dd>Field separator</dd>
@@ -227,7 +231,7 @@ Stefan Blumentrath
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Tuesday Jun 04 12:54:30 2024
+  Accessed: Thursday Jun 06 10:39:43 2024
 </p>
 <hr class="header">
 <p>
