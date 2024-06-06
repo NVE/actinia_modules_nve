@@ -449,13 +449,13 @@ def main():
                     header.append("zone_label")
 
         header.append("raster_value")
-        if "l" in flags:
+        if "l" in flags and flags["l"]:
             header.append("raster_value_label")
-        if "a" in flags:
+        if "a" in flags and flags["a"]:
             header.append("area_m2")
-        elif "c" in flags:
+        elif "c" in flags and flags["c"]:
             header.append("cell_counts")
-        elif "p" in flags:
+        elif "p" in flags and flags["p"]:
             header.append("percent")
 
         header = f"{sep}".join(header)
