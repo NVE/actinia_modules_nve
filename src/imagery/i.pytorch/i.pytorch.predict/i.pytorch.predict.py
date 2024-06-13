@@ -45,7 +45,7 @@
 # %end
 
 # %option G_OPT_I_GROUP
-# %key: input
+# %key: reference_group
 # % description: Reference imagery group (usually a complementary to the input group but from a different point in time)
 # % required: no
 # %end
@@ -297,12 +297,12 @@ def read_config(module_options):
             "fill_value": 0,  # Value to replace NoData value with
             "description": "Sentinel-3 SLSTR band S1 scaled to reflectance values",  # Human readable description of the band that is expected as input
             },
-        'S2_reflectance_an':  {"order": 2, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S2 in reflectance values"},
-        'S3_reflectance_an':  {"order": 3, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S3 in reflectance values"},
-        'S5_reflectance_an':  {"order": 4, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S5 in reflectance values"},
-        'S6_reflectance_an':  {"order": 5, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S6 in reflectance values"},
-        'S8_BT_in':  {"order": 6, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentine-3 SLSTR band S8 in brightness temperature values"},
-        'S9_BT_in':  {"order": 7, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentine-3 SLSTR band S9 in brightness temperature values"},
+        'S2_reflectance_an':  {"order": 2, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentinel-3 SLSTR band S2 in reflectance values"},
+        'S3_reflectance_an':  {"order": 3, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentinel-3 SLSTR band S3 in reflectance values"},
+        'S5_reflectance_an':  {"order": 4, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentinel-3 SLSTR band S5 in reflectance values"},
+        'S6_reflectance_an':  {"order": 5, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentinel-3 SLSTR band S6 in reflectance values"},
+        'S8_BT_in':  {"order": 6, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentinel-3 SLSTR band S8 in brightness temperature values"},
+        'S9_BT_in':  {"order": 7, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentinel-3 SLSTR band S9 in brightness temperature values"},
         },
     "reference_bands": {  # dictionary describing the input bands of a reference image expected by the model
         'S1_reflectance_an':  {  # input band name / key
@@ -313,12 +313,12 @@ def read_config(module_options):
             "fill_value": 0,  # Value to replace NoData value with
             "description": "Sentinel-3 SLSTR band S1 scaled to reflectance values, temporally preceeding the S1_reflectance_an band in the input bands",  # Human readable description of the band that is expected as input
             },
-        'S2_reflectance_an':  {"order": 2, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S2 in reflectance values, temporally preceeding the S2_reflectance_an band in the input bands"},
-        'S3_reflectance_an':  {"order": 3, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S3 in reflectance values, temporally preceeding the S3_reflectance_an band in the input bands"},
-        'S5_reflectance_an':  {"order": 4, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S5 in reflectance values, temporally preceeding the S5_reflectance_an band in the input bands"},
-        'S6_reflectance_an':  {"order": 5, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentine-3 SLSTR band S6 in reflectance values, temporally preceeding the S6_reflectance_an band in the input bands"},
-        'S8_BT_in':  {"order": 6, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentine-3 SLSTR band S8 in brightness temperature values, temporally preceeding the S8_BT_in band in the input bands"},
-        'S9_BT_in':  {"order": 7, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentine-3 SLSTR band S9 in brightness temperature values, temporally preceeding the S9_BT_in band in the input bands"},
+        'S2_reflectance_an':  {"order": 2, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentinel-3 SLSTR band S2 in reflectance values, temporally preceeding the S2_reflectance_an band in the input bands"},
+        'S3_reflectance_an':  {"order": 3, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentinel-3 SLSTR band S3 in reflectance values, temporally preceeding the S3_reflectance_an band in the input bands"},
+        'S5_reflectance_an':  {"order": 4, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentinel-3 SLSTR band S5 in reflectance values, temporally preceeding the S5_reflectance_an band in the input bands"},
+        'S6_reflectance_an':  {"order": 5, "offset": 0, "scale": 1, "valid_range": [None, 2], "description": "Sentinel-3 SLSTR band S6 in reflectance values, temporally preceeding the S6_reflectance_an band in the input bands"},
+        'S8_BT_in':  {"order": 6, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentinel-3 SLSTR band S8 in brightness temperature values, temporally preceeding the S8_BT_in band in the input bands"},
+        'S9_BT_in':  {"order": 7, "offset": -200, "scale": 100, "valid_range": None, "description": "Sentinel-3 SLSTR band S9 in brightness temperature values, temporally preceeding the S9_BT_in band in the input bands"},
         },
     "auxillary_bands": {  # dictionary describing the input auxillary bands expected by the model (auxillary bands may have the same semantic labels as the input bands) thus we need to provide them in a separate category / group
         'DTM_20m':  {  # input band name / key
@@ -359,16 +359,6 @@ def read_config(module_options):
                 },
         },
     }
-
-    Todo:
-    - implement pattern matching for input (and output!) bands
-    - maybe better to loop over orbits and
-        a) add orbit in where clause to select only a given orbit
-        b) replace an ORBIT and DIRECTION placeholder in JSON file
-           to handle orbit number and direction dynamically
-           (less adjustment in the module code but more wrapper code in
-           Airflow and more processing overhead)
-
     """
     json_path = Path(module_options["configuration"])
     if not json_path.exists():
@@ -402,14 +392,26 @@ def read_config(module_options):
 
         for semantic_label, raster_map_info in maps_in_group.items():
             raster_map = f"{raster_map_info['map']}@{raster_map_info['mapset']}"
-            if mask_rules is not None and masks and semantic_label in masks:
-                mask_rules[semantic_label] = {raster_map: masks[semantic_label]}
-            if semantic_label not in config[config_key]:
+
+            if mask_rules is not None and masks:
+                mask_pattern_match = [
+                    re.match(label, semantic_label) for label in masks
+                ]
+                if mask_pattern_match:
+                    mask_rules[semantic_label] = {
+                        raster_map: masks[mask_pattern_match[0]]
+                    }
+
+            band_pattern_match = [
+                re.match(label, semantic_label) for label in config[config_key]
+            ]
+            if not config[config_key]:
                 continue
 
+            band_pattern_match = band_pattern_match[0]
             if raster_map_info["min"] and raster_map_info["max"]:
                 # Check valid range of non-empty input maps
-                valid_range = config[config_key][semantic_label]["valid_range"]
+                valid_range = config[config_key][band_pattern_match]["valid_range"]
                 if (
                     valid_range
                     and valid_range[0]
@@ -435,14 +437,17 @@ def read_config(module_options):
                     _("Input map <{}> does not contain valid data").format(raster_map)
                 )
 
-            input_group_dict[config[config_key][semantic_label]["order"]] = (
+            input_group_dict[config[config_key][band_pattern_match]["order"]] = (
                 raster_map,
                 raster_map_info["datatype"],
-                config[config_key][semantic_label],
+                config[config_key][band_pattern_matchsemantic_label],
             )
 
         for band in config[config_key]:
-            if band not in input_group_dict:
+            band_pattern_match = [
+                re.match(band, semantic_label) for semantic_label in input_group_dict
+            ]
+            if not band_pattern_match:
                 gs.fatal(
                     _("Band '{0}' is missing in input group <{1}>").format(
                         band, img_group
