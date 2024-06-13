@@ -60,6 +60,14 @@
 # # % multiple: no
 # %end
 
+# %option
+# % key: offset
+# % type: integer
+# % required: no
+# % multiple: no
+# % description: Offset that defines a reference map (e.g. -1 for the previous map (group) in the input STRDS)
+# %end
+
 # %option G_OPT_I_GROUP
 # %key: auxillary_group
 # % required: no
