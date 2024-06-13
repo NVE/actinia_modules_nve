@@ -13,9 +13,6 @@
               for details.
 
               ToDo:
-                - Add a reference_strds option
-                - add a reference_strds_where option
-                - add a sampling option for spation-temporal matching of input and refgerence STRDS
                   using time and semantic label e.g. time = time AND semanitc_label = semantic_label
                 - add the possibility to have "pattern" in semantic_label definition in model JSON
 
@@ -35,13 +32,13 @@
 # % keyword: strds
 # %end
 
-# %option G_OPT_STRDS_INPUT
+# %option G_OPT_STRDS_INPUTS
 # %end
 
 # %option G_OPT_T_WHERE
 # %end
 
-# %option G_OPT_STRDS_INPUT
+# %option G_OPT_STRDS_INPUTS
 # %key: reference_strds
 # %end
 
@@ -50,19 +47,33 @@
 # % description: Where clause to select reference images
 # %end
 
+# %option
+# %key: reference_suffix
+# % description: Suffix to be added to the semantic label of the raster maps in the reference_strds
+# # % type: string
+# # % required: no
+# # % multiple: no
+# %end
+
+# %option G_OPT_T_SAMPLE
+# # % required: no
+# # % multiple: no
+# %end
+
 # %option G_OPT_I_GROUP
-# %key: static_group
+# %key: auxillary_group
 # % required: no
 # % multiple: no
 # % description: Input imagery group with time independent raster maps
 # %end
 
-# # %option
-# # % key: region_relation
-# # % type: string
-# # % required: no
-# # % multiple: no
-# # %end
+# %option
+# % key: region_relation
+# % description: Process only maps with this spatial relation to the current computational region
+# % options: overlaps,contains,is_contained
+# % required: no
+# % multiple: no
+# %end
 
 # %option G_OPT_STRDS_OUTPUT
 # %end
@@ -146,12 +157,13 @@
 # % description: Limit output to valid range (data outside the valid range is set to valid min/max)
 # %end
 
-# %flag
-# %key: s
-# % description: Process each semantic label separately
-# %end
+# # %flag
+# # %key: m
+# # % description: Match semantic labels between input and reference_strds
+# # %end
 
 # %rules
+# % exclusive: offset,reference_strds
 # % collective: title,description
 # % required: -e,title,description
 # %end
@@ -167,53 +179,153 @@ from pathlib import Path
 from subprocess import PIPE
 
 import grass.script as gs
-
+from grass.exceptions import CalledModuleError
 
 TMP_NAME = gs.tempname(12)
 # Get GRASS GIS environment
 GISENV = dict(gs.gisenv())
 
 
-def parse_group(imagery_group):
-    """Create a dict to represent an imagery group, where raster maps
-    in the imagery group are the values and the associated semantic_labels
-    are their respective keys.
-    For raster maps in the imagery group that do not have a semantic label
-    a warning is given.
+def group_to_dict(
+    imagery_group_name,
+    subgroup=None,
+    dict_keys="semantic_labels",
+    dict_values="map_names",
+    fill_semantic_label=True,
+    env=None,
+):
+    """Create a dictionary to represent an imagery group with metadata.
+
+    Defined by the dict_keys option, the dictionary uses either the names
+    of the raster maps ("map_names"), their row indices in the group
+    ("indices") or their associated semantic_labels ("semantic_labels") as keys.
+    The default is to use semantic_labels. Note that map metadata
+    of the maps in the group have to be read to get the semantic label,
+    in addition to the group file. The same metadata is read when the
+    "metadata" is requested as dict_values. Other supported dict_values
+    are "map_names" (default), "semantic_labels", or "indices".
+
+    The function can also operate on the level of subgroups. In case a
+    non-existing (or empty sub-group) is requested a warning is printed
+    and an empty dictionary is returned (following the behavior of i.group).
+
+    Example::
+
+    >>> run_command("g.copy", raster="lsat7_2000_10,lsat7_2000_10")
+    >>> run_command("r.support", raster="lsat7_2000_10", semantic_label="L8_1")
+    >>> run_command("g.copy", raster="lsat7_2000_20,lsat7_2000_20")
+    >>> run_command("r.support", raster="lsat7_2000_20", semantic_label="L8_2")
+    >>> run_command("g.copy", raster="lsat7_2000_30,lsat7_2000_30")
+    >>> run_command("r.support", raster="lsat7_2000_30", semantic_label="L8_3")
+    >>> run_command("i.group", group="L8_group",
+    >>>             input="lsat7_2000_10,lsat7_2000_20,lsat7_2000_30")
+    >>> group_to_dict("L8_group")  # doctest: +ELLIPSIS
+    {"L8_1": "lsat7_2000_10", ... "L8_3": "lsat7_2000_30"}
+    >>> run_command("g.remove", flags="f", type="group", name="L8_group")
+    >>> run_command("g.remove", flags="f", type="raster",
+    >>>             name="lsat7_2000_10,lsat7_2000_20,lsat7_2000_30")
+
+    :param str imagery_group_name: Name of the imagery group to process (or None)
+    :param str subgroup: Name of the imagery sub-group to process (or None)
+    :param str dict_keys: What to use as key for dictionary. Can bei either
+                         "semantic_labels" (default), "map_names" or "indices"
+    :param str dict_values: What to use as values for dictionary. Can bei either
+                           "map_names" (default), "semanic_labels", "indices" or
+                           "metadata" (to return dictionaries with full map metadata)
+    :param bool fill_semantic_label: If maps in a group do not have a semantic
+                                     label, their index in the group is used
+                                     instead (default). Otherwise None / "none"
+                                     is used.
+    :param dict env: Environment to use when parsing the imagery group
+
+    :return: dictionary representing an imagery group with it's maps and their
+             semantic labels, row indices in the group, or metadata
+    :rtype: dict
     """
     group_dict = {}
-    if not imagery_group:
-        return group_dict
-    maps_in_group = (
-        gs.read_command("i.group", group=imagery_group, flags="g", quiet=True)
-        .strip()
-        .split()
-    )
+    try:
+        maps_in_group = (
+            gs.read_command(
+                "i.group",
+                group=imagery_group_name,
+                subgroup=subgroup,
+                flags="g",
+                quiet=True,
+                env=env,
+            )
+            .strip()
+            .split()
+        )
+    except CalledModuleError as cme:
+        raise cme
 
-    for idx, raster_map, raster_map in enumerate(maps_in_group):
-        raster_map_info = gs.raster_info(raster_map)
-        semantic_label = raster_map_info["semantic_label"]
-        if not raster_map_info["semantic_label"]:
+    if dict_keys not in ["indices", "map_names", "semantic_labels"]:
+        raise ValueError(f"Invalid dictionary keys <{dict_keys}> requested")
+
+    if dict_values not in ["indices", "map_names", "semantic_labels", "metadata"]:
+        raise ValueError(f"Invalid dictionary values <{dict_values}> requested")
+
+    if subgroup and not maps_in_group:
+        gs.warning(
+            _("Empty result returned for subgroup <{sg}> in group <{g}>").format(
+                sg=subgroup, g=imagery_group_name
+            )
+        )
+
+    for idx, raster_map in enumerate(maps_in_group):
+        raster_map_info = None
+        # Get raster metadata if needed
+        if (
+            dict_values in ["semantic_labels", "metadata"]
+            or dict_keys == "semantic_labels"
+        ):
+            raster_map_info = gs.raster_info(raster_map, env=env)
+
+        # Get key for dictionary
+        if dict_keys == "indices":
+            key = str(idx + 1)
+        elif dict_keys == "map_names":
+            key = raster_map
+        elif dict_keys == "semantic_labels":
+            key = raster_map_info["semantic_label"]
+            if not key or key == '"none"':
+                gs.warning(
+                    _(
+                        "Raster map {m} in group <{g}> does not have a semantic label."
+                    ).format(m=raster_map, g=imagery_group_name)
+                )
+                if fill_semantic_label:
+                    key = str(idx + 1)
+
+        if dict_values == "indices":
+            val = str(idx + 1)
+        elif dict_values == "map_names":
+            val = raster_map
+        elif dict_values == "semantic_labels":
+            val = raster_map_info or raster_map
+        elif dict_values == "metadata":
+            val = raster_map_info
+        if key in group_dict:
             gs.warning(
                 _(
-                    "Raster map {rmap} in group {igroup} does not have a semantic label."
-                    "Using the numeric index in the group"
-                ).format(rmap=raster_map, igroup=imagery_group)
+                    "Key {k} from raster map {m} already present in group dictionary."
+                    "Overwriting existing entry..."
+                ).format(k=key, r=raster_map)
             )
-            semantic_label = idx + 1
-        group_dict[semantic_label] = raster_map
+        group_dict[key] = val
     return group_dict
 
 
 def is_int(string):
+    """Check if a string represents an integer value"""
     try:
         int(string)
-    except Exception:
+    except ValueError:
         return False
     return True
 
 
-def get_registered_maps_grouped(
+def get_registered_maps(
     stds,
     columns=None,
     where=None,
@@ -222,20 +334,27 @@ def get_registered_maps_grouped(
     spatial_relation=None,
     dbif=None,
 ):
-    """Return SQL rows of all registered maps.
+    """Return SQL rows of the selected registered maps, grouped by
+    the columns in the group_by option.
 
-    In case columns are not specified, each row includes all columns
-    specified in the datatype specific view.
+    This function is useful to retrieve e.g. granules from an STRDS
+    with satellite imagery where scene consists of different bands
+    that have different semantic_labels but equal an temporal extend.
+
+    The returned SQL rows contain the selected columns plus the columns
+    in the group_by option are always included too. Content of the
+    selected columns is concatenated to a comma separated string.
 
     The combination of the spatial_extent and spatial_relation parameters
     can be used to return only SQL rows of maps with the given spatial
     relation to the provided spatial extent
 
-    :param columns: Columns to be selected as list of SQL compliant strings
+    :param columns: Columns to be selected as list of SQL compliant strings,
+                    default is ["id", "semantic_label"].
     :param where: The SQL where statement to select a subset
-                    of the registered maps without "WHERE"
+                  of the registered maps without "WHERE"
     :param group_by: The columns to be used in the SQL GROUP BY statement
-                      as list of SQL compliant strings
+                     as list of SQL compliant strings
     :param dbif: The database interface to be used
     :param spatial_extent: Spatial extent dict and projection information
         e.g. from g.region -ug3 with GRASS GIS region keys
@@ -247,8 +366,8 @@ def get_registered_maps_grouped(
         "is_contained": maps that are fully within the provided spatial extent
         "contains": maps that contain (fully cover) the provided spatial extent
 
-    :return: SQL rows of all registered maps,
-            In case nothing found None is returned
+    :return: SQL rows of all registered maps grouped by the columns given in
+             the group_by option, in case no maps are found, None is returned
     """
 
     dbif, connection_state_changed = tgis.init_dbif(dbif)
@@ -312,17 +431,32 @@ def get_registered_maps_grouped(
     return rows
 
 
+def map_row_to_dict(map_row):
+    """Create a dictionary from a group row returned by
+    `get_registered_maps`
+
+    :param map_row: SQL row returned by `get_registered_maps`
+                    with keys: ids, semantic_labels
+    """
+    map_ids = map_row["ids"].split(",")
+    if not map_row["semantic_labels"]:
+        gs.warning("Semantic labels are missing for all raster maps")
+        semantic_labels = [""] * len(map_ids)
+    else:
+        semantic_labels = map_row["semantic_labels"].split(",")
+    return {semantic_labels[idx]: map_id for idx, map_id in enumerate(map_ids)}
+
+
 def build_group_dict(
     map_list,
     time_unit=None,
     offset=None,
     raster_dataset=False,
-    reference_suffix=None,
-    static_map_dict=None,
 ):
     """Build dictionary to represent image groups registered in an STRDS"""
     maps_dict = {}
     for idx, raster_map_row in enumerate(map_list):
+        group_dict = {}
         reference_dict = {}
         temporal_extent = [raster_map_row["start_time"], raster_map_row["end_time"]]
         if offset and 0 < idx + offset < len(map_list):
@@ -332,28 +466,15 @@ def build_group_dict(
                     map_list[idx + offset]["end_time"],
                 ]
             )
-            map_ids = raster_map_row["ids"].split(",")
-            if not map_list[idx + offset]["semantic_labels"]:
-                gs.warning(
-                    "Semantic labels are missing for all raster maps in reference"
-                )
-                semantic_labels = [""] * len(map_ids)
-            else:
-                semantic_labels = map_list[idx + offset]["semantic_labels"].split(",")
-                if reference_suffix:
-                    semantic_labels = [
-                        f"{semantic_label}_{reference_suffix}"
-                        for semantic_label in semantic_labels
-                    ]
-            reference_dict = {
-                semantic_labels[mid]: map_id for mid, map_id in enumerate(map_ids)
-            }
+            reference_dict = map_row_to_dict(map_list[idx + offset])
+        # Remove potential None
         temporal_extent = {time_stamp for time_stamp in temporal_extent if time_stamp}
         temporal_extent = (
             min(temporal_extent),
             max(temporal_extent) if len(temporal_extent) > 1 else None,
         )
         if raster_dataset:
+            # Use TGIS RasterDataset as dict key (for spatio-temporal relations)
             dict_key = tgis.RasterDataset(None)
             if time_unit:
                 dict_key.set_relative_time(*temporal_extent, time_unit)
@@ -362,21 +483,49 @@ def build_group_dict(
         else:
             dict_key = temporal_extent
 
-        map_ids = raster_map_row["ids"].split(",")
-        if not raster_map_row["semantic_labels"]:
-            gs.warning("Semantic labels are missing for all raster maps")
-            semantic_labels = [""] * len(map_ids)
-        else:
-            semantic_labels = raster_map_row["semantic_labels"].split(",")
-        group_dict = {
-            semantic_labels[idx]: map_id for idx, map_id in enumerate(map_ids)
-        }
-        if static_map_dict:
-            group_dict.update(static_map_dict)
-        if not offset or offset and reference_dict:
-            group_dict.update(reference_dict)
-            maps_dict[dict_key] = group_dict
+        group_dict = map_row_to_dict(raster_map_row)
+        if reference_dict or not offset:
+            maps_dict[dict_key] = {
+                "input": group_dict,
+                "reference_group": reference_dict,
+            }
     return maps_dict
+
+
+def merge_strds_groups(list_of_map_rows):
+    """Merge a list of lists with grouped STRDS representations
+    created with get_registered_maps into a single list
+
+    This function concatenates map IDs and semantic labels of elemnts in
+    map_rows_a and map_rows_b, matched by equal time stamp. Elements without
+    match in both groups are excluded from the results. Thus, a precondition
+    is that maps have equal time stamps and the evtl. where-clause used to
+    select from both input STRDS is applicable both.
+
+    Dev note: The presence of required semantic labels should be checked
+              for each ganule at a later point!
+
+    If no matching elements between input STRDS is found, the module exits.
+
+    The purpose of the function is to be able to use multiple input STRDS
+    (input and reference_strds_option), e.g. if original and artificial bands
+    (spectral indices) are organized in different STRDS that need to be input
+    to the deep learning models.
+    """
+    if len(list_of_map_rows) == 1:
+        return list_of_map_rows[0]
+
+    # Initialize a dict with granule as keys
+    map_rows_dict = {map_row[0]: map_row[1] for map_row in list_of_map_rows[0]}
+    # Merge all other map lists
+    for map_rows_list in list_of_map_rows[1:]:
+        for map_row in map_rows_list:
+            if map_row[0] in map_rows_dict:
+                map_rows_dict[map_row[0]]["semantic_labels"] += (
+                    "," + map_row[1]["semantic_labels"]
+                )
+                map_rows_dict[map_row[0]]["ids"] += "," + map_row[1]["ids"]
+    return map_rows_dict.items()
 
 
 def compile_image_groups(
@@ -384,58 +533,74 @@ def compile_image_groups(
     where=None,
     reference_strds=None,
     reference_where=None,
-    reference_suffix=None,
-    static_group=None,
     sampling=None,
     spatial_relation=None,
     offset=None,
     dbif=None,
 ):
-    """Compile image groups starting with input strds and then
-    add:
-    a) raster maps from the static input group
-    b) reference raster maps that are either
-        i)  sampled from a reference STRDS (if given) whose maps
-            are related to the raster maps in the input STRDS in
-            space (spatial_relation) and time (sampling) as
-            requested or
-        ii) taken from the input_strds with the requested offset
+    """Compile dictionary with image groups as input to
+    i.pytorch.predict
+
+    starting with input
+    strds and then add raster maps from a reference group that
+    is either
+    a)  sampled from a reference STRDS (if given) whose maps
+        are related to the raster maps in the input STRDS in
+        space (spatial_relation) and time (sampling) as
+        requested or
+    b) taken from the input_strds with the requested offset
+       (if given)
 
     All raster maps are expected to have a semantic label
-    associated. If semantic labels are supposed to be matched
-    between currnt and reerence groups this function should be used
-    in a loop over semantic_labels.
-    Cases are:
-    a) just input STRDS (usually grouped ("one process per scene"))
-    b) just input STRDS (usually grouped) with reference defined by
-      offset (e.g. for "repeat-pass" with multiple semantic labels per scene)
-    c) just input STRDS (usually grouped) with reference defined by
-      offset (e.g. for "repeat-pass" with multiple semantic labels per scene)
-    d) input STRDS and reference STRDS matched according to temporal relation
-       with grouped semantic labels
-    e) input STRDS and reference STRDS matched according to temporal relation
-       with equal semantic labels
+    associated.
 
-    - input raster maps and reference raster maps
-    Returns a dict of matched and grouped raster maps"""
+    In order to run the function / module for tile- or
+    orbit repeat-passes, the user should loop over tiles or orbits
+    and use orbit- or tile IDs in the where clause of the input and
+    reference STRDS. STRDS containing mosaics with equal spatial
+    extent do not require special handling.
+
+    Currently supported use-cases are:
+    a) only input STRDS (usually grouped ("one process per scene"))
+    b) only input STRDS (usually grouped) with reference defined by
+      offset (e.g. for "repeat-pass")
+    c) input STRDS and reference STRDS matched according to temporal relation
+       with grouped semantic labels
+
+    Returns a dict of matched and grouped raster maps with
+    the following structure:
+    {temporal_key:
+      {"input": {"semantic_label": "raster_map_id"}}
+      {"reference_strds": {"semantic_label": "raster_map_id"}}}
+    or
+    {temporal_key:
+      {"input": {"semantic_label": "raster_map_id"}}
+      {"reference_strds": {}}}
+    Where the temporal key can be either a temporal extent as tuple
+    (start_time, end_time) or a tgis.RasterDataset with a TemporalExtent
+    """
     time_unit = input_strds.get_relative_time_unit()
-    static_maps = {}
-    if static_group:
-        static_maps = parse_group(static_group)
 
     spatial_extent = None
-    spatial_topology = None
+    # spatial_topology = None
     if spatial_relation:
         spatial_extent = gs.parse_command("g.region", flags="ug")
-        spatial_topology = (
-            "3d"
-            if input_strds.spatial_extent.top
-            and reference_strds
-            and reference_strds.spatial_extent.top
-            else "2d"
-        )
+        # spatial_topology = (
+        #     "3d"
+        #     if input_strds.spatial_extent.top
+        #     and reference_strds
+        #     and reference_strds.spatial_extent.top
+        #     else "2d"
+        # )
 
-    map_rows = get_registered_maps_grouped(
+    # If needed, here we could introduce multiple input STRDS
+    # e.g. if original and artificial bands (spectral indices)
+    # are organized in different STRDS
+    # could be done with a merge_strds_groups() function
+    # that concatenates map IDs and semantic labels
+    # precondition is that maps have equal time stamps and the evtl.
+    # where-clause is applicable to all STRDS
+    map_rows = get_registered_maps(
         input_strds,
         columns=["id", "start_time", "end_time", "semantic_label"],
         where=where,
@@ -450,8 +615,13 @@ def compile_image_groups(
         sys.exit(0)
 
     if reference_strds:
-        # Case d and e
-        map_rows_reference = get_registered_maps_grouped(
+        # Check user input
+        if not sampling:
+            gs.fatal(_("Sampling is required to match reference image groups."))
+        if offset:
+            gs.warning(_("'reference_strds' is given. Offset will be ignored."))
+
+        map_rows_reference = get_registered_maps(
             reference_strds,
             columns=["id", "start_time", "end_time", "semantic_label"],
             where=reference_where,
@@ -470,7 +640,7 @@ def compile_image_groups(
         topo_builder.build(
             mapsA=list(map_rows.keys()),
             mapsB=list(map_rows_reference.keys()),
-            spatial=spatial_topology,
+            # spatial=spatial_topology,
         )
 
         map_groups = {}
@@ -482,17 +652,11 @@ def compile_image_groups(
                 if matching_objects:
                     matched_reference = True
                     for matching_object in matching_objects:
-                        # for ref_dict in map_rows_reference[matching_object].values():
-                        # print(ref_dict)
-                        matched_group_elements = map_rows_reference[matching_object]
-                        if reference_suffix:
-                            matched_group_elements = {
-                                f"{key}_{reference_suffix}": val
-                                for key, val in map_rows_reference[
-                                    matching_object
-                                ].items()
-                            }
-                        group_elements.update(matched_group_elements)
+                        # Get elements frm matched reference group
+                        matched_group_elements = map_rows_reference[matching_object][
+                            "input"
+                        ]
+                        group_elements["reference_group"].update(matched_group_elements)
 
             if not matched_reference:
                 gs.warning("No matching objects")
@@ -501,14 +665,7 @@ def compile_image_groups(
             map_groups.update(group_dict)
         return map_groups
 
-    # Group maps using granule
-    return build_group_dict(
-        map_rows,
-        time_unit=time_unit,
-        offset=offset,
-        reference_suffix=reference_suffix,
-        static_map_dict=static_maps,
-    )
+    return build_group_dict(map_rows, time_unit=time_unit, offset=offset)
 
 
 def distribute_cores(nprocs, groups_n):
@@ -523,7 +680,7 @@ def distribute_cores(nprocs, groups_n):
 
 def process_scene_group(
     temporal_extent,
-    map_list,
+    map_dict,
     basename=None,
     module_options=None,
     torch_flags=None,
@@ -532,33 +689,38 @@ def process_scene_group(
     run a pytorch prediction on the imagery group"""
     # Get the base name
     if not basename:
-        output_name = os.path.commonprefix(list(map_list.values())).rstrip("_")
+        output_name = os.path.commonprefix(list(map_dict["input"].values())).rstrip("_")
     else:
         output_name = f"{basename}_{temporal_extent[0].isoformat()}_{temporal_extent[1].isoformat()}"
+
     # Get semantic labels
     output_bands = json.loads(
         Path(module_options["configuration"]).read_text(encoding="UTF8")
     )["output_bands"]
 
     gs.verbose(_("Processing group {}...").format(output_name))
-    Module(
-        "i.group",
-        group=f"{TMP_NAME}_{output_name}",
-        input=list(map_list.values()),
-        quiet=True,
-    )
 
     try:
-        Module(
+        torch_mod = Module(
             "i.pytorch.predict",
-            input=f"{TMP_NAME}_{output_name}",
             output=output_name,
             stdout_=PIPE,
             **module_options,
             flags=torch_flags,
+            run_=False,
             # stderr_=PIPE,
             quiet=True,
         )
+        for group in ["input", "reference_group"]:
+            Module(
+                "i.group",
+                group=f"{TMP_NAME}_{group}_{output_name}",
+                input=list(map_dict[group].values()),
+                quiet=True,
+            )
+            torch_mod.inputs[group] = f"{TMP_NAME}_{group}_{output_name}"
+        torch_mod.run()
+
         register_strings = [
             "|".join(
                 [
@@ -584,7 +746,7 @@ def main():
     """Do the main work"""
 
     # Initialize TGIS
-    dbif = tgis.init()
+    tgis.init()
 
     # Initialize SpaceTimeRasterDataset (STRDS) using tgis
     strds_long_name = f"{options['output']}@{GISENV['MAPSET']}"
@@ -610,25 +772,29 @@ def main():
         )
 
     # Initialize input STRDS
-    input_strds = tgis.open_old_stds(options["input"], "strds", dbif)
+    input_strds = tgis.open_old_stds(options["input"], "strds")
     # Initialize reference STRDS if requested
     reference_strds = None
-    if options["reference"]:
-        reference_strds = tgis.open_old_stds(options["input"], "strds", dbif)
+    if options["reference_strds"]:
+        reference_strds = tgis.open_old_stds(options["reference_strds"], "strds")
 
     # Compile dicts for imagery groups per granule (and semantic label)
-    static_maps = parse_group(options["static_group"])
+
+    if options["auxillary_group"]:
+        # Check content of the static group with auxillary data
+        # Could be organized in subgroups if orbit or tile info
+        # would be needed to filter
+        # Needed to be propagated to i.pytorch.predict in case
+        group_to_dict(options["auxillary_group"], fill_semantic_label=False)
+
     imagery_groups = compile_image_groups(
         input_strds,
         where=options["where"],
         reference_strds=reference_strds,
         reference_where=options["reference_where"],
-        reference_suffix=options["reference_suffix"],
-        static_group=static_maps,
         sampling=options["sampling"],
         spatial_relation=options["spatial_relation"],
-        offset=options["spatial_relation"],
-        dbif=dbif,
+        offset=int(options["offset"]),
     )
 
     if not imagery_groups:
@@ -662,6 +828,7 @@ def main():
             else options[option]
         )
         for option in [
+            "auxillary_group",
             "model",
             "model_code",
             "tile_size",
