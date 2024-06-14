@@ -117,12 +117,12 @@
 # optimize tiling (shape) to minimize number of tiles and overlap between them within max size
 # Handle divisible by x (e.g. 8) for tile size to avoid:
 #    RuntimeError: Sizes of tensors must match except in dimension 1
-# Allow time series input in group (e.g. the same image group from multiple times)
 
 
 import atexit
 import json
 import sys
+import re
 
 from copy import deepcopy
 from functools import partial
@@ -132,6 +132,7 @@ from pathlib import Path
 # from multiprocessing import Pool
 
 import grass.script as gs
+from grass.exceptions import CalledModuleError
 from grass.pygrass.raster import raster2numpy, numpy2raster
 from grass.pygrass.gis.region import Region
 from grass.pygrass.vector import Bbox
@@ -199,7 +200,7 @@ def group_to_dict(
     group_dict = {}
     try:
         maps_in_group = (
-            read_command(
+            gs.read_command(
                 "i.group",
                 group=imagery_group_name,
                 subgroup=subgroup,
@@ -220,7 +221,7 @@ def group_to_dict(
         raise ValueError(f"Invalid dictionary values <{dict_values}> requested")
 
     if subgroup and not maps_in_group:
-        warning(
+        gs.warning(
             _("Empty result returned for subgroup <{sg}> in group <{g}>").format(
                 sg=subgroup, g=imagery_group_name
             )
@@ -233,7 +234,7 @@ def group_to_dict(
             dict_values in ["semantic_labels", "metadata"]
             or dict_keys == "semantic_labels"
         ):
-            raster_map_info = raster_info(raster_map, env=env)
+            raster_map_info = gs.raster_info(raster_map, env=env)
 
         # Get key for dictionary
         if dict_keys == "indices":
@@ -243,7 +244,7 @@ def group_to_dict(
         elif dict_keys == "semantic_labels":
             key = raster_map_info["semantic_label"]
             if not key or key == '"none"':
-                warning(
+                gs.warning(
                     _(
                         "Raster map {m} in group <{g}> does not have a semantic label."
                     ).format(m=raster_map, g=imagery_group_name)
@@ -260,7 +261,7 @@ def group_to_dict(
         elif dict_values == "metadata":
             val = raster_map_info
         if key in group_dict:
-            warning(
+            gs.warning(
                 _(
                     "Key {k} from raster map {m} already present in group dictionary."
                     "Overwriting existing entry..."
@@ -379,6 +380,10 @@ def read_config(module_options):
 
     for img_group in ["input", "reference_group", "auxillary_group"]:
         config_key = f"{img_group.split('_')[0]}_bands"
+
+        if config_key not in config or not config[config_key]:
+            continue
+
         if not module_options[img_group]:
             if config_key in config and config[config_key]:
                 gs.fatal(
@@ -392,10 +397,11 @@ def read_config(module_options):
 
         for semantic_label, raster_map_info in maps_in_group.items():
             raster_map = f"{raster_map_info['map']}@{raster_map_info['mapset']}"
-
             if mask_rules is not None and masks:
                 mask_pattern_match = [
-                    re.match(label, semantic_label) for label in masks
+                    re.match(label, semantic_label)
+                    for label in masks
+                    if re.match(label, semantic_label)
                 ]
                 if mask_pattern_match:
                     mask_rules[semantic_label] = {
@@ -403,12 +409,13 @@ def read_config(module_options):
                     }
 
             band_pattern_match = [
-                re.match(label, semantic_label) for label in config[config_key]
+                re.match(label, semantic_label)
+                for label in config[config_key]
+                if re.match(label, semantic_label)
             ]
-            if not config[config_key]:
+            if not band_pattern_match:
                 continue
-
-            band_pattern_match = band_pattern_match[0]
+            band_pattern_match = band_pattern_match[0].string
             if raster_map_info["min"] and raster_map_info["max"]:
                 # Check valid range of non-empty input maps
                 valid_range = config[config_key][band_pattern_match]["valid_range"]
@@ -440,12 +447,14 @@ def read_config(module_options):
             input_group_dict[config[config_key][band_pattern_match]["order"]] = (
                 raster_map,
                 raster_map_info["datatype"],
-                config[config_key][band_pattern_matchsemantic_label],
+                config[config_key][band_pattern_match],
             )
 
         for band in config[config_key]:
             band_pattern_match = [
-                re.match(band, semantic_label) for semantic_label in input_group_dict
+                re.match(band, semantic_label)
+                for semantic_label in maps_in_group
+                if re.match(band, semantic_label)
             ]
             if not band_pattern_match:
                 gs.fatal(
@@ -587,17 +596,21 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
 def read_bands(raster_map_dict, bbox, null_value=0):
     """Read band maps and return stacked numpy array for all bands
     after applying nan-replacement, scale, offset and clamping to valid range"""
+
     # pygrass sets region for pygrass tasks
     pygrass_region = Region()
     raster_region = deepcopy(pygrass_region)
+
     # raster_region.read(force_read=True)
     raster_region.set_bbox(Bbox(bbox["n"], bbox["s"], bbox["e"], bbox["w"]))
     raster_region.set_raster_region()
+
     # Clip to valid range
     data_cube = []
     mask = None
     for band_number in sorted(raster_map_dict.keys()):
         npa = raster2numpy(raster_map_dict[band_number][0])
+
         # Set null to nan
         if raster_map_dict[band_number][1] == "CELL":
             npa = np.where(npa == -2147483648, np.nan, npa)
@@ -605,6 +618,7 @@ def read_bands(raster_map_dict, bbox, null_value=0):
             mask = np.where(np.isnan(npa), True, False)
         else:
             mask = np.where(np.logical_or(mask, np.isnan(npa)), True, False)
+
         # Clip to valid range
         if raster_map_dict[band_number][2]["valid_range"]:
             min_value = raster_map_dict[band_number][2]["valid_range"][0]
