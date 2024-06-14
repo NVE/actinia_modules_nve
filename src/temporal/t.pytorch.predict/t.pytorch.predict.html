@@ -4,23 +4,51 @@
 module and supports all relevant flags and options of that module.
 <em>t.pytorch.predict</em> compiles the input imagery groups to
 <em>i.pytorch.predict</em> from the temporal granules in the
-<b>input</b> STRDS. Those groups pre granule are complemented with raster maps
-from a <b>static_group</b> and/or another <b>reference_strds</b>, where maps
-in the reference STRDS are matched with the input STRDS in space and time
-using the user-defined <b>sampling</b>. If a reference STRDS or a
-static group is used it often makes sense to provide a <b>basename</b>
+<b>input</b> STRDS. Those groups per granule are complemented with
+raster maps from a <b>auxillary_group</b> and/or another
+<b>reference_strds</b>, where maps in the reference STRDS are matched
+with the input STRDS in space and time using the user-defined <b>sampling</b>.
+If a reference STRDS or an auxaliry group is used it often makes sense to provide a <b>basename</b>
 for the resulting raster maps.
+<p>
+In order to run the module with tile- or orbit repeat-passes, the user
+should loop over tiles or orbits and use orbit- or tile IDs in the where
+clause of the input and reference STRDS. STRDS containing mosaics with
+equal spatial extent do not require special handling.
+
+Currently supported use-cases are:
+<ol>
+<li>only input STRDS, usually grouped ("one process per scene")</li>
+<li>only input STRDS, usually grouped, with reference defined by
+offset (e.g. for "repeat-pass")</li>
+<li>input STRDS and reference STRDS matched according to temporal relation
+given in <b>sampling</b> with single or grouped semantic labels</li>
+</ol>
 <p>
 For more information on how machine learning models are applied to the imagery
 groups, please consult the manual of <em>i.pytorch.predict</em>.
 
 <h2>EXAMPLES</h2>
 
-<h3>Predict FSC for a Sentinel-3 time series</h3>
+<h3>Run cloud detection on a Sentinel-3 SLSTR time series</h3>
 
 <div class="code"><pre>
-  t.pytorch.predict input=/data/Sentinel3/SLSTR/ output=Sentinel_3_SLSTR_RBT_L2 \
-  nprocs=8 (...)
+t.pytorch.predict -e --o --v input=Sentinel_3_SLSTR_RBT_L2 model=cloud.pt \
+  output=Sentinel_3_SLSTR_RBT_L2 tile_size=1024,1024 overlap=164 \
+  configuration=cloud.json model_code=S3_models/ nprocs=8 \
+  mask_json=mask_land.json where="start_time > '2024-02-02'"
+
+t.info Sentinel_3_SLSTR_RBT_L2
+(...)
+</pre></div>
+
+<h3>Estimate FSC on Sentinel-3 SLSTR time series</h3>
+
+<div class="code"><pre>
+time t.pytorch.predict -e --o --v input=Sentinel_3_SLSTR_RBT_L2 model=fsc.pt \
+  output=Sentinel_3_SLSTR_RBT_L2 tile_size=1024,1024 overlap=164 \
+  configuration=fsc.json model_code=S3_models/ nprocs=8 \
+  mask_json=mask_cloud_dl.json where="start_time > '2024-02-02'"
 
 t.info Sentinel_3_SLSTR_RBT_L2
 (...)
