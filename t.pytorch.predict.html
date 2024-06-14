@@ -22,7 +22,9 @@ const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' +
 '</li>' + 
 '<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
 '<ul>' + 
-'<li><a class="toc-item" href="#predict-fsc-for-a-sentinel-3-time-series">Predict FSC for a Sentinel-3 time series</a>' + 
+'<li><a class="toc-item" href="#run-cloud-detection-on-a-sentinel-3-slstr-time-series">Run cloud detection on a Sentinel-3 SLSTR time series</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#estimate-fsc-on-sentinel-3-slstr-time-series">Estimate FSC on Sentinel-3 SLSTR time series</a>' + 
 '</li>' + 
 '</ul></li>' + 
 '<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
@@ -49,7 +51,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>t.pytorch.predict</b><br></div>
 <b>t.pytorch.predict --help</b><br>
-<div id="synopsis"><b>t.pytorch.predict</b> [-<b>cels</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]  <b>reference_strds</b>=<em>name</em>  [<b>reference_where</b>=<em>sql_query</em>]   [<b>static_group</b>=<em>name</em>]  <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]  <b>configuration</b>=<em>name</em>  [<b>mask_json</b>=<em>name</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>basename</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>t.pytorch.predict</b> [-<b>cel</b>] <b>inputs</b>=<em>name</em>[,<i>name</i>,...]  [<b>where</b>=<em>sql_query</em>]  <b>reference_strds</b>=<em>name</em>[,<i>name</i>,...]  [<b>reference_where</b>=<em>sql_query</em>]   [<b>reference_suffix</b>=<em>string</em>]   [<b>sampling</b>=<em>name</em>[,<i>name</i>,...]]   [<b>offset</b>=<em>integer</em>]   [<b>auxillary_group</b>=<em>name</em>]   [<b>region_relation</b>=<em>string</em>]  <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]  <b>configuration</b>=<em>name</em>  [<b>mask_json</b>=<em>name</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>basename</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -63,9 +65,6 @@ grassLogoLink.after(temp.content);
 
 <dt><b>-l</b></dt>
 <dd>Limit output to valid range (data outside the valid range is set to valid min/max)</dd>
-
-<dt><b>-s</b></dt>
-<dd>Process each semantic label separately</dd>
 
 <dt><b>--overwrite</b></dt>
 <dd>Allow output files to overwrite existing files</dd>
@@ -83,22 +82,37 @@ grassLogoLink.after(temp.content);
 <div id="parameters">
 <h3>Parameters:</h3>
 <dl>
-<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
-<dd>Name of the input space time raster dataset</dd>
+<dt><b>inputs</b>=<em>name[,<i>name</i>,...]</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the input space time raster datasets</dd>
 
 <dt><b>where</b>=<em>sql_query</em></dt>
 <dd>WHERE conditions of SQL statement without 'where' keyword used in the temporal GIS framework</dd>
 <dd>Example: start_time &gt; '2001-01-01 12:30:00'</dd>
 
-<dt><b>reference_strds</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
-<dd>Name of the input space time raster dataset</dd>
+<dt><b>reference_strds</b>=<em>name[,<i>name</i>,...]</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the input space time raster datasets</dd>
 
 <dt><b>reference_where</b>=<em>sql_query</em></dt>
 <dd>WHERE conditions of SQL statement without 'where' keyword used in the temporal GIS framework</dd>
 <dd>Where clause to select reference images</dd>
 
-<dt><b>static_group</b>=<em>name</em></dt>
+<dt><b>reference_suffix</b>=<em>string</em></dt>
+<dd>Suffix to be added to the semantic label of the raster maps in the reference_strds</dd>
+
+<dt><b>sampling</b>=<em>name[,<i>name</i>,...]</em></dt>
+<dd>The method to be used for sampling the input dataset</dd>
+<dd>Options: <em>start, during, overlap, contain, equal, follows, precedes</em></dd>
+<dd>Default: <em>start</em></dd>
+
+<dt><b>offset</b>=<em>integer</em></dt>
+<dd>Offset that defines a reference map (e.g. -1 for the previous map (group) in the input STRDS)</dd>
+
+<dt><b>auxillary_group</b>=<em>name</em></dt>
 <dd>Input imagery group with time independent raster maps</dd>
+
+<dt><b>region_relation</b>=<em>string</em></dt>
+<dd>Process only maps with this spatial relation to the current computational region</dd>
+<dd>Options: <em>overlaps, contains, is_contained</em></dd>
 
 <dt><b>output</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
 <dd>Name of the output space time raster dataset</dd>
@@ -142,7 +156,8 @@ grassLogoLink.after(temp.content);
     <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
     <li class="toc"><a href="#examples" class="toc">EXAMPLES</a>
     <ul class="toc">
-        <li class="toc"><a href="#predict-fsc-for-a-sentinel-3-time-series" class="toc">Predict FSC for a Sentinel-3 time series</a></li>
+        <li class="toc"><a href="#run-cloud-detection-on-a-sentinel-3-slstr-time-series" class="toc">Run cloud detection on a Sentinel-3 SLSTR time series</a></li>
+        <li class="toc"><a href="#estimate-fsc-on-sentinel-3-slstr-time-series" class="toc">Estimate FSC on Sentinel-3 SLSTR time series</a></li>
     </ul></li>
     <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
     <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
@@ -154,23 +169,51 @@ grassLogoLink.after(temp.content);
 module and supports all relevant flags and options of that module.
 <em>t.pytorch.predict</em> compiles the input imagery groups to
 <em>i.pytorch.predict</em> from the temporal granules in the
-<b>input</b> STRDS. Those groups pre granule are complemented with raster maps
-from a <b>static_group</b> and/or another <b>reference_strds</b>, where maps
-in the reference STRDS are matched with the input STRDS in space and time
-using the user-defined <b>sampling</b>. If a reference STRDS or a
-static group is used it often makes sense to provide a <b>basename</b>
+<b>input</b> STRDS. Those groups per granule are complemented with
+raster maps from a <b>auxillary_group</b> and/or another
+<b>reference_strds</b>, where maps in the reference STRDS are matched
+with the input STRDS in space and time using the user-defined <b>sampling</b>.
+If a reference STRDS or an auxaliry group is used it often makes sense to provide a <b>basename</b>
 for the resulting raster maps.
+<p>
+In order to run the module with tile- or orbit repeat-passes, the user
+should loop over tiles or orbits and use orbit- or tile IDs in the where
+clause of the input and reference STRDS. STRDS containing mosaics with
+equal spatial extent do not require special handling.
+
+Currently supported use-cases are:
+<ol>
+<li>only input STRDS, usually grouped ("one process per scene")</li>
+<li>only input STRDS, usually grouped, with reference defined by
+offset (e.g. for "repeat-pass")</li>
+<li>input STRDS and reference STRDS matched according to temporal relation
+given in <b>sampling</b> with single or grouped semantic labels</li>
+</ol>
 <p>
 For more information on how machine learning models are applied to the imagery
 groups, please consult the manual of <em>i.pytorch.predict</em>.
 
 <h2><a name="examples">EXAMPLES</a></h2>
 
-<h3><a name="predict-fsc-for-a-sentinel-3-time-series">Predict FSC for a Sentinel-3 time series</a></h3>
+<h3><a name="run-cloud-detection-on-a-sentinel-3-slstr-time-series">Run cloud detection on a Sentinel-3 SLSTR time series</a></h3>
 
 <div class="code"><pre>
-  t.pytorch.predict input=/data/Sentinel3/SLSTR/ output=Sentinel_3_SLSTR_RBT_L2 \
-  nprocs=8 (...)
+t.pytorch.predict -e --o --v input=Sentinel_3_SLSTR_RBT_L2 model=cloud.pt \
+  output=Sentinel_3_SLSTR_RBT_L2 tile_size=1024,1024 overlap=164 \
+  configuration=cloud.json model_code=S3_models/ nprocs=8 \
+  mask_json=mask_land.json where="start_time > '2024-02-02'"
+
+t.info Sentinel_3_SLSTR_RBT_L2
+(...)
+</pre></div>
+
+<h3><a name="estimate-fsc-on-sentinel-3-slstr-time-series">Estimate FSC on Sentinel-3 SLSTR time series</a></h3>
+
+<div class="code"><pre>
+time t.pytorch.predict -e --o --v input=Sentinel_3_SLSTR_RBT_L2 model=fsc.pt \
+  output=Sentinel_3_SLSTR_RBT_L2 tile_size=1024,1024 overlap=164 \
+  configuration=fsc.json model_code=S3_models/ nprocs=8 \
+  mask_json=mask_cloud_dl.json where="start_time > '2024-02-02'"
 
 t.info Sentinel_3_SLSTR_RBT_L2
 (...)
@@ -194,7 +237,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Friday Jun 07 11:22:18 2024
+  Accessed: Friday Jun 14 08:41:42 2024
 </p>
 <hr class="header">
 <p>

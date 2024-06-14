@@ -50,7 +50,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>i.pytorch.predict</b><br></div>
 <b>i.pytorch.predict --help</b><br>
-<div id="synopsis"><b>i.pytorch.predict</b> [-<b>cl</b>] <b>input</b>=<em>name</em>  [<b>auxillary_group</b>=<em>name</em>]   [<b>input</b>=<em>name</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]   [<b>mask_json</b>=<em>name</em>]  <b>configuration</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]  <b>output</b>=<em>name</em>  [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>i.pytorch.predict</b> [-<b>cl</b>] <b>input</b>=<em>name</em>  [<b>auxillary_group</b>=<em>name</em>]   [<b>reference_group</b>=<em>name</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]   [<b>mask_json</b>=<em>name</em>]  <b>configuration</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]  <b>output</b>=<em>name</em>  [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -84,7 +84,7 @@ grassLogoLink.after(temp.content);
 <dt><b>auxillary_group</b>=<em>name</em></dt>
 <dd>Input imagery group with auxillary data</dd>
 
-<dt><b>input</b>=<em>name</em></dt>
+<dt><b>reference_group</b>=<em>name</em></dt>
 <dd>Reference imagery group (usually a complementary to the input group but from a different point in time)</dd>
 
 <dt><b>model</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
@@ -258,7 +258,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Friday Jun 07 11:22:29 2024
+  Accessed: Friday Jun 14 08:41:55 2024
 </p>
 <hr class="header">
 <p>
