@@ -285,22 +285,26 @@ def validate_config(json_path, package_dir):
             model_kwargs[parameter.name] = config_dict["model"][parameter.name]
 
     # Check input and output description
-    required_keys = {
-        "input_bands": {
-            "order": {"type": int, "length": None, "content": None},
-            "valid_range": {
-                "type": (tuple, list, None),
-                "length": 2,
-                "content": (int, float, None),
-            },
-            "offset": {"type": (int, float), "length": None, "content": None},
-            "scale": {"type": (int, float), "length": None, "content": None},
-            "fill_value": {
-                "type": (int, float, None),
-                "length": None,
-                "content": None,
-            },  # None will be replaced by np.nan
+    input_band_dict = {
+        "order": {"type": int, "length": None, "content": None},
+        "valid_range": {
+            "type": (tuple, list, None),
+            "length": 2,
+            "content": (int, float, None),
         },
+        "offset": {"type": (int, float), "length": None, "content": None},
+        "scale": {"type": (int, float), "length": None, "content": None},
+        "fill_value": {
+            "type": (int, float, None),
+            "length": None,
+            "content": None,
+        },  # None will be replaced by np.nan
+    }
+    required_keys = ["input_bands", "output_bands"]
+    config_keys = {
+        "input_bands": input_band_dict,
+        "reference_bands": input_band_dict,
+        "auxillary_bands": input_band_dict,
         "output_bands": {
             "valid_output_range": {
                 "type": (tuple, list, None),
@@ -323,15 +327,18 @@ def validate_config(json_path, package_dir):
             "classes": {"type": dict, "length": None, "content": None},
         },
     }
-    for config_key in required_keys:
+    for config_key in config_keys:
         if config_key not in config_dict:
-            # Check if required key is present in section
-            gs.fatal(
-                _("Key '{0}' missing in input config file {1}").format(
-                    config_key, str(json_path)
+            if config_key in required_keys:
+                # Check if required key is present in section
+                gs.fatal(
+                    _("Key '{0}' missing in input config file {1}").format(
+                        config_key, str(json_path)
+                    )
                 )
-            )
-        for config_sub_key in required_keys[config_key]:
+            else:
+                continue
+        for config_sub_key in config_keys[config_key]:
             for band, band_description in config_dict[config_key].items():
                 # Check if required sub-key is present in section
                 if config_sub_key not in band_description:
@@ -343,7 +350,7 @@ def validate_config(json_path, package_dir):
                 # Check if sub-key is of required data type
                 type_mismatch = not_in_types(
                     band_description[config_sub_key],
-                    required_keys[config_key][config_sub_key]["type"],
+                    config_keys[config_key][config_sub_key]["type"],
                 )
                 if type_mismatch:
                     gs.fatal(
@@ -358,10 +365,10 @@ def validate_config(json_path, package_dir):
                     )
                 # Check if sub-key has the required length
                 if (
-                    required_keys[config_key][config_sub_key]["length"]
+                    config_keys[config_key][config_sub_key]["length"]
                     and band_description[config_sub_key]
                     and len(band_description[config_sub_key])
-                    != required_keys[config_key][config_sub_key]["length"]
+                    != config_keys[config_key][config_sub_key]["length"]
                 ):
                     gs.fatal(
                         _(
@@ -369,20 +376,20 @@ def validate_config(json_path, package_dir):
                         ).format(
                             config_sub_key,
                             config_key,
-                            required_keys[config_key][config_sub_key]["length"],
+                            config_keys[config_key][config_sub_key]["length"],
                             band,
                             len(band_description[config_sub_key]),
                         )
                     )
                 # Check if sub-key contains required elements
                 if (
-                    required_keys[config_key][config_sub_key]["content"]
+                    config_keys[config_key][config_sub_key]["content"]
                     and band_description[config_sub_key]
                 ):
                     for idx, key_element in enumerate(band_description[config_sub_key]):
                         type_mismatch = not_in_types(
                             band_description[config_sub_key],
-                            required_keys[config_key][config_sub_key]["type"],
+                            config_keys[config_key][config_sub_key]["type"],
                         )
                         if type_mismatch:
                             gs.fatal(
