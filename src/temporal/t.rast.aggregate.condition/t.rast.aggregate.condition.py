@@ -299,9 +299,9 @@ def aggregate_with_condition(
     agg_module = pymod.Module(
         "r.mapcalc",
         overwrite=gs.overwrite(),
-        quiet=False,
+        quiet=True,
         run_=False,
-        finish_=False,
+        # finish_=False,
     )
 
     count = 0
@@ -389,7 +389,7 @@ def aggregate_with_condition(
                     # Create mask expression for aggregation map
                     for aggregation_label in aggregation_labels:
                         res_dict[aggregation_label].append(
-                            f"{map_ids[semantic_labels.index(aggregation_label)].split('@')[0]}_eval=if({mask_map}=={mask_value},if({{output_condition_map}}=={condition_map},{map_ids[semantic_labels.index(aggregation_label)]},null()),null())"
+                            f"if({mask_map}=={mask_value},if({{output_condition_map}}=={condition_map},{map_ids[semantic_labels.index(aggregation_label)]},null()),null())"
                         )
                     res_dict["mask_labels"].append(mask_list)
 
@@ -409,31 +409,18 @@ def aggregate_with_condition(
             output_name = f"{basename}_{suffix}"
 
             # Compile expressions
-            expression = f"eval({output_name}_{condition_label}_{aggregate_condition}_eval={aggregate_condition}({','.join(res_dict['mask_labels'])}))\n"
+            expression = f"{output_name}_{condition_label}_{aggregate_condition}={aggregate_condition}({','.join(res_dict['mask_labels'])})\n"
             map_layer = RasterDataset(
                 f"{output_name}_{condition_label}_{aggregate_condition}@{current_mapset}"
             )
             map_layer.set_temporal_extent(granule_temporal_extent)
             map_layer.set_semantic_label(f"{condition_label}_{aggregate_condition}")
             output_list.append(map_layer)
-
+            condition_module = deepcopy(agg_module)
+            condition_module.inputs.expression = expression
+            expression = ""
             for aggregation_label in aggregation_labels:
-                expression += (
-                    "\n".join(
-                        [
-                            f"eval({eval_map})"
-                            for eval_map in res_dict[aggregation_label]
-                        ]
-                    )
-                    + "\n"
-                )
-                map_layers = ",".join(
-                    [
-                        eval_map.split("=")[0].replace("eval(", "")
-                        for eval_map in res_dict[aggregation_label]
-                    ]
-                )
-                expression += f"{output_name}_{aggregation_label}=nmedian({map_layers})\n{output_name}_{condition_label}_{aggregate_condition}={output_name}_{condition_label}_{aggregate_condition}_eval"
+                expression += f"{output_name}_{aggregation_label}=nmedian({','.join([eval_expression for eval_expression in res_dict[aggregation_label]])})"
                 map_layer = RasterDataset(
                     f"{output_name}_{aggregation_label}@{current_mapset}"
                 )
@@ -441,7 +428,7 @@ def aggregate_with_condition(
                 map_layer.set_semantic_label(aggregation_label)
                 output_list.append(map_layer)
             expression = expression.format(
-                output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}_eval"
+                output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}"
             )
 
             mc_module = deepcopy(agg_module)
@@ -449,8 +436,8 @@ def aggregate_with_condition(
                 output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}"
             )
 
-            # Add module to process queue
-            process_queue.put(mc_module)
+            # Add modules to process queue
+            process_queue.put(pymod.MultiModule([condition_module, mc_module]))
     process_queue.wait()
 
     if connection_state_changed:
