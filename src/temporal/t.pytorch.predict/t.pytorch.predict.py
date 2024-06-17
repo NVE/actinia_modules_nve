@@ -5,17 +5,22 @@
  AUTHOR(S):   Stefan Blumentrath
  PURPOSE:     Apply a pytorch model to imagery groups in a Space Time Raster Dataset
               and register results in an output STRDS
- COPYRIGHT:   (C) 2024 by Norwegian Water and Energy Directorate, Stefan Blumentrath,
-              and the GRASS development team
+ COPYRIGHT:   (C) 2023-2024 by Norwegian Water and Energy Directorate
+              (NVE), Stefan Blumentrath and the GRASS GIS Development Team
 
-              This program is free software under the GNU General Public
-              License (>=v2). Read the file COPYING that comes with GRASS
-              for details.
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
 
-              ToDo:
-                  using time and semantic label e.g. time = time AND semanitc_label = semantic_label
-                - add the possibility to have "pattern" in semantic_label definition in model JSON
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
+ ToDo:
+ - tiling from vector map (to avoid unnecessary data reads outside core AOI)
+ - test case
 """
 
 # %Module
