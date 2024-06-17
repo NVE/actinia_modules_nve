@@ -32,7 +32,7 @@
 # % keyword: strds
 # %end
 
-# %option G_OPT_STRDS_INPUTS
+# %option G_OPT_STRDS_INPUT
 # %end
 
 # %option G_OPT_T_WHERE
@@ -40,10 +40,12 @@
 
 # %option G_OPT_STRDS_INPUTS
 # %key: reference_strds
+# % required: no
 # %end
 
 # %option G_OPT_T_WHERE
 # %key: reference_where
+# % required: no
 # % description: Where clause to select reference images
 # %end
 
@@ -562,12 +564,6 @@ def compile_image_groups(
     All raster maps are expected to have a semantic label
     associated.
 
-    In order to run the function / module for tile- or
-    orbit repeat-passes, the user should loop over tiles or orbits
-    and use orbit- or tile IDs in the where clause of the input and
-    reference STRDS. STRDS containing mosaics with equal spatial
-    extent do not require special handling.
-
     Currently supported use-cases are:
     a) only input STRDS (usually grouped ("one process per scene"))
     b) only input STRDS (usually grouped) with reference defined by
@@ -720,13 +716,14 @@ def process_scene_group(
             quiet=True,
         )
         for group in ["input", "reference_group"]:
-            Module(
-                "i.group",
-                group=f"{TMP_NAME}_{group}_{output_name}",
-                input=list(map_dict[group].values()),
-                quiet=True,
-            )
-            torch_mod.inputs[group] = f"{TMP_NAME}_{group}_{output_name}"
+            if map_dict[group]:
+                Module(
+                    "i.group",
+                    group=f"{TMP_NAME}_{group}_{output_name}",
+                    input=list(map_dict[group].values()),
+                    quiet=True,
+                )
+                torch_mod.inputs[group].value = f"{TMP_NAME}_{group}_{output_name}"
         torch_mod.run()
 
         register_strings = [
@@ -801,8 +798,8 @@ def main():
         reference_strds=reference_strds,
         reference_where=options["reference_where"],
         sampling=options["sampling"],
-        spatial_relation=options["spatial_relation"],
-        offset=int(options["offset"]),
+        spatial_relation=options["region_relation"],
+        offset=int(options["offset"]) if options["offset"] else None,
     )
 
     if not imagery_groups:
