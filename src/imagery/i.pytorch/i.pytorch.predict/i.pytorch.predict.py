@@ -4,7 +4,8 @@
  MODULE:       i.pytorch.predict
  AUTHOR(S):    Stefan Blumentrath
  PURPOSE:      Apply Deep Learning model to imagery group using pytorch
- COPYRIGHT:    (C) 2023 by Stefan Blumentrath
+ COPYRIGHT:    (C) 2023-2024 by Norwegian Water and Energy Directorate
+               (NVE), Stefan Blumentrath and the GRASS GIS Development Team
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,9 +18,8 @@
   GNU General Public License for more details.
 
  ToDo:
- - linting
+ - tiling from vector map (avoid unnecessary data reads outside core AOI)
  - test case
-
 """
 
 # %module
