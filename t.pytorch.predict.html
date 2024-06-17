@@ -51,7 +51,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>t.pytorch.predict</b><br></div>
 <b>t.pytorch.predict --help</b><br>
-<div id="synopsis"><b>t.pytorch.predict</b> [-<b>cel</b>] <b>inputs</b>=<em>name</em>[,<i>name</i>,...]  [<b>where</b>=<em>sql_query</em>]  <b>reference_strds</b>=<em>name</em>[,<i>name</i>,...]  [<b>reference_where</b>=<em>sql_query</em>]   [<b>reference_suffix</b>=<em>string</em>]   [<b>sampling</b>=<em>name</em>[,<i>name</i>,...]]   [<b>offset</b>=<em>integer</em>]   [<b>auxillary_group</b>=<em>name</em>]   [<b>region_relation</b>=<em>string</em>]  <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]  <b>configuration</b>=<em>name</em>  [<b>mask_json</b>=<em>name</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>basename</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>t.pytorch.predict</b> [-<b>cel</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]   [<b>reference_strds</b>=<em>name</em>[,<i>name</i>,...]]   [<b>reference_where</b>=<em>sql_query</em>]   [<b>reference_suffix</b>=<em>string</em>]   [<b>sampling</b>=<em>name</em>[,<i>name</i>,...]]   [<b>offset</b>=<em>integer</em>]   [<b>auxillary_group</b>=<em>name</em>]   [<b>region_relation</b>=<em>string</em>]  <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]  <b>configuration</b>=<em>name</em>  [<b>mask_json</b>=<em>name</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>basename</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -82,14 +82,14 @@ grassLogoLink.after(temp.content);
 <div id="parameters">
 <h3>Parameters:</h3>
 <dl>
-<dt><b>inputs</b>=<em>name[,<i>name</i>,...]</em>&nbsp;<b>[required]</b></dt>
-<dd>Name of the input space time raster datasets</dd>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the input space time raster dataset</dd>
 
 <dt><b>where</b>=<em>sql_query</em></dt>
 <dd>WHERE conditions of SQL statement without 'where' keyword used in the temporal GIS framework</dd>
 <dd>Example: start_time &gt; '2001-01-01 12:30:00'</dd>
 
-<dt><b>reference_strds</b>=<em>name[,<i>name</i>,...]</em>&nbsp;<b>[required]</b></dt>
+<dt><b>reference_strds</b>=<em>name[,<i>name</i>,...]</em></dt>
 <dd>Name of the input space time raster datasets</dd>
 
 <dt><b>reference_where</b>=<em>sql_query</em></dt>
@@ -237,7 +237,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Friday Jun 14 08:41:42 2024
+  Accessed: Monday Jun 17 07:51:50 2024
 </p>
 <hr class="header">
 <p>
