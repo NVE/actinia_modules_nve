@@ -18,7 +18,7 @@
   GNU General Public License for more details.
 
  ToDo:
- - tiling from vector map (avoid unnecessary data reads outside core AOI)
+ - tiling from vector map (to avoid unnecessary data reads outside core AOI)
  - test case
 """
 
@@ -64,6 +64,12 @@
 # % required: yes
 # % multiple: no
 # % description: Path to input deep learning model code (.py)
+# %end
+
+# %option G_OPT_V_INPUT
+# % key: vector_tiles
+# % required: no
+# % description: Vector map with tiles to process (will be extended by "overlap")
 # %end
 
 # %option
@@ -112,6 +118,11 @@
 # %key: l
 # % description: Limit output to valid range (data outside the valid range is set to valid min/max)
 # %end
+
+# %rules
+# % exclusive: tile_size,vector_tiles
+# %end
+
 
 # To do:
 # optimize tiling (shape) to minimize number of tiles and overlap between them within max size
@@ -868,6 +879,9 @@ def main():
             tile_set = create_tiling(*tile_size, overlap=overlap, region=None)
         except ValueError:
             gs.fatal(_("Invalid input in tile_size option"))
+    # Check tile size
+    elif options["vector_tiles"]:
+        pass
     else:
         tile_set = create_tiling(tile_size, overlap=overlap, region=None)
 
