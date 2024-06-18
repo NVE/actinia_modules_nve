@@ -159,6 +159,9 @@ GNU General Public License for more details.
 # %end
 
 # ToDo:
+# - Support granules from moving windows (even if leading to invalid temporal topology) with:
+#   m-flag for moving temporal window + d-flag for decrementing granule (default is increment)
+
 # - implement n-flag
 # - Create a TemporalExtentTuple class based on
 #   https://grass.osgeo.org/grass84/manuals/libpython/_modules/grass/temporal/temporal_extent.html
