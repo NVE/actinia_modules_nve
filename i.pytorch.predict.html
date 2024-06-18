@@ -50,7 +50,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>i.pytorch.predict</b><br></div>
 <b>i.pytorch.predict --help</b><br>
-<div id="synopsis"><b>i.pytorch.predict</b> [-<b>cl</b>] <b>input</b>=<em>name</em>  [<b>auxillary_group</b>=<em>name</em>]   [<b>reference_group</b>=<em>name</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]   [<b>mask_json</b>=<em>name</em>]  <b>configuration</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]  <b>output</b>=<em>name</em>  [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>i.pytorch.predict</b> [-<b>cl</b>] <b>input</b>=<em>name</em>  [<b>auxillary_group</b>=<em>name</em>]   [<b>reference_group</b>=<em>name</em>]  <b>model</b>=<em>name</em> <b>model_code</b>=<em>name</em>  [<b>vector_tiles</b>=<em>name</em>]   [<b>tile_size</b>=<em>integer</em>[,<i>integer</i>,...]]   [<b>overlap</b>=<em>integer</em>]   [<b>mask_json</b>=<em>name</em>]  <b>configuration</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]  <b>output</b>=<em>name</em>  [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -92,6 +92,10 @@ grassLogoLink.after(temp.content);
 
 <dt><b>model_code</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
 <dd>Path to input deep learning model code (.py)</dd>
+
+<dt><b>vector_tiles</b>=<em>name</em></dt>
+<dd>Name of input vector map</dd>
+<dd>Vector map with tiles to process (will be extended by "overlap")</dd>
 
 <dt><b>tile_size</b>=<em>integer[,<i>integer</i>,...]</em></dt>
 <dd>Number of rows and columns in tiles</dd>
@@ -258,7 +262,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Monday Jun 17 07:52:00 2024
+  Accessed: Tuesday Jun 18 10:19:04 2024
 </p>
 <hr class="header">
 <p>
