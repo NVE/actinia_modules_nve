@@ -117,6 +117,12 @@
 # % description: Path to input deep learning model code (.py)
 # %end
 
+# %option G_OPT_V_INPUT
+# % key: vector_tiles
+# % required: no
+# % description: Vector map with tiles to process (will be extended by "overlap")
+# %end
+
 # %option
 # % key: tile_size
 # % type: integer
@@ -179,6 +185,7 @@
 
 # %rules
 # % exclusive: offset,reference_strds
+# % exclusive: tile_size,vector_tiles
 # % collective: title,description
 # % required: -e,title,description
 # %end
@@ -808,6 +815,7 @@ def main():
     )
 
     if not imagery_groups:
+        gs.warning("Insufficient data found to process.")
         sys.exit(0)
 
     # Check wich device to use
@@ -841,6 +849,7 @@ def main():
             "auxillary_group",
             "model",
             "model_code",
+            "vector_tiles",
             "tile_size",
             "overlap",
             "configuration",
