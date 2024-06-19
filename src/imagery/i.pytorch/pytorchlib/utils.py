@@ -338,6 +338,9 @@ def validate_config(json_path, package_dir):
                 )
             else:
                 continue
+        if config_key == "reference_bands" or config_key == "auxillary_bands":
+            model_kwargs["input_bands"] += len(config_dict[config_key])
+
         for config_sub_key in config_keys[config_key]:
             for band, band_description in config_dict[config_key].items():
                 # Check if required sub-key is present in section
