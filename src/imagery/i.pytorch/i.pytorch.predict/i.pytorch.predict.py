@@ -125,9 +125,10 @@
 
 
 # To do:
-# optimize tiling (shape) to minimize number of tiles and overlap between them within max size
-# Handle divisible by x (e.g. 8) for tile size to avoid:
-#    RuntimeError: Sizes of tensors must match except in dimension 1
+# - optimize tiling (shape) to minimize number of tiles and overlap between them within max size
+#   or use vector tiles to handle non rectangular AOIs better
+# - Handle divisible by x (e.g. 8) for tile size to avoid:
+#     RuntimeError: Sizes of tensors must match except in dimension 1
 
 
 import atexit
@@ -419,17 +420,20 @@ def read_config(module_options):
                         raster_map: masks[mask_pattern_match[0]]
                     }
 
-            band_pattern_match = [
-                re.match(label, semantic_label)
-                for label in config[config_key]
-                if re.match(label, semantic_label)
-            ]
+            for label in config[config_key]:
+                band_pattern_match = None
+                pattern_match = re.match(label, semantic_label)
+                if pattern_match:
+                    matched_label = label
+                    band_pattern_match = pattern_match.string
+                    break
+
             if not band_pattern_match:
                 continue
-            band_pattern_match = band_pattern_match[0].string
+
             if raster_map_info["min"] and raster_map_info["max"]:
                 # Check valid range of non-empty input maps
-                valid_range = config[config_key][band_pattern_match]["valid_range"]
+                valid_range = config[config_key][matched_label]["valid_range"]
                 if (
                     valid_range
                     and valid_range[0]
@@ -455,10 +459,10 @@ def read_config(module_options):
                     _("Input map <{}> does not contain valid data").format(raster_map)
                 )
 
-            input_group_dict[config[config_key][band_pattern_match]["order"]] = (
+            input_group_dict[config[config_key][matched_label]["order"]] = (
                 raster_map,
                 raster_map_info["datatype"],
-                config[config_key][band_pattern_match],
+                config[config_key][matched_label],
             )
 
         for band in config[config_key]:
@@ -502,6 +506,9 @@ def read_config(module_options):
                 )
                 mask_rules_list.append(reclass_map)
         mask_rules = " && ".join(mask_rules_list)
+
+    gs.debug(json.dumps(input_group_dict))
+    gs.debug(json.dumps(model_kwargs))
 
     return config, backbone, model_kwargs, input_group_dict, mask_rules
 
@@ -729,10 +736,13 @@ def tiled_prediction(
                 ] = dl_config["output_bands"][output_band]["valid_output_range"][0]
                 # Limit to valid max
                 out_numpy[
-                    out_numpy
-                    > dl_config["output_bands"][output_band]["valid_output_range"][1]
-                    & out_numpy
-                    < 255
+                    (
+                        out_numpy
+                        > dl_config["output_bands"][output_band]["valid_output_range"][
+                            1
+                        ]
+                    )
+                    & (out_numpy < 255)
                 ] = dl_config["output_bands"][output_band]["valid_output_range"][1]
             else:
                 out_numpy = np.clip(
@@ -859,6 +869,24 @@ def main():
         dl_model_kwargs,
         device="cpu" if flags["c"] or not torch.cuda.is_available() else "gpu",
     )
+
+    for output_band in dl_config["output_bands"]:
+        # test for input raster map
+        map_name = f"{options['output']}_{output_band}"
+        result = gs.find_file(map_name, element="raster", mapset=".")
+        if result["file"] and not gs.overwrite():
+            gs.fatal(
+                _(
+                    "Output raster map <{}> exists. Use --overwrite to overwrite."
+                ).format(map_name)
+            )
+
+    # Here we could check if the tile_size and dl_model_kwargs are compatible with model
+    # dimensions:
+    # first_parameter = next(dl_model.parameters())
+    # input_shape = list(first_parameter.size())
+    # tile_size must be divisible by input_shape[0]
+    # dl_model_kwargs["input_bands"] must be equal to input_shape[1]
 
     gs.verbose(
         _("Using {device}").format(
