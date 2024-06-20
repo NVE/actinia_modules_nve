@@ -707,7 +707,7 @@ def process_scene_group(
     if not basename:
         output_name = os.path.commonprefix(list(map_dict["input"].values())).rstrip("_")
     else:
-        output_name = f"{basename}_{temporal_extent[0].isoformat()}_{temporal_extent[1].isoformat()}"
+        output_name = f"{basename}_{temporal_extent[0].strftime('%Y%m%dT%H%M%S')}_{temporal_extent[1].strftime('%Y%m%dT%H%M%S')}"
 
     # Get semantic labels
     output_bands = json.loads(
