@@ -783,11 +783,18 @@ def patch_results(
     output_band_config = dl_config["output_bands"][output_band]
     output_map_name = f"{output_map}_{output_band}"
     patch_map_name = output_map_name if not masking else f"{TMP_NAME}_{output_map_name}"
-    input_maps = (
-        gs.read_command("g.list", type="raster", pattern=f"{TMP_NAME}_{output_band}*")
+    input_maps = [
+        rmap
+        for rmap in gs.read_command(
+            "g.list", type="raster", pattern=f"{TMP_NAME}_{output_band}*"
+        )
         .strip()
         .split("\n")
-    )
+        if rmap
+    ]
+
+    if len(input_maps) == 0:
+        return
     if len(input_maps) == 1:
         gs.run_command(
             "g.rename",
