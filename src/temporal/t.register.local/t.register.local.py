@@ -340,7 +340,7 @@ def map_semantic_labels(
     subdatasets = ds.GetSubDatasets()
     nc_metadata = ds.GetMetadata()
     geotransforms = [
-        key for key in ds.GetMetadata().keys() if "geotransform" in key.lower()
+        key for key in ds.GetMetadata() if "geotransform" in key.lower()
     ]
     if subdatasets:
         if semantic_label_dict and not any(
