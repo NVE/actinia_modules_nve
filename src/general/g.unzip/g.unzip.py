@@ -58,10 +58,7 @@ def unzip_file(file_path, out_dir=None, remove=False):
 
     gs.verbose(_("Unzipping {}").format(str(file_path)))
 
-    if not out_dir:
-        out_dir = Path("./")
-    else:
-        out_dir = Path(out_dir)
+    out_dir = Path("./") if not out_dir else Path(out_dir)
 
     with ZipFile(file_path) as zip_file_object:
         for zipped_file in zip_file_object.infolist():
