@@ -299,7 +299,7 @@ class CLCCryoDownloader:
         Here the JSON API format is used
         Only two hirarchy levels are assumed in the API description"""
         xml_description = request.urlopen(self.description_url)
-        root = etree.fromstring(xml_description.read())
+        root = etree.fromstring(xml_description.read())  # noqa: S320
 
         desciption_dict = {}
         for item in root.iterchildren():
@@ -501,13 +501,12 @@ class CLCCryoDownloader:
         user = os.environ.get("HRSI_USERNAME")
         password = os.environ.get("HRSI_PASSWORD")
 
-        credits_file = credits_file or os.path.expanduser("~/.cryo_land")
-        if os.path.exists(credits_file):
+        credits_file = Path(credits_file or os.path.expanduser("~/.cryo_land"))
+        if credits_file.exists():
             try:
-                with open(credits_file, "r", encoding="UTF8") as cryo_land_credits:
-                    user, password = cryo_land_credits.read().split("\n")[0:2]
-            except OSError as error:
-                raise error
+                user, password = credits_file.strip().read_text().split("\n", 1)
+            except OSError:
+                gs.fatal(_("Unable to get credentials from credentials file {}").format(str(credits_file)))
         if not all((user, password)):
             gs.warning(
                 _(
@@ -569,7 +568,7 @@ class CLCCryoDownloader:
                 # temporal extend is not consistently represented in the
                 # metadata, so this part of the code is deactivated
                 if not self.requested_hrsi_product["time_pattern"]:
-                    metadata_xml = etree.fromstring(zip_data)
+                    metadata_xml = etree.fromstring(zip_data)  # noqa: S320
                     meta_data = MD_Metadata(metadata_xml)
 
                     # title = meta_data.identification[0].title
@@ -698,8 +697,7 @@ class CLCCryoDownloader:
 
 def legalize_name_string(string):
     """Replace conflicting characters with _"""
-    legal_string = re.sub(r"[^\w\d-]+|[^\x00-\x7F]+|[ -/\\]+", "_", string)
-    return legal_string
+    return re.sub(r"[^\w\d-]+|[^\x00-\x7F]+|[ -/\\]+", "_", string)
 
 
 def timestamp_from_filename(
@@ -904,7 +902,7 @@ def transform_bounding_box(bbox, transform, edge_densification=15):
     # we generate `edge_samples` number of points between the upper left and
     # lower left point, transform them all to the new coordinate system
     # then get the minimum x coordinate "min(p[0] ...)" of the batch.
-    transformed_bounding_box = [
+    return [
         bounding_fn(
             [
                 _transform_vertex(p_a * v + p_b * (1 - v))
@@ -912,13 +910,12 @@ def transform_bounding_box(bbox, transform, edge_densification=15):
             ]
         )
         for p_a, p_b, bounding_fn in [
-            (u_l, l_l, lambda point_list: min([p[0] for p in point_list])),
-            (l_l, l_r, lambda point_list: min([p[1] for p in point_list])),
-            (l_r, u_r, lambda point_list: max([p[0] for p in point_list])),
-            (u_r, u_l, lambda point_list: max([p[1] for p in point_list])),
+            (u_l, l_l, lambda point_list: min(p[0] for p in point_list)),
+            (l_l, l_r, lambda point_list: min(p[1] for p in point_list)),
+            (l_r, u_r, lambda point_list: max(p[0] for p in point_list)),
+            (u_r, u_l, lambda point_list: max(p[1] for p in point_list)),
         ]
     ]
-    return transformed_bounding_box
 
 
 def main():
@@ -1619,12 +1616,10 @@ def main():
         )
 
     # Remove potential duplicates
-    with open(clc_downloader.tempfile, encoding="UTF8") as reg_file:
-        reg_lines = set(reg_file.read().splitlines())
+    reg_lines = set(Path(clc_downloader.tempfile).read_text(encoding="UTF8").strip().split("\n"))
 
     # Write registration file with unique lines
-    with open(clc_downloader.tempfile, "w", encoding="UTF8") as reg_file:
-        reg_file.write("\n".join(reg_lines) + "\n")
+    Path(clc_downloader.tempfile).write_text("\n".join(reg_lines) + "\n", encoding="UTF8")
 
     # Register downloaded maps in STRDS
     register_maps_in_space_time_dataset(
@@ -1638,20 +1633,7 @@ def main():
     # Update mode and new download mode
     # Write log
     if flags["w"]:
-        with open(
-            Path(clc_downloader.output_directory)
-            / f"hrsi_import_{run_time.strftime('%Y%m%dT%H%M%S')}.log",
-            "w",
-            encoding="UTF8",
-        ) as log_json:
-            json.dump(
-                {
-                    "query_time": run_time.isoformat(),
-                    "failed_downloads": "\n".join([]),
-                    "query_params": query_params,
-                },
-                log_json,
-            )
+        Path(clc_downloader.output_directory / f"hrsi_import_{run_time.strftime('%Y%m%dT%H%M%S')}.log", encoding="UTF8").write_text(json.dumps({"query_time": run_time.isoformat(), "query_params": query_params}, indent=2))
 
 
 if __name__ == "__main__":
