@@ -506,7 +506,11 @@ class CLCCryoDownloader:
             try:
                 user, password = credits_file.strip().read_text().split("\n", 1)
             except OSError:
-                gs.fatal(_("Unable to get credentials from credentials file {}").format(str(credits_file)))
+                gs.fatal(
+                    _("Unable to get credentials from credentials file {}").format(
+                        str(credits_file)
+                    )
+                )
         if not all((user, password)):
             gs.warning(
                 _(
@@ -614,11 +618,13 @@ class CLCCryoDownloader:
                                 transform,
                                 self.requested_hrsi_product[sub_product]["resample"],
                                 self.requested_hrsi_product[sub_product]["data_type"],
-                                data_range=self.requested_hrsi_product[sub_product][
-                                    "valid_range"
-                                ]
-                                if self.import_module.flags.get("m")
-                                else None,
+                                data_range=(
+                                    self.requested_hrsi_product[sub_product][
+                                        "valid_range"
+                                    ]
+                                    if self.import_module.flags.get("m")
+                                    else None
+                                ),
                                 nodata=self.requested_hrsi_product[sub_product][
                                     "nodata"
                                 ],
@@ -1616,10 +1622,14 @@ def main():
         )
 
     # Remove potential duplicates
-    reg_lines = set(Path(clc_downloader.tempfile).read_text(encoding="UTF8").strip().split("\n"))
+    reg_lines = set(
+        Path(clc_downloader.tempfile).read_text(encoding="UTF8").strip().split("\n")
+    )
 
     # Write registration file with unique lines
-    Path(clc_downloader.tempfile).write_text("\n".join(reg_lines) + "\n", encoding="UTF8")
+    Path(clc_downloader.tempfile).write_text(
+        "\n".join(reg_lines) + "\n", encoding="UTF8"
+    )
 
     # Register downloaded maps in STRDS
     register_maps_in_space_time_dataset(
@@ -1633,7 +1643,16 @@ def main():
     # Update mode and new download mode
     # Write log
     if flags["w"]:
-        Path(clc_downloader.output_directory / f"hrsi_import_{run_time.strftime('%Y%m%dT%H%M%S')}.log", encoding="UTF8").write_text(json.dumps({"query_time": run_time.isoformat(), "query_params": query_params}, indent=2))
+        Path(
+            clc_downloader.output_directory
+            / f"hrsi_import_{run_time.strftime('%Y%m%dT%H%M%S')}.log",
+            encoding="UTF8",
+        ).write_text(
+            json.dumps(
+                {"query_time": run_time.isoformat(), "query_params": query_params},
+                indent=2,
+            )
+        )
 
 
 if __name__ == "__main__":
