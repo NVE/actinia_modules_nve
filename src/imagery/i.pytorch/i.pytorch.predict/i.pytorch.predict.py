@@ -980,11 +980,11 @@ if __name__ == "__main__":
     try:
         import torch
     except ImportError:
-        gs.fatal(("Could not import pytorch. Please make sure it is installed."))
+        gs.fatal(_("Could not import pytorch. Please make sure it is installed."))
     try:
         import numpy as np
     except ImportError:
-        gs.fatal(("Could not import pytorch. Please make sure it is installed."))
+        gs.fatal(_("Could not import pytorch. Please make sure it is installed."))
 
     gs.utils.set_path(modulename="i.pytorch", dirname="", path="..")
     try:
@@ -998,7 +998,7 @@ if __name__ == "__main__":
         )
     except ImportError:
         gs.fatal(
-            (
+            _(
                 "Could not import included unet library. Please check the addon installation."
             )
         )
