@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 
 """
- MODULE:       i.pytorch.predict
- AUTHOR(S):    Stefan Blumentrath
- PURPOSE:      Apply Deep Learning model to imagery group using pytorch
- COPYRIGHT:    (C) 2023-2024 by Norwegian Water and Energy Directorate
-               (NVE), Stefan Blumentrath and the GRASS GIS Development Team
+MODULE:       i.pytorch.predict
+AUTHOR(S):    Stefan Blumentrath
+PURPOSE:      Apply Deep Learning model to imagery group using pytorch
+COPYRIGHT:    (C) 2023-2024 by Norwegian Water and Energy Directorate
+              (NVE), Stefan Blumentrath and the GRASS GIS Development Team
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
- ToDo:
- - tiling from vector map (to avoid unnecessary data reads outside core AOI)
- - test case
+ToDo:
+- tiling from vector map (to avoid unnecessary data reads outside core AOI)
+- test case
 """
 
 # %module
@@ -130,7 +130,6 @@
 # - Handle divisible by x (e.g. 8) for tile size to avoid:
 #     RuntimeError: Sizes of tensors must match except in dimension 1
 
-
 import atexit
 import json
 import sys
@@ -224,7 +223,7 @@ def group_to_dict(
             .split()
         )
     except CalledModuleError as cme:
-        raise cme
+        gs.fatal(_("Could not parse imagery group <{}>").format(imagery_group_name))
 
     if dict_keys not in ["indices", "map_names", "semantic_labels"]:
         raise ValueError(f"Invalid dictionary keys <{dict_keys}> requested")
@@ -491,7 +490,7 @@ def read_config(module_options):
         mask_rules_list = []
         for idx, mask_config in enumerate(mask_rules.values()):
             raster_map, rules = list(mask_config.items())[0]
-            if any([symbol in rules for symbol in "<>=,"]):
+            if any(symbol in rules for symbol in "<>=,"):
                 mask_rules_list.extend(
                     [f"{raster_map}{rule}" for rule in rules.split(",")]
                 )
