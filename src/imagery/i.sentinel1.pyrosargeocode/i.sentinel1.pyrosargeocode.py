@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
 
 """
- MODULE:       i.sentinel1.pyrosargeocode
- AUTHOR(S):    Stefan Blumentrath
- PURPOSE:      Pre-process and import Sentinel-1 imagery using pyroSAR / ESA SNAP
- COPYRIGHT:    (C) 2023 by Stefan Blumentrath
+MODULE:       i.sentinel1.pyrosargeocode
+AUTHOR(S):    Stefan Blumentrath
+PURPOSE:      Pre-process and import Sentinel-1 imagery using pyroSAR / ESA SNAP
+COPYRIGHT:    (C) 2023 by Stefan Blumentrath
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
- ToDo:
- - Support SLC workflows
- - address pyrosar issues:
-   - return resulting file names and not just processing XML
-   - unclear parallelization
-   - handling of axis order / GeoJSON in Spatialist
-   - ...
+ToDo:
+- Support SLC workflows
+- address pyrosar issues:
+  - return resulting file names and not just processing XML
+  - unclear parallelization
+  - handling of axis order / GeoJSON in Spatialist
+  - ...
 """
 
 # %module
@@ -390,9 +390,7 @@ def process_image_file(
             map=output_map,
             semantic_label=semantic_label,
         )
-        register_strings.append(
-            "|".join((output_map, start_time, end_time, semantic_label))
-        )
+        register_strings.append(f"{output_map}|{start_time}|{end_time}|{semantic_label}")
     return "\n".join(register_strings)
 
 
@@ -530,7 +528,7 @@ def main():
         "externalDEMNoDataValue": -2147483678.0
         if dem_info["datatype"] == "DCELL"
         else None,
-        "externalDEMApplyEGM": False if flags["e"] else True,
+        "externalDEMApplyEGM": not flags["e"],
         "alignToStandardGrid": True,
         "demResamplingMethod": "BILINEAR_INTERPOLATION",
         "imgResamplingMethod": "BILINEAR_INTERPOLATION",
