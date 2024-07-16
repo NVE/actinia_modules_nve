@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 
 """
- MODULE:       r.avaframe.com1dfa
- AUTHOR(S):    Stefan Blumentrath and Yngve Antonsen
- PURPOSE:      Run com1dfa avalanche simulations using AvaFrame
- COPYRIGHT:    (C) 2022 by Stefan Blumentrath
+MODULE:       r.avaframe.com1dfa
+AUTHOR(S):    Stefan Blumentrath and Yngve Antonsen
+PURPOSE:      Run com1dfa avalanche simulations using AvaFrame
+COPYRIGHT:    (C) 2022 by Stefan Blumentrath
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
 """
 
@@ -285,7 +285,6 @@ def import_result(asc_path):
 
 
 def convert_result(asc_path, config=None, results_df=None, directory="/tmp"):
-
     """Convert ascii file to GeoTiff"""
     result_prefix = {
         "pft": "MaxFlowThickness",
@@ -419,11 +418,11 @@ def main():
     if options["export_directory"]:
         if not Path(options["export_directory"]).exists():
             gs.fatal(
-                _("Directory <{}> does not exist".format(options["export_directory"]))
+                _("Directory <{}> does not exist").format(options["export_directory"])
             )
         if not os.access(options["export_directory"], os.W_OK):
             gs.fatal(
-                _("Directory <{}> is not writable".format(options["export_directory"]))
+                _("Directory <{}> is not writable").format(options["export_directory"])
             )
 
     # Get release area
@@ -508,7 +507,6 @@ def main():
     com1dfa_results_pd = pd.DataFrame(run_com1dfa(config_dict=config)[3])
 
     if options["format"]:
-
         if options["format"] == "json":
             print(com1dfa_results_pd.to_json())
         if options["format"] == "csv":
