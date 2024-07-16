@@ -31,7 +31,7 @@ try:
     from torch import nn
     from torch.autograd import Variable
 except ImportError:
-    gs.fatal(("Could not import pytorch. Please make sure it is installed."))
+    gs.fatal(_("Could not import pytorch. Please make sure it is installed."))
 import numpy as np
 
 
@@ -133,7 +133,7 @@ def load_model(dl_model_path, dl_backbone, dl_kwargs, device="gpu"):
     """The following should be included in a predict function"""
     # load pytorch model
     if not dl_model_path.exists():
-        gs.fatal(("Model file {} not found").format(str(dl_model_path)))
+        gs.fatal(_("Model file {} not found").format(str(dl_model_path)))
 
     try:
         dl_model = dl_backbone(**dl_kwargs)
@@ -389,7 +389,7 @@ def validate_config(json_path, package_dir):
                     config_keys[config_key][config_sub_key]["content"]
                     and band_description[config_sub_key]
                 ):
-                    for idx, key_element in enumerate(band_description[config_sub_key]):
+                    for idx, _key_element in enumerate(band_description[config_sub_key]):
                         type_mismatch = not_in_types(
                             band_description[config_sub_key],
                             config_keys[config_key][config_sub_key]["type"],
