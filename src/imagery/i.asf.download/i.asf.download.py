@@ -364,13 +364,12 @@ def checkout_results(
 ):
     """Helper function for checking, printing and logging search results"""
 
-    if len(result_set) == 0:
-        if not log_results:
-            if initial_scenes:
-                gs.info(_("All {} scenes previously downloaded").format(initial_scenes))
-            else:
-                gs.info(_("No results found with given search criteria"))
-            sys.exit()
+    if len(result_set) == 0 and not log_results:
+        if initial_scenes:
+            gs.info(_("All {} scenes previously downloaded").format(initial_scenes))
+        else:
+            gs.info(_("No results found with given search criteria"))
+        sys.exit()
 
     if initial_scenes:
         gs.verbose(
