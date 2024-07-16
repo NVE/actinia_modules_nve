@@ -8,6 +8,7 @@ for details.
 
 :authors: Stefan Blumentrath
 """
+
 import os
 from subprocess import PIPE
 
