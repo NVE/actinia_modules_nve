@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 
 """
- MODULE:      t.pytorch.predict
- AUTHOR(S):   Stefan Blumentrath
- PURPOSE:     Apply a pytorch model to imagery groups in a Space Time Raster Dataset
-              and register results in an output STRDS
- COPYRIGHT:   (C) 2023-2024 by Norwegian Water and Energy Directorate
-              (NVE), Stefan Blumentrath and the GRASS GIS Development Team
+MODULE:      t.pytorch.predict
+AUTHOR(S):   Stefan Blumentrath
+PURPOSE:     Apply a pytorch model to imagery groups in a Space Time Raster Dataset
+             and register results in an output STRDS
+COPYRIGHT:   (C) 2023-2024 by Norwegian Water and Energy Directorate
+             (NVE), Stefan Blumentrath and the GRASS GIS Development Team
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
- ToDo:
- - tiling from vector map (to avoid unnecessary data reads outside core AOI)
- - test case
+ToDo:
+- tiling from vector map (to avoid unnecessary data reads outside core AOI)
+- test case
 """
 
 # %Module
@@ -202,6 +202,7 @@ from subprocess import PIPE
 
 import grass.script as gs
 from grass.exceptions import CalledModuleError
+from itertools import starmap
 
 TMP_NAME = gs.tempname(12)
 # Get GRASS GIS environment
@@ -279,7 +280,7 @@ def group_to_dict(
             .split()
         )
     except CalledModuleError as cme:
-        raise cme
+        gs.fatal(_("Could not parse imagery group <{}>").format(imagery_group_name))
 
     if dict_keys not in ["indices", "map_names", "semantic_labels"]:
         raise ValueError(f"Invalid dictionary keys <{dict_keys}> requested")
@@ -441,7 +442,7 @@ def get_registered_maps(
             if connection_state_changed:
                 dbif.close()
             stds.msgr.error(
-                _("Unable to get map ids from register table " "<{}>").format(
+                _("Unable to get map ids from register table <{}>").format(
                     stds.get_map_register()
                 )
             )
@@ -874,9 +875,7 @@ def main():
         with Pool(nprocs_outer) as pool:
             register_strings = pool.starmap(i_pytorch_predict, imagery_groups.items())
     else:
-        register_strings = [
-            i_pytorch_predict(*scene_group) for scene_group in imagery_groups.items()
-        ]
+        register_strings = list(starmap(i_pytorch_predict, imagery_groups.items()))
 
     # Create STRDS if needed
     if not output_strds_in_db or (overwrite and not flags["e"]):
