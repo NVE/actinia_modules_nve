@@ -7,6 +7,7 @@ for details.
 
 :authors: Stefan Blumentrath
 """
+
 import os
 
 import grass.pygrass.modules as pymod
