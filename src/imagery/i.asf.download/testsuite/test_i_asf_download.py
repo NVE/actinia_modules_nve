@@ -7,6 +7,7 @@ for details.
 
 :authors: Yngve Antonsen
 """
+
 import os
 
 import grass.script as gs
