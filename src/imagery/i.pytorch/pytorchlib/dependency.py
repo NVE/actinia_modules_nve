@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 
 """
-  MODULE:       dependency
+MODULE:       dependency
 
-  AUTHOR(S):    Matej Krejci <matejkrejci gmail.com> (GSoC 2014),
-                Tomas Zigo <tomas.zigo slovanet.sk>
+AUTHOR(S):    Matej Krejci <matejkrejci gmail.com> (GSoC 2014),
+              Tomas Zigo <tomas.zigo slovanet.sk>
 
-  PURPOSE:      Check i.pytorch py lib dependencies
-                Mostly copied from wx.metadata
+PURPOSE:      Check i.pytorch py lib dependencies
+              Mostly copied from wx.metadata
 
-  COPYRIGHT:    (C) 2020-2023 by Matej Krejci, Tomas Zigo,
-                Stefan Blumentrath and the GRASS Development Team
+COPYRIGHT:    (C) 2020-2023 by Matej Krejci, Tomas Zigo,
+              Stefan Blumentrath and the GRASS Development Team
 
-                This program is free software under the GNU General
-                Public License (>=v2). Read the file COPYING that
-                comes with GRASS for details.
+              This program is free software under the GNU General
+              Public License (>=v2). Read the file COPYING that
+              comes with GRASS for details.
 """
 
 import importlib
@@ -32,9 +32,9 @@ MODULES = {
     },
 }
 
-INSTALLED_VERSION_MESSAGE = "Installed version of {} library is " "<{}>."
+INSTALLED_VERSION_MESSAGE = "Installed version of {} library is <{}>."
 REQ_VERSION_MESSAGE = (
-    "{name} {version} is required. " "check requirements on the manual page <{url}>."
+    "{name} {version} is required. check requirements on the manual page <{url}>."
 )
 
 
@@ -86,7 +86,7 @@ def check_dependencies(module_name, check_version=False):
     except ModuleNotFoundError:
         message = "{name} {text} <{url}>.\n".format(
             name=module_name,
-            text="library is missing. Check requirements on the " "manual page",
+            text="library is missing. Check requirements on the manual page",
             url=URL,
         )
         sys.stderr.write(message)
