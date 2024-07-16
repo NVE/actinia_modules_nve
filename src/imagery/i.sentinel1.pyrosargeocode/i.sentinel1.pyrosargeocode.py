@@ -390,7 +390,9 @@ def process_image_file(
             map=output_map,
             semantic_label=semantic_label,
         )
-        register_strings.append(f"{output_map}|{start_time}|{end_time}|{semantic_label}")
+        register_strings.append(
+            f"{output_map}|{start_time}|{end_time}|{semantic_label}"
+        )
     return "\n".join(register_strings)
 
 
@@ -520,14 +522,16 @@ def main():
         "refarea": "gamma0" if flags["n"] else "sigma0",
         "export_extra": export_extra,
         "outdir": str(output_directory),
-        "speckleFilter": speckle_filter_dict[options["speckle_filter"]]
-        if options["speckle_filter"]
-        else None,
+        "speckleFilter": (
+            speckle_filter_dict[options["speckle_filter"]]
+            if options["speckle_filter"]
+            else None
+        ),
         "spacing": float(dem_info["nsres"]),
         "externalDEMFile": str(dem_info["GDAL_path"]),
-        "externalDEMNoDataValue": -2147483678.0
-        if dem_info["datatype"] == "DCELL"
-        else None,
+        "externalDEMNoDataValue": (
+            -2147483678.0 if dem_info["datatype"] == "DCELL" else None
+        ),
         "externalDEMApplyEGM": not flags["e"],
         "alignToStandardGrid": True,
         "demResamplingMethod": "BILINEAR_INTERPOLATION",
