@@ -246,7 +246,6 @@ def patch_by_topology(
     current_mapset = get_current_mapset()
 
     for semantic_label, map_list in map_dict.items():
-
         topo_builder = SpatioTemporalTopologyBuilder()
         topo_builder.build(mapsA=granularity_list, mapsB=map_list)
 
@@ -302,9 +301,7 @@ def patch_by_topology(
                 )
 
                 if granule.is_time_absolute() is True and time_suffix == "gran":
-                    suffix = create_suffix_from_datetime(
-                        start_time, granularity
-                    )
+                    suffix = create_suffix_from_datetime(start_time, granularity)
                 elif granule.is_time_absolute() is True and time_suffix == "time":
                     suffix = create_time_suffix(granule)
 
@@ -321,7 +318,7 @@ def patch_by_topology(
                 map_layer = RasterDataset(f"{output_name}@{current_mapset}")
                 # map_layer.set_temporal_extent(granule.get_temporal_extent())
                 # map_layer.set_semantic_label(semantic_label)
-                
+
                 if map_layer.map_exists() is True and overwrite is False:
                     msgr.fatal(
                         _(
@@ -331,12 +328,16 @@ def patch_by_topology(
                         ).format(name=output_name)
                     )
 
-                output_list.append("|".join([
-                    f"{output_name}@{current_mapset}",
-                    start_time.isoformat(),
-                    end_time.isoformat(),
-                    semantic_label,
-                ]))
+                output_list.append(
+                    "|".join(
+                        [
+                            f"{output_name}@{current_mapset}",
+                            start_time.isoformat(),
+                            end_time.isoformat(),
+                            semantic_label,
+                        ]
+                    )
+                )
 
                 if sort == "desc":
                     aggregation_list.reverse()
