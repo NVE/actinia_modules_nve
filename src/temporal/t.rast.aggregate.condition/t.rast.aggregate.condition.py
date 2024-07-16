@@ -538,7 +538,7 @@ def get_registered_maps_grouped(
             if connection_state_changed:
                 dbif.close()
             stds.msgr.error(
-                _("Unable to get map ids from register table " "<{}>").format(
+                _("Unable to get map ids from register table <{}>").format(
                     stds.get_map_register()
                 )
             )
