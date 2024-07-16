@@ -95,7 +95,7 @@ def check_dependencies(module_name, check_version=False):
 def main():
     for module in MODULES:
         if check_dependencies(module_name=module):
-            print("{name} is installed.".format(name=module))
+            print(f"{module} is installed.")
 
 
 if __name__ == "__main__":
