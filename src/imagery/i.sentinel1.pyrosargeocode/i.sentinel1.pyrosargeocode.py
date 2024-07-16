@@ -339,7 +339,7 @@ def process_image_file(
         snap.geocode(infile=s1_file_id, **kwargs)
     except RuntimeError as runtime_error:
         gs.fatal(
-            (
+            _(
                 "Geocoding failed with the following error: {}\nPlease check the log files"
             ).format(runtime_error)
         )
