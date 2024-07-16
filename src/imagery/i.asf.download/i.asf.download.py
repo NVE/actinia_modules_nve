@@ -316,7 +316,9 @@ def get_asf_token(token_file=None):
         try:
             asf_token = token_file.read_text(encoding="UTF8").rstrip()
         except OSError as error:
-            gs.fatal(_("Unable to get token from token-file <{}>").format(str(token_file)))
+            gs.fatal(
+                _("Unable to get token from token-file <{}>").format(str(token_file))
+            )
     if not asf_token:
         gs.fatal(
             _(
