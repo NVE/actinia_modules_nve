@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 
 """
- MODULE:       pytorchlib.utils
- AUTHOR(S):    Stefan Blumentrath
- PURPOSE:      Collection of utility functions when working with torch
- COPYRIGHT:    (C) 2023 by Stefan Blumentrath
+MODULE:       pytorchlib.utils
+AUTHOR(S):    Stefan Blumentrath
+PURPOSE:      Collection of utility functions when working with torch
+COPYRIGHT:    (C) 2023 by Stefan Blumentrath
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
 """
 
@@ -198,7 +198,7 @@ def predict_torch(data_cube, config_dict=None, device=None, dl_model=None):
 def not_in_types(data_type, allowed_types):
     """Check if data_type is not an element of allowed_types"""
     allowed_types = (
-        tuple([allowed_types]) if isinstance(allowed_types, type) else allowed_types
+        tuple(allowed_types) if isinstance(allowed_types, type) else allowed_types
     )
     if data_type is None:
         data_type_str = "'None'"
@@ -338,7 +338,7 @@ def validate_config(json_path, package_dir):
                 )
             else:
                 continue
-        if config_key == "reference_bands" or config_key == "auxillary_bands":
+        if config_key in {"reference_bands", "auxillary_bands"}:
             model_kwargs["input_bands"] += len(config_dict[config_key])
 
         for config_sub_key in config_keys[config_key]:
