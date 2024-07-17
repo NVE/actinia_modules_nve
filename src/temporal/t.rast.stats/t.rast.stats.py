@@ -208,16 +208,14 @@ COPYRIGHT:    (C) 2023 by the Stefan Blumentrath and
 # %end
 
 import sys
-
 from copy import deepcopy
+from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
 from subprocess import PIPE
-from functools import partial
 
 import grass.script as gs
 from grass.pygrass.modules import Module
-
 
 METADATA_DICT = {
     "ctime": "base",
@@ -393,9 +391,7 @@ def main():
         sys.exit(0)
 
     # Extract flags for r.stats
-    rstats_flags = [
-        flag for flag, flag_set in flags.items() if flag in "acpl1gxArnNCi" and flag_set
-    ]
+    rstats_flags = [flag for flag in "acpl1gxArnNCi" if flags.get(flag)]
 
     # Create Module object for r.stats that will be deep copied
     # and put into the process queue
@@ -429,33 +425,31 @@ def main():
 
     # Generate header if needed
     if flags["h"]:
-        header = ["map", "start", "end"] + metadata_columns
-        if "g" in flags and flags["g"]:
-            header.append("east")
-            header.append("north")
-        elif "x" in flags and flags["x"]:
-            header.append("x")
-            header.append("y")
+        header = ["map", "start", "end", *metadata_columns]
+        if flags.get("g"):
+            header.extend(("east", "north"))
+        elif flags.get("x"):
+            header.extend(("x", "y"))
         if options["zone"]:
             if len(zone) > 1:
                 for idx in range(len(zone)):
                     zone_header = f"zone_{idx + 1}"
                     header.append(zone_header)
-                    if "l" in flags and flags["l"]:
+                    if flags.get("l"):
                         header.append(f"{zone_header}_label")
             else:
                 header.append("zone")
-                if "l" in flags:
+                if flags.get("l"):
                     header.append("zone_label")
 
         header.append("raster_value")
-        if "l" in flags and flags["l"]:
+        if flags.get("l"):
             header.append("raster_value_label")
-        if "a" in flags and flags["a"]:
+        if flags.get("a"):
             header.append("area_m2")
-        elif "c" in flags and flags["c"]:
+        elif flags.get("c"):
             header.append("cell_counts")
-        elif "p" in flags and flags["p"]:
+        elif flags.get("p"):
             header.append("percent")
 
         header = f"{sep}".join(header)
