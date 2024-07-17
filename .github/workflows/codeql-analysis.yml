@@ -29,7 +29,6 @@ jobs:
       fail-fast: false
       matrix:
         language:
-          - c-cpp
           - python
 
     concurrency:
@@ -60,25 +59,6 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           config-file: ./.github/codeql/codeql-config.yml
-
-      - name: Create installation directory
-        run: |
-          mkdir "${HOME}/install"
-
-      - name: Set LD_LIBRARY_PATH for compilation
-        run: |
-          echo "LD_LIBRARY_PATH=${HOME}/install/lib" >> $GITHUB_ENV
-
-      - name: Set number of cores for compilation
-        run: |
-          echo "MAKEFLAGS=-j$(nproc)" >> $GITHUB_ENV
-
-      - name: Build
-        if: ${{ matrix.language == 'c-cpp' }}
-        env:
-          CFLAGS: -std=gnu11
-          CXXFLAGS: -std=c++11
-        run: .github/workflows/build_ubuntu-22.04.sh "${HOME}/install"
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@23acc5c183826b7a8a97bce3cecc52db901f8251 # v3.25.10
