@@ -153,7 +153,6 @@ import os
 import shutil
 import sys
 import tempfile
-
 from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
@@ -595,8 +594,7 @@ if __name__ == "__main__":
         )
 
     try:
-        from pyroSAR import identify
-        from pyroSAR import snap
+        from pyroSAR import identify, snap
     except ImportError:
         gs.fatal(
             _(
