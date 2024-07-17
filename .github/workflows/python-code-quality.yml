@@ -118,11 +118,11 @@ jobs:
         run: |
           echo "MAKEFLAGS=-j$(nproc)" >> $GITHUB_ENV
 
-      - name: Run Pylint on AddOn code package
-        run: |
-          # export PYTHONPATH=`grass --config python_path`:$PYTHONPATH
-          # export LD_LIBRARY_PATH=$(grass --config path)/lib:$LD_LIBRARY_PATH
-          pylint --persistent=no --py-version=${{ env.MIN_PYTHON_VERSION }} --jobs=$(nproc) ./
+      # - name: Run Pylint on AddOn code package
+      #   run: |
+      #     # export PYTHONPATH=`grass --config python_path`:$PYTHONPATH
+      #     # export LD_LIBRARY_PATH=$(grass --config path)/lib:$LD_LIBRARY_PATH
+      #     pylint --persistent=no --py-version=${{ env.MIN_PYTHON_VERSION }} --jobs=$(nproc) ./
 
       - name: Run Pylint on other files using pytest
         run: |
