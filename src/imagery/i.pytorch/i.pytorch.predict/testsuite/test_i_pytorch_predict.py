@@ -8,6 +8,8 @@ for details.
 :authors: Stefan Blumentrath
 """
 
+import unittest
+
 import grass.script as gs
 from grass.gunittest.case import TestCase
 
@@ -61,6 +63,7 @@ class TestAggregationAbsolute(TestCase):
         cls.del_temp_region()
         gs.run_command("g.remove", type="raster", pattern="S3_SLSTR_reflectance*")
 
+    @unittest.skip("Skipping due to lack of test-data")
     def test_torch_prediction_no_tiles(self):
         """Test i.pytorch.predict runs as expected
         with just one tile (=without tiling)
@@ -78,6 +81,7 @@ class TestAggregationAbsolute(TestCase):
             verbose=True,
         )
 
+    @unittest.skip("Skipping due to lack of test-data")
     def test_torch_prediction_with_tiles(self):
         """Test i.pytorch.predict runs as expected
         with just one tile (=without tiling)
