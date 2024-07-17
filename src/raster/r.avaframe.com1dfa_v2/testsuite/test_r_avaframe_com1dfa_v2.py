@@ -64,8 +64,8 @@ class TestAvaframeV2(TestCase):
         )
         stdout, stderr = avaframe_run.communicate()
         stderr = stderr.decode("utf8").lower()
-        print(stdout)
-        print(stderr)
+        gs.warning(stdout)
+        gs.fatal(stderr)
         self.assertFalse("error" in stderr or "traceback" in stderr)
 
 
