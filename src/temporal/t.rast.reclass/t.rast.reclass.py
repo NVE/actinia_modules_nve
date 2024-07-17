@@ -122,14 +122,12 @@
 #   https://grass.osgeo.org/grass83/manuals/libpython/_modules/temporal/register.html#register_maps_in_space_time_dataset
 
 import sys
-
 from copy import deepcopy
 from multiprocessing import Pool
 from pathlib import Path
 
 import grass.script as gs
 from grass.pygrass.modules import Module
-
 
 ############################################################################
 
