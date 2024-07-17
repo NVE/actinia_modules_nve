@@ -145,22 +145,22 @@ GNU General Public License for more details.
 import sys
 from copy import deepcopy
 from io import StringIO
-import grass.script as gs
-import grass.pygrass.modules as pymod
-import grass.temporal as tgis
 
-from grass.temporal.space_time_datasets import RasterDataset
-from grass.temporal.datetime_math import (
-    create_suffix_from_datetime,
-    create_time_suffix,
-    create_numeric_suffix,
-)
+import grass.pygrass.modules as pymod
+import grass.script as gs
+import grass.temporal as tgis
 from grass.temporal.core import (
     get_current_mapset,
     get_tgis_message_interface,
     init_dbif,
 )
+from grass.temporal.datetime_math import (
+    create_numeric_suffix,
+    create_suffix_from_datetime,
+    create_time_suffix,
+)
 from grass.temporal.open_stds import open_old_stds
+from grass.temporal.space_time_datasets import RasterDataset
 from grass.temporal.spatio_temporal_relationships import SpatioTemporalTopologyBuilder
 
 
@@ -260,32 +260,41 @@ def patch_by_topology(
 
             # Handle semantic labels (one granule per semantic label)
             if "equal" in topo_list and granule.equal:
-                for map_layer in granule.equal:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "contains" in topo_list and granule.contains:
-                for map_layer in granule.contains:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "during" in topo_list and granule.during:
-                for map_layer in granule.during:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "starts" in topo_list and granule.starts:
-                for map_layer in granule.starts:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "started" in topo_list and granule.started:
-                for map_layer in granule.started:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "finishes" in topo_list and granule.finishes:
-                for map_layer in granule.finishes:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "finished" in topo_list and granule.finished:
-                for map_layer in granule.finished:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "overlaps" in topo_list and granule.overlaps:
-                for map_layer in granule.overlaps:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "overlapped" in topo_list and granule.overlapped:
-                for map_layer in granule.overlapped:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
 
             if aggregation_list:
                 msgr.verbose(
