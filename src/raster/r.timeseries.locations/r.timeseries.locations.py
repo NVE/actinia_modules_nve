@@ -136,13 +136,11 @@ COPYRIGHT:    (C) 2023 by Stefan Blumentrath
 
 import os
 import sys
-
 from functools import partial
 from subprocess import PIPE
 
-import numpy as np
-
 import grass.script as gs
+import numpy as np
 
 
 def round_to_closest(x, y):
@@ -156,7 +154,6 @@ def keepass_to_env(
     keepass_file, keepass_pwd, title, username_var, password_var, first=True
 ):
     """Write KeePass entries into environment variables"""
-    from pykeepass import PyKeePass
 
     kp = PyKeePass(keepass_file, password=keepass_pwd)
     entry = kp.find_entries(title=title, first=first)
