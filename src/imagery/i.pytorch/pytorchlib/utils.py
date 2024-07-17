@@ -18,18 +18,19 @@ COPYRIGHT:    (C) 2023 by Stefan Blumentrath
 
 """
 
-from importlib import import_module
 import inspect
 import json
 import sys
+from importlib import import_module
 
 import grass.script as gs
 
 try:
     import torch
     import torch.nn.functional as F
-    from torch import nn
-    from torch.autograd import Variable
+
+    # from torch import nn
+    # from torch.autograd import Variable
 except ImportError:
     gs.fatal(_("Could not import pytorch. Please make sure it is installed."))
 import numpy as np
@@ -88,8 +89,7 @@ def transform_axes(np_array, from_format="HWC", to_format="NCHW"):
             else:
                 idx.append(slice(None))
         return np_array[tuple(idx)]
-    else:
-        return np_array
+    return np_array
 
 
 def numpy2torch(np_array, device="cpu", precision="float"):
@@ -389,7 +389,9 @@ def validate_config(json_path, package_dir):
                     config_keys[config_key][config_sub_key]["content"]
                     and band_description[config_sub_key]
                 ):
-                    for idx, _key_element in enumerate(band_description[config_sub_key]):
+                    for idx, _key_element in enumerate(
+                        band_description[config_sub_key]
+                    ):
                         type_mismatch = not_in_types(
                             band_description[config_sub_key],
                             config_keys[config_key][config_sub_key]["type"],
