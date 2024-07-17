@@ -194,27 +194,26 @@
 # % excludes: output,-p,-g
 # %end
 
-import os
 import json
+import os
 import re
 import sys
 import zipfile
 
+# from multiprocessing import Pool
+from concurrent import futures
 from copy import deepcopy
 from datetime import datetime
 from http.client import IncompleteRead
 from io import BytesIO
-
-# from multiprocessing import Pool
-from concurrent import futures
 from pathlib import Path
 from subprocess import PIPE
-from urllib import parse
-from urllib import request
+from urllib import parse, request
+
+import grass.script as gs
 
 # Non-builtin imports
 import numpy as np
-import grass.script as gs
 
 
 class CLCCryoDownloader:
@@ -1665,9 +1664,7 @@ if __name__ == "__main__":
     from grass.temporal.register import register_maps_in_space_time_dataset
 
     try:
-        from osgeo import gdal
-        from osgeo import osr
-        from osgeo import ogr
+        from osgeo import gdal, ogr, osr
     except ImportError as import_error:
         gs.fatal(_("Module requires GDAL python bindings: {}").format(import_error))
 
