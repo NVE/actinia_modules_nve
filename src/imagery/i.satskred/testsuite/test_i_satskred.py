@@ -8,10 +8,8 @@ for details.
 :authors: Stefan Blumentrath
 """
 
-import os
 
 import grass.script as gs
-
 from grass.gunittest.case import TestCase
 
 
