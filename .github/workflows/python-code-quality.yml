@@ -120,8 +120,8 @@ jobs:
 
       - name: Run Pylint on AddOn code package
         run: |
-          export PYTHONPATH=`grass --config python_path`:$PYTHONPATH
-          export LD_LIBRARY_PATH=$(grass --config path)/lib:$LD_LIBRARY_PATH
+          # export PYTHONPATH=`grass --config python_path`:$PYTHONPATH
+          # export LD_LIBRARY_PATH=$(grass --config path)/lib:$LD_LIBRARY_PATH
           pylint --persistent=no --py-version=${{ env.MIN_PYTHON_VERSION }} --jobs=$(nproc) ./
 
       - name: Run Pylint on other files using pytest
@@ -132,8 +132,8 @@ jobs:
             The errors reported with a newer version seem legitimite and should be fixed \
             (2023-10-18, see https://github.com/OSGeo/grass/pull/3205)\
             (2024-01-28, see https://github.com/OSGeo/grass/issues/3380)"
-          export PYTHONPATH=`grass --config python_path`:$PYTHONPATH
-          export LD_LIBRARY_PATH=$(grass --config path)/lib:$LD_LIBRARY_PATH
+          # export PYTHONPATH=`grass --config python_path`:$PYTHONPATH
+          # export LD_LIBRARY_PATH=$(grass --config path)/lib:$LD_LIBRARY_PATH
           pytest --pylint -m pylint --pylint-rcfile=.pylintrc --pylint-jobs=$(nproc) \
             --pylint-ignore-patterns="${{ env.PylintIgnore }}"
         env:
