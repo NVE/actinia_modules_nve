@@ -143,7 +143,6 @@ import hashlib
 import json
 import os
 import sys
-
 from datetime import datetime
 from functools import partial
 from multiprocessing import Pool
@@ -315,7 +314,7 @@ def get_asf_token(token_file=None):
     if token_file.exists():
         try:
             asf_token = token_file.read_text(encoding="UTF8").rstrip()
-        except OSError as error:
+        except OSError:
             gs.fatal(
                 _("Unable to get token from token-file <{}>").format(str(token_file))
             )
