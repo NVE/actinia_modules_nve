@@ -211,9 +211,13 @@ from subprocess import PIPE
 from urllib import parse, request
 
 import grass.script as gs
+import grass.temporal as tgis
 
 # Non-builtin imports
 import numpy as np
+from grass.pygrass.gis.region import Region
+from grass.pygrass.modules.interface import Module
+from grass.temporal.register import register_maps_in_space_time_dataset
 
 
 class CLCCryoDownloader:
@@ -1658,11 +1662,6 @@ if __name__ == "__main__":
     options, flags = gs.parser()
 
     # Lazy imports
-    import grass.temporal as tgis
-    from grass.pygrass.gis.region import Region
-    from grass.pygrass.modules.interface import Module
-    from grass.temporal.register import register_maps_in_space_time_dataset
-
     try:
         from osgeo import gdal, ogr, osr
     except ImportError as import_error:
