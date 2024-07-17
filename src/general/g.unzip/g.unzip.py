@@ -42,7 +42,6 @@ comes with GRASS for details.
 import os
 import sys
 import time
-
 from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
@@ -77,7 +76,7 @@ def unzip_file(file_path, out_dir=None, remove=False):
                 # Extract file
                 with zip_file_object.open(zipped_file) as zip_content:
                     out_file_name.write_bytes(zip_content.read())
-            file_date_time = time.mktime(file_date_time + (0, 0, -1))
+            file_date_time = time.mktime((*file_date_time, 0, 0, -1))
             os.utime(out_file_name, (file_date_time, file_date_time))
 
     if not remove:
