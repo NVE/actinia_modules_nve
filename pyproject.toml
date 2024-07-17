@@ -194,7 +194,8 @@ ignore = [
 "*/testsuite/**.py" = ["PT009", "PT027"]
 "__init__.py" = ["E402"]
 "src/temporal/t.import.hrsi/t.import.hrsi.py" = ["S105", "S107", "S320"]
-
+"src/temporal/t.rast.aggregate.condition/t.rast.aggregate.condition.py" = ["SLF001"]
+"src/temporal/t.rast.aggregate.patch/t.rast.aggregate.patch.py" = ["SLF001"]
 
 [tool.ruff.lint.flake8-import-conventions.extend-aliases]
 # Declare a custom aliases, checked with rule ICN001
