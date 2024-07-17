@@ -80,7 +80,11 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=raw-checker-failed,
+disable=protected-access,
+        duplicate-code,
+        # The above two are deactivated for missing TGIS group function
+        # Reactivate once available in (hopefully GRASS GIS 8.5)
+        raw-checker-failed,
         bad-inline-option,
         locally-disabled,
         file-ignored,
