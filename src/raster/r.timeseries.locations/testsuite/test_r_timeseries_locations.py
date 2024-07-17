@@ -10,9 +10,7 @@ for details.
 
 import os
 
-import grass.pygrass.modules as pymod
 from grass.gunittest.case import TestCase
-from grass.gunittest.gmodules import SimpleModule
 
 
 class TestAggregationAbsolute(TestCase):
@@ -47,7 +45,6 @@ class TestAggregationAbsolute(TestCase):
 
     def tearDown(self):
         """Remove generated data"""
-        pass
         # self.runModule("t.remove", flags="df", type="strds", inputs="B")
 
     def test_reclass_with_null_maps(self):
