@@ -136,10 +136,9 @@ COPYRIGHT:    (C) 2022 by Stefan Blumentrath
 
 import os
 import sys
-
 from functools import partial
-from pathlib import Path
 from multiprocessing import Pool
+from pathlib import Path
 from urllib import parse
 
 # Local imports
@@ -536,10 +535,8 @@ if __name__ == "__main__":
     from grass.pygrass.modules.interface import Module
 
     try:
-        from avaframe.in3Utils import initializeProject
         from avaframe.com1DFA import com1DFA
-        from avaframe.in3Utils import logUtils
-        from avaframe.in3Utils import cfgUtils
+        from avaframe.in3Utils import cfgUtils, initializeProject, logUtils
     except ImportError:
         gs.fatal(_("Unable to load avaframe library"))
     try:
