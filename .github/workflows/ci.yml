@@ -23,7 +23,7 @@ jobs:
         include:
           - grass-version: main
             python-version: '3.10'
-          - grass-version: releasebranch_8_2
+          - grass-version: releasebranch_8_4
             python-version: '3.10'
       fail-fast: false
 
