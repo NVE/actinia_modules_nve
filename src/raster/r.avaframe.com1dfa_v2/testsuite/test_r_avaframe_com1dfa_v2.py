@@ -12,11 +12,8 @@ for details.
 import os
 from subprocess import PIPE
 
-import grass.pygrass.modules as pymod
-from grass.gunittest.case import TestCase
-from grass.gunittest.gmodules import SimpleModule
-from grass.pygrass.modules import Module
 import grass.script as gs
+from grass.gunittest.case import TestCase
 
 
 class TestAvaframeV2(TestCase):
@@ -43,7 +40,6 @@ class TestAvaframeV2(TestCase):
 
     def tearDown(self):
         """Remove generated data"""
-        pass
 
     def test_avaframe_v2(self):
         """Test avaframe v2 with entrainment, resistance and
