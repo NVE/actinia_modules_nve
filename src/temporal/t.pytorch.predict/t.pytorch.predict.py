@@ -190,11 +190,11 @@ ToDo:
 # % required: -e,title,description
 # %end
 
-import os
 import json
+import os
 import sys
-
 from functools import partial
+from itertools import starmap
 from math import floor
 from multiprocessing import Pool
 from pathlib import Path
@@ -202,7 +202,6 @@ from subprocess import PIPE
 
 import grass.script as gs
 from grass.exceptions import CalledModuleError
-from itertools import starmap
 
 TMP_NAME = gs.tempname(12)
 # Get GRASS GIS environment
@@ -279,7 +278,7 @@ def group_to_dict(
             .strip()
             .split()
         )
-    except CalledModuleError as cme:
+    except CalledModuleError:
         gs.fatal(_("Could not parse imagery group <{}>").format(imagery_group_name))
 
     if dict_keys not in ["indices", "map_names", "semantic_labels"]:
