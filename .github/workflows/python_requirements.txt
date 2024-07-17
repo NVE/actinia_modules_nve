@@ -1,3 +1,4 @@
+avaframe
 matplotlib
 numpy
 Pillow
