@@ -20,7 +20,6 @@ COPYRIGHT:    (C) 2020-2023 by Matej Krejci, Tomas Zigo,
 import importlib
 import sys
 
-
 URL = "https://grasswiki.osgeo.org/wiki/ISO/INSPIRE_Metadata_Support"
 
 MODULES = {
