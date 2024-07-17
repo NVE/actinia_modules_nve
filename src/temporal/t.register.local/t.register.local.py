@@ -193,7 +193,6 @@ COPYRIGHT:    (C) 2022 by Stefan Blumentrath
 import os
 import re
 import sys
-
 from copy import deepcopy
 from datetime import datetime
 from functools import partial
@@ -204,7 +203,6 @@ from pathlib import Path
 
 import grass.script as gs
 import grass.temporal as tgis
-
 from grass.pygrass.gis import Mapset
 from grass.pygrass.modules.interface import Module, MultiModule
 from grass.temporal.register import register_maps_in_space_time_dataset
@@ -290,9 +288,9 @@ def parse_semantic_label_conf(conf_file, grass_major_version):
                 )
         else:
             gs.fatal(
-                _(
-                    "Invalid format of semantic label configuration in file <{}>"
-                ).format(conf_file)
+                _("Invalid format of semantic label configuration in file <{}>").format(
+                    conf_file
+                )
             )
 
     return semantic_label
@@ -339,9 +337,7 @@ def map_semantic_labels(
     # Map subdatasets if present
     subdatasets = ds.GetSubDatasets()
     nc_metadata = ds.GetMetadata()
-    geotransforms = [
-        key for key in ds.GetMetadata() if "geotransform" in key.lower()
-    ]
+    geotransforms = [key for key in ds.GetMetadata() if "geotransform" in key.lower()]
     if subdatasets:
         if semantic_label_dict and not any(
             reference[1].split(" ")[1] in semantic_label_dict
@@ -521,12 +517,11 @@ def timestamp_from_filename(file_path, pattern, second_is_stop=False):
                 datetime.strptime(time_string_match[0], pattern),
                 datetime.strptime(time_string_match[1], pattern),
             )
-        else:
-            gs.warning(
-                _(
-                    "No second time stamp found in file <{path}> with pattern {pattern}"
-                ).format(path=file_path, pattern=pattern)
-            )
+        gs.warning(
+            _(
+                "No second time stamp found in file <{path}> with pattern {pattern}"
+            ).format(path=file_path, pattern=pattern)
+        )
     return (
         datetime.strptime(time_string_match[0], pattern),
         None,
@@ -760,7 +755,9 @@ def main():
 
     # Register imported maps in STRDS using register file
     map_file = gs.tempfile()
-    Path(map_file).write_text("\n".join({r_s for r_s in register_string if r_s is not None}))
+    Path(map_file).write_text(
+        "\n".join({r_s for r_s in register_string if r_s is not None})
+    )
 
     register_maps_in_space_time_dataset(
         "raster",
