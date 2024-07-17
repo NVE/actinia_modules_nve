@@ -21,41 +21,41 @@ class TestAggregationAbsolute(TestCase):
         and import data for test case"""
         cls.tempdir = gs.tempdir()
         # Import data
-        gs.run_command(
-            "r.in.gdal",
-            flags="o",
-            input="data/S3_SLSTR_reflectance.tif",
-            output="S3_SLSTR_reflectance",
-            overwrite=True,
-        )
-        # Add semantic labels
-        for band in range(5):
-            band = band + 1
-            # Skip band 4
-            gs.run_command(
-                "r.support",
-                map=f"S3_SLSTR_reflectance.{band}",
-                semantic_label=f"S{band if band < 4 else band + 1}_reflectance_an",
-                overwrite=True,
-            )
-        # Create imagery group
-        gs.run_command(
-            "i.group",
-            group="S3_SLSTR_test_case",
-            input=[f"S3_SLSTR_reflectance.{band + 1}" for band in range(5)],
-            overwrite=True,
-        )
+        # gs.run_command(
+        #     "r.in.gdal",
+        #     flags="o",
+        #     input="data/S3_SLSTR_reflectance.tif",
+        #     output="S3_SLSTR_reflectance",
+        #     overwrite=True,
+        # )
+        # # Add semantic labels
+        # for band in range(5):
+        #     band = band + 1
+        #     # Skip band 4
+        #     gs.run_command(
+        #         "r.support",
+        #         map=f"S3_SLSTR_reflectance.{band}",
+        #         semantic_label=f"S{band if band < 4 else band + 1}_reflectance_an",
+        #         overwrite=True,
+        #     )
+        # # Create imagery group
+        # gs.run_command(
+        #     "i.group",
+        #     group="S3_SLSTR_test_case",
+        #     input=[f"S3_SLSTR_reflectance.{band + 1}" for band in range(5)],
+        #     overwrite=True,
+        # )
 
-        cls.use_temp_region()
-        gs.run_command(
-            "g.region",
-            raster="S3_SLSTR_reflectance.1",
-            n=7719679,
-            e=671015,
-            s=7701760,
-            res=20,
-            flags="ap",
-        )
+        # cls.use_temp_region()
+        # gs.run_command(
+        #     "g.region",
+        #     raster="S3_SLSTR_reflectance.1",
+        #     n=7719679,
+        #     e=671015,
+        #     s=7701760,
+        #     res=20,
+        #     flags="ap",
+        # )
 
     @classmethod
     def tearDownClass(cls):
