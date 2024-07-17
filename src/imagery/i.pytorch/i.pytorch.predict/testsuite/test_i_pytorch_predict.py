@@ -57,11 +57,11 @@ class TestAggregationAbsolute(TestCase):
         #     flags="ap",
         # )
 
-    @classmethod
-    def tearDownClass(cls):
-        """Remove the temporary data"""
-        cls.del_temp_region()
-        gs.run_command("g.remove", type="raster", pattern="S3_SLSTR_reflectance*")
+    # @classmethod
+    # def tearDownClass(cls):
+    #     """Remove the temporary data"""
+    #     cls.del_temp_region()
+    #     gs.run_command("g.remove", type="raster", pattern="S3_SLSTR_reflectance*")
 
     @unittest.skip("Skipping due to lack of test-data")
     def test_torch_prediction_no_tiles(self):
