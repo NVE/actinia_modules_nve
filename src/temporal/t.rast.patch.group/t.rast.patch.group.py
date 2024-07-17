@@ -91,8 +91,11 @@
 # % excludes: -v,-s,-z
 # %end
 
+import sys
+
 import grass.script as gs
 from grass.exceptions import CalledModuleError
+from grass.pygrass.modules import Module
 
 
 def patch_maps(ordered_rasts, patch_flags, output_map, patch_module="r.patch"):
@@ -110,7 +113,6 @@ def main():
     import gs.temporal as tgis
 
     # Get the options
-    input = options["input"]
     output = options["output"]
     where = options["where"]
     sort = options["sort"]
@@ -122,7 +124,6 @@ def main():
     # Make sure the temporal database exists
     dbif = tgis.init()
 
-    rows = sp.get_registered_maps("id", where, "start_time", None)
     # Get list of maps in input STRDS
     input_strds = tgis.open_old_stds(options["input"], "strds", dbif)
 
@@ -185,16 +186,16 @@ def main():
                 row["id"]
             )
 
-    if not rows:
+    if not map_rows:
         gs.warning(_("No maps found to process"))
         sys.exit(0)
     ordered_rasts = []
     # newest images are first
     if sort == "desc":
-        rows_sorted = rows[::-1]
+        rows_sorted = map_rows[::-1]
     # older images are first
     elif sort == "asc":
-        rows_sorted = rows
+        rows_sorted = map_rows
 
     for row in rows_sorted:
         string = str(row["id"])
@@ -219,12 +220,12 @@ def main():
 
     if not add_time:
         # We need to set the temporal extent from the subset of selected maps
-        maps = sp.get_registered_maps_as_objects(
+        maps = input_strds.get_registered_maps_as_objects(
             where=where, order="start_time", dbif=None
         )
         first_map = maps[0]
         last_map = maps[-1]
-        start_a, end_a = first_map.get_temporal_extent_as_tuple()
+        start_a, _end_a = first_map.get_temporal_extent_as_tuple()
         start_b, end_b = last_map.get_temporal_extent_as_tuple()
 
         if end_b is None:
@@ -246,7 +247,7 @@ def main():
             mapset = gs.gisenv()["MAPSET"]
             id = output + "@" + mapset
 
-        map = sp.get_new_map_instance(id)
+        map = input_strds.get_new_map_instance(id)
         map.load()
 
         map.set_temporal_extent(extent=extent)
