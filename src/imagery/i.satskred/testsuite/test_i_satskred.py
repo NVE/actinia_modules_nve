@@ -8,7 +8,6 @@ for details.
 :authors: Stefan Blumentrath
 """
 
-
 import grass.script as gs
 from grass.gunittest.case import TestCase
 
