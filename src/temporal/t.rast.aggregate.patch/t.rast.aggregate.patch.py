@@ -245,9 +245,9 @@ def patch_by_topology(
     count = 0
     current_mapset = get_current_mapset()
 
-    for semantic_label, map_list in map_dict.items():
+    for semantic_label, raster_map_list in map_dict.items():
         topo_builder = SpatioTemporalTopologyBuilder()
-        topo_builder.build(mapsA=granularity_list, mapsB=map_list)
+        topo_builder.build(mapsA=granularity_list, mapsB=raster_map_list)
 
         for granule in granularity_list:
             msgr.percent(count, len(granularity_list), 1)
