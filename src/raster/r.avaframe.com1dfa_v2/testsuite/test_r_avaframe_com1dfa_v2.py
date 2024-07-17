@@ -46,7 +46,7 @@ class TestAvaframeV2(TestCase):
         multiple release thicknesses"""
         avaframe_run = gs.start_command(
             "r.avaframe.com1dfa_v2",
-            flags="er",
+            flags="l",
             id="1",
             url="https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer",
             release_area_layer_id="0",
@@ -64,8 +64,8 @@ class TestAvaframeV2(TestCase):
         )
         stdout, stderr = avaframe_run.communicate()
         stderr = stderr.decode("utf8").lower()
-        gs.warning(stdout)
-        gs.fatal(stderr)
+        gs.warning(str(stdout))
+        gs.warning(str(stderr))
         self.assertFalse("error" in stderr or "traceback" in stderr)
 
 
