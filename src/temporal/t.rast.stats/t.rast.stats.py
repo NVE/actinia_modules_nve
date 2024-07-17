@@ -339,7 +339,7 @@ def main():
     """Do the main work"""
     # Get the options
     input_strds = options["input"]
-    zone = options["zone"].split(",")
+    zone = options["zone"].split(",") if options["zone"] else None
     where = options["where"]
     sep = gs.utils.separator(options["separator"])
     output = Path(options["output"]) if options["output"] else None
@@ -406,7 +406,7 @@ def main():
     if zone:
         for zone_map in zone:
             result = gs.find_file(zone_map, element="raster")
-            if not result["file"]:
+            if not result.get("file"):
                 gs.fatal(_("Zone raster map <{}> not found").format(zone_map))
 
         r_stats_module.inputs.input = zone
