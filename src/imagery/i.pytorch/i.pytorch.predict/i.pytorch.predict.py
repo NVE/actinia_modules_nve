@@ -132,22 +132,19 @@ ToDo:
 
 import atexit
 import json
-import sys
 import re
-
+import sys
 from copy import deepcopy
 from functools import partial
 from itertools import product
 from pathlib import Path
 
 # from multiprocessing import Pool
-
 import grass.script as gs
 from grass.exceptions import CalledModuleError
-from grass.pygrass.raster import raster2numpy, numpy2raster
 from grass.pygrass.gis.region import Region
+from grass.pygrass.raster import numpy2raster, raster2numpy
 from grass.pygrass.vector import Bbox
-
 
 TMP_NAME = gs.tempname(12)
 
@@ -222,7 +219,7 @@ def group_to_dict(
             .strip()
             .split()
         )
-    except CalledModuleError as cme:
+    except CalledModuleError:
         gs.fatal(_("Could not parse imagery group <{}>").format(imagery_group_name))
 
     if dict_keys not in ["indices", "map_names", "semantic_labels"]:
@@ -396,7 +393,7 @@ def read_config(module_options):
             continue
 
         if not module_options[img_group]:
-            if config_key in config and config[config_key]:
+            if config.get(config_key):
                 gs.fatal(
                     _(
                         "{} required according to model configuration but missing from input."
@@ -989,12 +986,12 @@ if __name__ == "__main__":
     gs.utils.set_path(modulename="i.pytorch", dirname="", path="..")
     try:
         from pytorchlib.utils import (
-            # numpy2torch,
-            # torch2numpy,
-            validate_config,
             # transform_axes,
             load_model,
             predict_torch,
+            # numpy2torch,
+            # torch2numpy,
+            validate_config,
         )
     except ImportError:
         gs.fatal(
