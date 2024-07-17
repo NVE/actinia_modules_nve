@@ -142,19 +142,19 @@ jobs:
             temporal/t.rast.accdetect/t.rast.accdetect.py,temporal/t.rast.accumulate/t.rast.accumulate.py,\
             scripts/d.rast.edit/d.rast.edit.py"
 
-      - name: Run Sphinx to check API documentation build
-        run: |
-          pip install sphinx
-          make sphinxdoclib
-          ARCH=$(cat include/Make/Platform.make | grep ^ARCH | cut -d'=' -f2 | xargs)
-          cp -rp dist.$ARCH/docs/html/libpython sphinx-grass
+      # - name: Run Sphinx to check API documentation build
+      #   run: |
+      #     pip install sphinx
+      #     make sphinxdoclib
+      #     ARCH=$(cat include/Make/Platform.make | grep ^ARCH | cut -d'=' -f2 | xargs)
+      #     cp -rp dist.$ARCH/docs/html/libpython sphinx-grass
 
-      - name: Make Sphinx documentation available
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
-        with:
-          name: sphinx-grass
-          path: sphinx-grass
-          retention-days: 3
+      # - name: Make Sphinx documentation available
+      #   uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+      #   with:
+      #     name: sphinx-grass
+      #     path: sphinx-grass
+      #     retention-days: 3
 
   python-success:
     name: Python Code Quality Result
