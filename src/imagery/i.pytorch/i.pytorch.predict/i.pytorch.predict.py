@@ -137,9 +137,9 @@ import sys
 from copy import deepcopy
 from functools import partial
 from itertools import product
+from multiprocessing import Pool
 from pathlib import Path
 
-# from multiprocessing import Pool
 import grass.script as gs
 from grass.exceptions import CalledModuleError
 from grass.pygrass.gis.region import Region
@@ -698,7 +698,6 @@ def write_result(np_array, map_name, bbox):
 
 
 def tiled_prediction(
-    idx,
     bboxes,
     group_dict=None,
     dl_config=None,
@@ -926,17 +925,14 @@ def main():
     )
     nprocs = int(options["nprocs"])
 
-    if device == "cpu":
-        torch.set_num_threads(nprocs)
-    # if nprocs > 1:
-    #    with Pool(nprocs) as pool:
-    #        pool.starmap(tiled_group_rediction, tile_set.items())
-    # else:
-    idx = 0
-    for idx, tile_def in tile_set.items():
-        gs.percent(idx, len(tile_set), 3)
-        tiled_group_rediction(idx, tile_def)
-        idx += 1
+    if device == "cpu" and nprocs > 1:
+        torch.set_num_threads(1)
+        with Pool(nprocs) as pool:
+            pool.map(tiled_group_rediction, tile_set.values())
+    else:
+        for idx, tile_def in enumerate(tile_set.values()):
+            gs.percent(idx, len(tile_set), 3)
+            tiled_group_rediction(tile_def)
 
     # Patch or rename results and write metadata
     for output_band in dl_config["output_bands"]:
@@ -986,11 +982,8 @@ if __name__ == "__main__":
     gs.utils.set_path(modulename="i.pytorch", dirname="", path="..")
     try:
         from pytorchlib.utils import (
-            # transform_axes,
             load_model,
             predict_torch,
-            # numpy2torch,
-            # torch2numpy,
             validate_config,
         )
     except ImportError:
