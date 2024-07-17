@@ -266,9 +266,7 @@ def run_com1dfa(thickness, config_dict=None):
     log.info("Current avalanche: %s", str(avalanche_dir))
 
     # call com1DFA and perform simulations
-    return com1DFA.com1DFAMain(
-        str(avalanche_dir), config_dict["main"], cfgFile=cfg_ini_file
-    )
+    return com1DFA.com1DFAMain(str(avalanche_dir), cfgInfo=cfg_ini_file)
 
 
 def main():
