@@ -25,7 +25,7 @@ class TestAvaframeV2(TestCase):
 
         # Import testdata
         cls.runModule(
-            "r.in.gdal",
+            "r.import",
             input="data/DTM_10m.tif",
             output="DTM_10m",
             overwrite=True,
@@ -64,6 +64,7 @@ class TestAvaframeV2(TestCase):
         )
         stdout, stderr = avaframe_run.communicate()
         stderr = stderr.decode("utf8").lower()
+        print(stdout)
         print(stderr)
         self.assertFalse("error" in stderr or "traceback" in stderr)
 
