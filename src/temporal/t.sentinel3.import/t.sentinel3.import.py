@@ -161,7 +161,6 @@ COPYRIGHT:   (C) 2024 by Norwegian Water and Energy Directorate, Stefan Blumentr
 
 import re
 import sys
-
 from datetime import datetime
 from functools import partial
 from math import floor
@@ -170,7 +169,6 @@ from pathlib import Path
 from subprocess import PIPE
 
 import grass.script as gs
-
 
 S3_FILE_PATTERN = {
     # "S3OL1ERF": None,
