@@ -8,7 +8,6 @@ for details.
 :authors: Stefan Blumentrath
 """
 
-
 from grass.gunittest.case import TestCase
 from grass.gunittest.gmodules import SimpleModule
 
@@ -167,7 +166,7 @@ a3@...|2001-01-17 12:05:45|2001-01-18 12:05:45|3||300||800.000000
 """,
         )
 
-    def test_stats_with_zone_and_label(self):
+    def test_stats_with_zone_label_and_header(self):
         """Test area statistics with one zone map, label and header"""
         stats_module = SimpleModule(
             "t.rast.stats",
