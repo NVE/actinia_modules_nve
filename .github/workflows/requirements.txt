@@ -1,3 +1,5 @@
+avaframe
+asf_search
 matplotlib
 numpy
 six
