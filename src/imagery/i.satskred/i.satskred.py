@@ -123,7 +123,6 @@ time satskred run \
 import json
 import shutil
 import sys
-
 from datetime import datetime
 from pathlib import Path
 
@@ -297,18 +296,14 @@ def main():
     if not output_directory.exists():
         gs.info(_("Initializing input region {}").format(output_directory.name))
         satskred_command = (
-            ["satskred", "init"]
-            + config_list
-            + [str(output_directory)]
-            + list(map(str, [region["w"], region["n"], region["e"], region["s"]]))
-            + ["--areaname", output_directory.name, "--projname", "UTM33N"]
+            ["satskred", "init", *config_list, str(output_directory), *list(map(str, [region["w"], region["n"], region["e"], region["s"]])), "--areaname", output_directory.name, "--projname", "UTM33N"]
         )
 
         gs.verbose(_('Running "{}"').format(" ".join(satskred_command)))
         gs.call(satskred_command)
 
     # Run satskred (for a given time frame)
-    satskred_command = ["satskred", "run"] + config_list
+    satskred_command = ["satskred", "run", *config_list]
     if options["start"]:
         satskred_command.extend(["--starttime", options["start"]])
     if options["end"]:
