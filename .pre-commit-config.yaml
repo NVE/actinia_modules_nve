@@ -46,6 +46,7 @@ repos:
       - id: black-jupyter
         exclude: |
           (?x)^(
+                .tmp
           )
   - repo: https://github.com/pycqa/flake8
     rev: 7.1.0
