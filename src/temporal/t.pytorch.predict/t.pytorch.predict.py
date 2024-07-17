@@ -201,7 +201,10 @@ from pathlib import Path
 from subprocess import PIPE
 
 import grass.script as gs
+import grass.temporal as tgis
 from grass.exceptions import CalledModuleError
+from grass.pygrass.modules.interface import Module
+from grass.temporal.register import register_maps_in_space_time_dataset
 
 TMP_NAME = gs.tempname(12)
 # Get GRASS GIS environment
@@ -914,9 +917,5 @@ if __name__ == "__main__":
         import torch
     except ImportError:
         gs.fatal("Could not import pytorch. Please make sure it is installed")
-
-    import grass.temporal as tgis
-    from grass.pygrass.modules.interface import Module
-    from grass.temporal.register import register_maps_in_space_time_dataset
 
     sys.exit(main())
