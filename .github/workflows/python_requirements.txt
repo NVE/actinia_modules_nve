@@ -1,4 +1,4 @@
-avaframe
+git+https://github.com/avaframe/AvaFrame
 matplotlib
 numpy
 Pillow
