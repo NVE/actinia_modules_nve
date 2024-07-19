@@ -25,11 +25,10 @@ class TestAvaframeV2(TestCase):
 
         # Import testdata
         cls.runModule(
-            "r.import",
+            "r.in.gdal",
+            flags="o",
             input="data/DTM_10m.tif",
             output="DTM_10m",
-            resolution="value",
-            resolution_value=10,
             overwrite=True,
         )
 
