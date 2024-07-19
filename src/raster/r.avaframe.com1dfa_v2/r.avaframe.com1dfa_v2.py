@@ -499,6 +499,7 @@ def main():
         output=str(avalanche_dir / "raster.asc"),
         nodata=-9999,
         format="AAIGrid",
+        createopt="FORCE_CELLSIZE=YES",
         overwrite=True,
         verbose=True,
     )
