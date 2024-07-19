@@ -48,7 +48,7 @@ class TestAvaframeV2(TestCase):
         avaframe_run = gs.start_command(
             "r.avaframe.com1dfa_v2",
             flags="l",
-            id="2",
+            id="8",
             url="https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer",
             release_area_layer_id="0",
             entrainment_area_layer_id="1",
