@@ -28,6 +28,7 @@ class TestAvaframeV2(TestCase):
             "r.import",
             input="data/DTM_10m.tif",
             output="DTM_10m",
+            resolution=10,
             overwrite=True,
         )
 
