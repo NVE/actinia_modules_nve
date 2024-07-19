@@ -1,6 +1,6 @@
 [project]
-name = "grass"
-requires-python = ">=3.9"
+name = "actinia_modules_nve"
+requires-python = ">=3.10"
 
 [tool.black]
 required-version = '24'
