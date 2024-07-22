@@ -143,6 +143,7 @@ from urllib import parse
 
 # Local imports
 import grass.script as gs
+from grass.pygrass.modules.interface import Module
 
 
 def write_avaframe_config(
@@ -366,6 +367,8 @@ def get_shape_file_and_config(area_type, module_config, module_options):
     Allowed area_type "RES" and "ENT"
     See avaframe documentation
     """
+    location_crs = osr.SpatialReference()
+    location_crs.ImportFromProj4(gs.read_command("g.proj", flags="fj"))
     area = "{url}/{layer_id}/query?where=id+%3D+{id}&outFields=*&f=json".format(
         url=module_options["url"],
         layer_id=module_options[
@@ -396,7 +399,10 @@ def get_shape_file_and_config(area_type, module_config, module_options):
             / f"{module_config['release_name']}.shp"
         ),
         ogr_dataset_area,
-        options='-f "ESRI Shapefile"',
+        options=gdal.VectorTranslateOptions(
+            format="ESRI Shapefile",
+            dstSRS=location_crs,
+        ),
     )
 
     return module_config
@@ -533,15 +539,13 @@ if __name__ == "__main__":
     options, flags = gs.parser()
 
     # lazy imports
-    from grass.pygrass.modules.interface import Module
-
     try:
         from avaframe.com1DFA import com1DFA
         from avaframe.in3Utils import cfgUtils, initializeProject, logUtils
     except ImportError:
         gs.fatal(_("Unable to load avaframe library"))
     try:
-        from osgeo import gdal
+        from osgeo import gdal, osr
     except ImportError:
         gs.fatal(_("Unable to load GDAL library"))
     try:
