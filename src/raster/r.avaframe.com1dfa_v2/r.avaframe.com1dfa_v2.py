@@ -371,11 +371,15 @@ def get_shape_file_and_config(area_type, module_config, module_options):
     location_crs.ImportFromWkt(gs.read_command("g.proj", flags="w"))
     area = "{url}/{layer_id}/query?where=id+%3D+{id}&outFields=*&f=json".format(
         url=module_options["url"],
-        layer_id=module_options[
-            {"ENT": "entrainment_area_layer_id", "RES": "resistance_area_layer_id"}[
-                area_type
+        layer_id=(
+            module_options[
+                {"ENT": "entrainment_area_layer_id", "RES": "resistance_area_layer_id"}[
+                    area_type
+                ]
             ]
-        ],
+            if area_type != "REL"
+            else 0
+        ),
         id=module_options["id"],
     )
     ogr_dataset_area = gdal.OpenEx(area, gdal.OF_VECTOR)
@@ -384,9 +388,32 @@ def get_shape_file_and_config(area_type, module_config, module_options):
         ogr_dataset_area = gdal.OpenEx(parse.unquote(area), gdal.OF_VECTOR)
     layer_area = ogr_dataset_area.GetLayerByIndex(0)
     layer_crs = layer_area.GetSpatialRef()
-    config_area = dict(
-        layer_area.GetNextFeature()
-    )  # first feature contains config attributes
+    feat = layer_area.GetNextFeature()
+    if area_type == "REL":
+        crs_transformer = osr.CoordinateTransformation(layer_crs, location_crs)
+        geom = feat.GetGeometryRef()
+        geom.Transform(crs_transformer)
+        release_extent = geom.GetEnvelope()
+        buffer = float(module_options["buffer"])
+        region = gs.parse_command(
+            "g.region",
+            flags="g",
+            align=module_options["elevation"],
+            n=release_extent[3] + buffer,
+            s=release_extent[2] - buffer,
+            e=release_extent[1] + buffer,
+            w=release_extent[0] - buffer,
+        )
+        release_shape = str(
+            module_config["avalanche_dir"] / f"{module_config['release_name']}.shp"
+        )
+    else:
+        release_shape = str(
+            module_config["avalanche_dir"]
+            / area_type
+            / f"{module_config['release_name']}.shp"
+        )
+    config_area = dict(feat)  # first feature contains config attributes
     entries_to_remove = ("OBJECTID", "Id", "Shape__Area", "Shape__Length")
     for key in entries_to_remove:
         if key in config_area:
@@ -394,11 +421,7 @@ def get_shape_file_and_config(area_type, module_config, module_options):
     module_config.update(config_area)
     (module_config["avalanche_dir"] / area_type).mkdir(parents=True, exist_ok=True)
     ds = gdal.VectorTranslate(
-        str(
-            module_config["avalanche_dir"]
-            / area_type
-            / f"{module_config['release_name']}.shp"
-        ),
+        release_shape,
         ogr_dataset_area,
         format="ESRI Shapefile",
         dstSRS=location_crs,
@@ -406,7 +429,8 @@ def get_shape_file_and_config(area_type, module_config, module_options):
         reproject=True,
     )
     ds = None
-
+    if area_type == "REL":
+        return module_config, region
     return module_config
 
 
@@ -432,26 +456,7 @@ def main():
                 _("Directory <{}> is not writable").format(options["export_directory"])
             )
 
-    # Get release area
-    release_area = "{url}/{layerId}/query?where=id+%3D+{id}&outFields=*&f=json".format(
-        url=options["url"], layerId=options["release_area_layer_id"], id=options["id"]
-    )
-    ogr_dataset_release_area = gdal.OpenEx(release_area, gdal.OF_VECTOR)
-
-    # actinia requires input URLs to be quoted if eg & is used
-    if not ogr_dataset_release_area:
-        ogr_dataset_release_area = gdal.OpenEx(
-            parse.unquote(release_area), gdal.OF_VECTOR
-        )
-    layer_release_area = ogr_dataset_release_area.GetLayerByIndex(0)
-    release_extent = (
-        layer_release_area.GetExtent()
-    )  # Extent is west, east, south, north
-    config = dict(
-        layer_release_area.GetNextFeature()
-    )  # first feature contains config attributes
-
-    release_name = f"com1DFAV2{config['id']}"
+    release_name = f"com1DFAV2{options['id']}"
 
     # Define directory for simulations
     avalanche_dir = Path(gs.tempfile(create=False))
@@ -459,19 +464,16 @@ def main():
     # Create simulation base directory
     (avalanche_dir).mkdir(mode=0o777, parents=True, exist_ok=True)
 
-    # Set relevant region from release area, buffer and DTM
-    region = gs.parse_command(
-        "g.region",
-        flags="g",
-        align=options["elevation"],
-        n=release_extent[3] + buffer,
-        s=release_extent[2] - buffer,
-        e=release_extent[1] + buffer,
-        w=release_extent[0] - buffer,
-    )
+    config = {
+        "avalanche_dir": avalanche_dir,
+        "release_name": release_name,
+        "nCPU": options["nprocs"],
+    }
+
+    # Get release area
+    config, region = get_shape_file_and_config("REL", config, options)
 
     config["mesh_cell_size"] = region["nsres"]
-    config["avalanche_dir"] = avalanche_dir
     config["frictionModel"] = friction_model_dict[config["frictionModel"]]
 
     # Configue avaframe
@@ -482,8 +484,6 @@ def main():
     config_main["MAIN"]["avalancheDir"] = str(avalanche_dir)
 
     config["main"] = config_main
-    config["release_name"] = release_name
-    config["nCPU"] = options["nprocs"]
 
     # Get entrainment area
     if options["entrainment_area_layer_id"]:
@@ -492,13 +492,6 @@ def main():
     # Get resistance area
     if options["resistance_area_layer_id"]:
         config = get_shape_file_and_config("RES", config, options)
-
-    # Write release area to shape
-    gdal.VectorTranslate(
-        str(avalanche_dir / f"{release_name}.shp"),
-        ogr_dataset_release_area,
-        options='-f "ESRI Shapefile"',
-    )
 
     # Export DTM to ASCII
     Module(
