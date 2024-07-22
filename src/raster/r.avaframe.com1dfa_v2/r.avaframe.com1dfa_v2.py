@@ -368,7 +368,7 @@ def get_shape_file_and_config(area_type, module_config, module_options):
     See avaframe documentation
     """
     location_crs = osr.SpatialReference()
-    location_crs.ImportFromProj4(gs.read_command("g.proj", flags="fj"))
+    location_crs.ImportFromWkt(gs.read_command("g.proj", flags="w"))
     area = "{url}/{layer_id}/query?where=id+%3D+{id}&outFields=*&f=json".format(
         url=module_options["url"],
         layer_id=module_options[
@@ -393,7 +393,7 @@ def get_shape_file_and_config(area_type, module_config, module_options):
             del config_area[key]
     module_config.update(config_area)
     (module_config["avalanche_dir"] / area_type).mkdir(parents=True, exist_ok=True)
-    gdal.VectorTranslate(
+    ds = gdal.VectorTranslate(
         str(
             module_config["avalanche_dir"]
             / area_type
@@ -405,6 +405,7 @@ def get_shape_file_and_config(area_type, module_config, module_options):
         srcSRS=layer_crs,
         reproject=True,
     )
+    ds = None
 
     return module_config
 
