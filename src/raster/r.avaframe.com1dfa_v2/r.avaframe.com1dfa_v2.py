@@ -383,6 +383,7 @@ def get_shape_file_and_config(area_type, module_config, module_options):
     if not ogr_dataset_area:
         ogr_dataset_area = gdal.OpenEx(parse.unquote(area), gdal.OF_VECTOR)
     layer_area = ogr_dataset_area.GetLayerByIndex(0)
+    layer_crs = layer_area.GetSpatialRef()
     config_area = dict(
         layer_area.GetNextFeature()
     )  # first feature contains config attributes
@@ -399,10 +400,10 @@ def get_shape_file_and_config(area_type, module_config, module_options):
             / f"{module_config['release_name']}.shp"
         ),
         ogr_dataset_area,
-        options=gdal.VectorTranslateOptions(
-            format="ESRI Shapefile",
-            dstSRS=location_crs,
-        ),
+        format="ESRI Shapefile",
+        dstSRS=location_crs,
+        srcSRS=layer_crs,
+        reproject=True,
     )
 
     return module_config
