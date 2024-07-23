@@ -1,13 +1,13 @@
 #! /usr/bin/python3
 """
-  MODULE:    g.unzip
-  AUTHOR(S): Stefan Blumentrath
-  PURPOSE:	 Unzip zip-files in a directory in parallel
-  COPYRIGHT: (C) 2023 by Stefan Blumentrath and the GRASS Development Team
+MODULE:    g.unzip
+AUTHOR(S): Stefan Blumentrath
+PURPOSE:	 Unzip zip-files in a directory in parallel
+COPYRIGHT: (C) 2023 by Stefan Blumentrath and the GRASS Development Team
 
-  This program is free software under the GNU General
-  Public License (>=v2). Read the file COPYING that
-  comes with GRASS for details.
+This program is free software under the GNU General
+Public License (>=v2). Read the file COPYING that
+comes with GRASS for details.
 """
 
 # %module
@@ -42,7 +42,6 @@
 import os
 import sys
 import time
-
 from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
@@ -58,10 +57,7 @@ def unzip_file(file_path, out_dir=None, remove=False):
 
     gs.verbose(_("Unzipping {}").format(str(file_path)))
 
-    if not out_dir:
-        out_dir = Path("./")
-    else:
-        out_dir = Path(out_dir)
+    out_dir = Path("./") if not out_dir else Path(out_dir)
 
     with ZipFile(file_path) as zip_file_object:
         for zipped_file in zip_file_object.infolist():
@@ -78,10 +74,9 @@ def unzip_file(file_path, out_dir=None, remove=False):
                 if not out_file_name.parent.exists():
                     out_file_name.parent.mkdir(parents=True, exist_ok=True)
                 # Extract file
-                with open(out_file_name, "wb") as out_file:
-                    with zip_file_object.open(zipped_file) as zip_content:
-                        out_file.write(zip_content.read())
-            file_date_time = time.mktime(file_date_time + (0, 0, -1))
+                with zip_file_object.open(zipped_file) as zip_content:
+                    out_file_name.write_bytes(zip_content.read())
+            file_date_time = time.mktime((*file_date_time, 0, 0, -1))
             os.utime(out_file_name, (file_date_time, file_date_time))
 
     if not remove:

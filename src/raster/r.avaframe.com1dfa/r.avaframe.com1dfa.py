@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 
 """
- MODULE:       r.avaframe.com1dfa
- AUTHOR(S):    Stefan Blumentrath
- PURPOSE:      Run com1dfa avalanche simulations using AvaFrame
- COPYRIGHT:    (C) 2022 by Stefan Blumentrath
+MODULE:       r.avaframe.com1dfa
+AUTHOR(S):    Stefan Blumentrath
+PURPOSE:      Run com1dfa avalanche simulations using AvaFrame
+COPYRIGHT:    (C) 2022 by Stefan Blumentrath
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
 """
 
@@ -104,10 +104,9 @@
 
 import os
 import sys
-
 from functools import partial
-from pathlib import Path
 from multiprocessing import Pool
+from pathlib import Path
 from urllib import parse
 
 # Local imports
@@ -267,9 +266,7 @@ def run_com1dfa(thickness, config_dict=None):
     log.info("Current avalanche: %s", str(avalanche_dir))
 
     # call com1DFA and perform simulations
-    return com1DFA.com1DFAMain(
-        str(avalanche_dir), config_dict["main"], cfgFile=cfg_ini_file
-    )
+    return com1DFA.com1DFAMain(str(avalanche_dir), cfgInfo=cfg_ini_file)
 
 
 def main():
@@ -291,11 +288,11 @@ def main():
     if options["export_directory"]:
         if not Path(options["export_directory"]).exists():
             gs.fatal(
-                _("Directory <{}> does not exist".format(options["export_directory"]))
+                _("Directory <{}> does not exist").format(options["export_directory"])
             )
         if not os.access(options["export_directory"], os.W_OK):
             gs.fatal(
-                _("Directory <{}> is not writable".format(options["export_directory"]))
+                _("Directory <{}> is not writable").format(options["export_directory"])
             )
 
     # Get release area
@@ -379,7 +376,6 @@ def main():
     )
 
     if options["format"]:
-
         if options["format"] == "json":
             print(com1dfa_results_pd.to_json())
         if options["format"] == "csv":
@@ -426,10 +422,8 @@ if __name__ == "__main__":
     from grass.pygrass.modules.interface import Module
 
     try:
-        from avaframe.in3Utils import initializeProject
         from avaframe.com1DFA import com1DFA
-        from avaframe.in3Utils import logUtils
-        from avaframe.in3Utils import cfgUtils
+        from avaframe.in3Utils import cfgUtils, initializeProject, logUtils
     except ImportError:
         gs.fatal(_("Unable to load avaframe library"))
     try:

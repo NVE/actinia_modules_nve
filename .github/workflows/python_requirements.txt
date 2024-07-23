@@ -1,5 +1,6 @@
 git+https://github.com/ninsbl/AvaFrame@np2
-asf_search
 matplotlib
 numpy
-six
+Pillow
+ply
+asf_search

@@ -1,3 +1,4 @@
+git+https://github.com/ninsbl/AvaFrame@np2
 scipy
 pandas
 scikit-learn

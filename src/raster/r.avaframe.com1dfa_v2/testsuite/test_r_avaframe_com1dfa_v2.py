@@ -8,14 +8,12 @@ for details.
 
 :authors: Stefan Blumentrath
 """
+
 import os
 from subprocess import PIPE
 
-import grass.pygrass.modules as pymod
-from grass.gunittest.case import TestCase
-from grass.gunittest.gmodules import SimpleModule
-from grass.pygrass.modules import Module
 import grass.script as gs
+from grass.gunittest.case import TestCase
 
 
 class TestAvaframeV2(TestCase):
@@ -27,9 +25,11 @@ class TestAvaframeV2(TestCase):
 
         # Import testdata
         cls.runModule(
-            "r.in.gdal",
+            "r.import",
             input="data/DTM_10m.tif",
             output="DTM_10m",
+            resolution="value",
+            resolution_value=10,
             overwrite=True,
         )
 
@@ -42,15 +42,14 @@ class TestAvaframeV2(TestCase):
 
     def tearDown(self):
         """Remove generated data"""
-        pass
 
     def test_avaframe_v2(self):
         """Test avaframe v2 with entrainment, resistance and
         multiple release thicknesses"""
         avaframe_run = gs.start_command(
             "r.avaframe.com1dfa_v2",
-            flags="er",
-            id="1",
+            flags="l",
+            id="2",
             url="https://gis3.nve.no/arcgis/rest/services/featureservice/AlarmInput/FeatureServer",
             release_area_layer_id="0",
             entrainment_area_layer_id="1",
@@ -67,7 +66,8 @@ class TestAvaframeV2(TestCase):
         )
         stdout, stderr = avaframe_run.communicate()
         stderr = stderr.decode("utf8").lower()
-        print(stderr)
+        gs.warning(str(stdout))
+        gs.warning(str(stderr))
         self.assertFalse("error" in stderr or "traceback" in stderr)
 
 

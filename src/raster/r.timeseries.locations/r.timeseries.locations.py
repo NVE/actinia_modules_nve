@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 
 """
- MODULE:       r.timeseries.locations
- AUTHOR(S):    Stefan Blumentrath
- PURPOSE:      Manage locations for time series in NVE time series DB
- COPYRIGHT:    (C) 2023 by Stefan Blumentrath
+MODULE:       r.timeseries.locations
+AUTHOR(S):    Stefan Blumentrath
+PURPOSE:      Manage locations for time series in NVE time series DB
+COPYRIGHT:    (C) 2023 by Stefan Blumentrath
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
 """
 
@@ -136,13 +136,11 @@
 
 import os
 import sys
-
 from functools import partial
 from subprocess import PIPE
 
-import numpy as np
-
 import grass.script as gs
+import numpy as np
 
 
 def round_to_closest(x, y):
@@ -156,7 +154,6 @@ def keepass_to_env(
     keepass_file, keepass_pwd, title, username_var, password_var, first=True
 ):
     """Write KeePass entries into environment variables"""
-    from pykeepass import PyKeePass
 
     kp = PyKeePass(keepass_file, password=keepass_pwd)
     entry = kp.find_entries(title=title, first=first)

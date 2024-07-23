@@ -7,12 +7,11 @@ for details.
 
 :authors: Yngve Antonsen
 """
+
 import os
 
 import grass.script as gs
-
 from grass.gunittest.case import TestCase
-from grass.gunittest.gmodules import SimpleModule
 
 
 class TestAggregationAbsolute(TestCase):

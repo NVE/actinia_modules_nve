@@ -145,22 +145,22 @@ GNU General Public License for more details.
 import sys
 from copy import deepcopy
 from io import StringIO
-import grass.script as gs
-import grass.pygrass.modules as pymod
-import grass.temporal as tgis
 
-from grass.temporal.space_time_datasets import RasterDataset
-from grass.temporal.datetime_math import (
-    create_suffix_from_datetime,
-    create_time_suffix,
-    create_numeric_suffix,
-)
+import grass.pygrass.modules as pymod
+import grass.script as gs
+import grass.temporal as tgis
 from grass.temporal.core import (
     get_current_mapset,
     get_tgis_message_interface,
     init_dbif,
 )
+from grass.temporal.datetime_math import (
+    create_numeric_suffix,
+    create_suffix_from_datetime,
+    create_time_suffix,
+)
 from grass.temporal.open_stds import open_old_stds
+from grass.temporal.space_time_datasets import RasterDataset
 from grass.temporal.spatio_temporal_relationships import SpatioTemporalTopologyBuilder
 
 
@@ -245,10 +245,9 @@ def patch_by_topology(
     count = 0
     current_mapset = get_current_mapset()
 
-    for semantic_label, map_list in map_dict.items():
-
+    for semantic_label, raster_map_list in map_dict.items():
         topo_builder = SpatioTemporalTopologyBuilder()
-        topo_builder.build(mapsA=granularity_list, mapsB=map_list)
+        topo_builder.build(mapsA=granularity_list, mapsB=raster_map_list)
 
         for granule in granularity_list:
             msgr.percent(count, len(granularity_list), 1)
@@ -261,32 +260,41 @@ def patch_by_topology(
 
             # Handle semantic labels (one granule per semantic label)
             if "equal" in topo_list and granule.equal:
-                for map_layer in granule.equal:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "contains" in topo_list and granule.contains:
-                for map_layer in granule.contains:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "during" in topo_list and granule.during:
-                for map_layer in granule.during:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "starts" in topo_list and granule.starts:
-                for map_layer in granule.starts:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "started" in topo_list and granule.started:
-                for map_layer in granule.started:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "finishes" in topo_list and granule.finishes:
-                for map_layer in granule.finishes:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "finished" in topo_list and granule.finished:
-                for map_layer in granule.finished:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "overlaps" in topo_list and granule.overlaps:
-                for map_layer in granule.overlaps:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
             if "overlapped" in topo_list and granule.overlapped:
-                for map_layer in granule.overlapped:
-                    aggregation_list.append(map_layer.get_name())
+                aggregation_list.extend(
+                    [map_layer.get_name() for map_layer in granule.equal]
+                )
 
             if aggregation_list:
                 msgr.verbose(
@@ -302,9 +310,7 @@ def patch_by_topology(
                 )
 
                 if granule.is_time_absolute() is True and time_suffix == "gran":
-                    suffix = create_suffix_from_datetime(
-                        start_time, granularity
-                    )
+                    suffix = create_suffix_from_datetime(start_time, granularity)
                 elif granule.is_time_absolute() is True and time_suffix == "time":
                     suffix = create_time_suffix(granule)
 
@@ -321,7 +327,7 @@ def patch_by_topology(
                 map_layer = RasterDataset(f"{output_name}@{current_mapset}")
                 # map_layer.set_temporal_extent(granule.get_temporal_extent())
                 # map_layer.set_semantic_label(semantic_label)
-                
+
                 if map_layer.map_exists() is True and overwrite is False:
                     msgr.fatal(
                         _(
@@ -331,12 +337,16 @@ def patch_by_topology(
                         ).format(name=output_name)
                     )
 
-                output_list.append("|".join([
-                    f"{output_name}@{current_mapset}",
-                    start_time.isoformat(),
-                    end_time.isoformat(),
-                    semantic_label,
-                ]))
+                output_list.append(
+                    "|".join(
+                        [
+                            f"{output_name}@{current_mapset}",
+                            start_time.isoformat(),
+                            end_time.isoformat(),
+                            semantic_label,
+                        ]
+                    )
+                )
 
                 if sort == "desc":
                     aggregation_list.reverse()

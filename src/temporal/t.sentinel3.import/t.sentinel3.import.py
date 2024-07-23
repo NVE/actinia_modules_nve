@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
 """
- MODULE:      t.sentinel3.import
- AUTHOR(S):   Stefan Blumentrath
- PURPOSE:     Import and pre-process Sentinel-3 data from the Copernicus program
-              into a Space Time Raster Dataset (STRDS)
- COPYRIGHT:   (C) 2024 by Norwegian Water and Energy Directorate, Stefan Blumentrath,
-              and the GRASS development team
+MODULE:      t.sentinel3.import
+AUTHOR(S):   Stefan Blumentrath
+PURPOSE:     Import and pre-process Sentinel-3 data from the Copernicus program
+             into a Space Time Raster Dataset (STRDS)
+COPYRIGHT:   (C) 2024 by Norwegian Water and Energy Directorate, Stefan Blumentrath,
+             and the GRASS development team
 
-              This program is free software under the GNU General Public
-              License (>=v2). Read the file COPYING that comes with GRASS
-              for details.
+             This program is free software under the GNU General Public
+             License (>=v2). Read the file COPYING that comes with GRASS
+             for details.
 """
 
 # %Module
@@ -159,10 +159,8 @@
 # % required: -e,title,description
 # %end
 
-
 import re
 import sys
-
 from datetime import datetime
 from functools import partial
 from math import floor
@@ -171,7 +169,6 @@ from pathlib import Path
 from subprocess import PIPE
 
 import grass.script as gs
-
 
 S3_FILE_PATTERN = {
     # "S3OL1ERF": None,

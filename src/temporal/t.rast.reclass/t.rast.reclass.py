@@ -122,14 +122,12 @@
 #   https://grass.osgeo.org/grass83/manuals/libpython/_modules/temporal/register.html#register_maps_in_space_time_dataset
 
 import sys
-
 from copy import deepcopy
 from multiprocessing import Pool
 from pathlib import Path
 
 import grass.script as gs
 from grass.pygrass.modules import Module
-
 
 ############################################################################
 
@@ -269,7 +267,7 @@ def main():
 
     if not map_list:
         dbif.close()
-        gs.warning(_("Space time raster dataset <{}> is empty".format(input)))
+        gs.warning(_("Space time raster dataset <{}> is empty").format(input))
         return
 
     # We will create the strds later, but need to check here
@@ -337,8 +335,9 @@ def main():
 
         # Register reclassified maps
         register_file_path = gs.tempfile(create=False)
-        with open(register_file_path, "w") as register_file:
-            register_file.write("\n".join([ol for ol in output_list if ol]))
+        Path(register_file_path).write_text(
+            "\n".join([ol for ol in output_list if ol]), encoding="UTF8"
+        )
         tgis.register_maps_in_space_time_dataset(
             "raster",
             output,

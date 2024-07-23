@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 
 """
- MODULE:       i.asf.download
- AUTHOR(S):    Yngve Antonsen, Stefan Blumentrath (parallelization and additional checks)
- PURPOSE:      Searches and Downloads SAR data from the Alaska Satellite Facility
- COPYRIGHT:	(C) 2023 by NVE, Yngve Antonsen
+MODULE:       i.asf.download
+AUTHOR(S):    Yngve Antonsen, Stefan Blumentrath (parallelization and additional checks)
+PURPOSE:      Searches and Downloads SAR data from the Alaska Satellite Facility
+COPYRIGHT:	(C) 2023 by NVE, Yngve Antonsen
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 """
 
 # %Module
@@ -143,7 +143,6 @@ import hashlib
 import json
 import os
 import sys
-
 from datetime import datetime
 from functools import partial
 from multiprocessing import Pool
@@ -311,13 +310,14 @@ def get_asf_token(token_file=None):
     # Get authentication
     asf_token = os.environ.get("ASF_TOKEN")
 
-    token_file = token_file or os.path.expanduser("~/.asf_token")
-    if os.path.exists(token_file):
+    token_file = Path(token_file or os.path.expanduser("~/.asf_token"))
+    if token_file.exists():
         try:
-            with open(token_file, "r", encoding="UTF8") as asf_token_file:
-                asf_token = asf_token_file.read().rstrip()
-        except OSError as error:
-            raise error
+            asf_token = token_file.read_text(encoding="UTF8").rstrip()
+        except OSError:
+            gs.fatal(
+                _("Unable to get token from token-file <{}>").format(str(token_file))
+            )
     if not asf_token:
         gs.fatal(
             _(
@@ -363,13 +363,12 @@ def checkout_results(
 ):
     """Helper function for checking, printing and logging search results"""
 
-    if len(result_set) == 0:
-        if not log_results:
-            if initial_scenes:
-                gs.info(_("All {} scenes previously downloaded").format(initial_scenes))
-            else:
-                gs.info(_("No results found with given search criteria"))
-            sys.exit()
+    if len(result_set) == 0 and not log_results:
+        if initial_scenes:
+            gs.info(_("All {} scenes previously downloaded").format(initial_scenes))
+        else:
+            gs.info(_("No results found with given search criteria"))
+        sys.exit()
 
     if initial_scenes:
         gs.verbose(

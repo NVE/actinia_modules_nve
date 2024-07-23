@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 
 """
- MODULE:       t.register.local
- AUTHOR(S):    Stefan Blumentrath
- PURPOSE:      Register raster data files from the local file system in a
-               Space Time Raster Dataset (STRDS)
- COPYRIGHT:    (C) 2022 by Stefan Blumentrath
+MODULE:       t.register.local
+AUTHOR(S):    Stefan Blumentrath
+PURPOSE:      Register raster data files from the local file system in a
+              Space Time Raster Dataset (STRDS)
+COPYRIGHT:    (C) 2022 by Stefan Blumentrath
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
 """
 
@@ -193,7 +193,6 @@
 import os
 import re
 import sys
-
 from copy import deepcopy
 from datetime import datetime
 from functools import partial
@@ -204,7 +203,6 @@ from pathlib import Path
 
 import grass.script as gs
 import grass.temporal as tgis
-
 from grass.pygrass.gis import Mapset
 from grass.pygrass.modules.interface import Module, MultiModule
 from grass.temporal.register import register_maps_in_space_time_dataset
@@ -216,8 +214,7 @@ def legalize_name_string(string):
     :param string: string to modify if needed
     :return: modified string
     """
-    legal_string = re.sub(r"[^\w\d-]+|[^\x00-\x7F]+|[ -/\\]+", "_", string)
-    return legal_string
+    return re.sub(r"[^\w\d-]+|[^\x00-\x7F]+|[ -/\\]+", "_", string)
 
 
 def strftime_to_regex(string):
@@ -268,40 +265,33 @@ def parse_semantic_label_conf(conf_file, grass_major_version):
     semantic_label = {}
     if not os.access(conf_file, os.R_OK):
         gs.fatal(
-            _(
-                "Cannot read configuration file <{conf_file}>".format(
-                    conf_file=conf_file
-                )
+            _("Cannot read configuration file <{conf_file}>").format(
+                conf_file=conf_file
             )
         )
 
-    with open(conf_file, "r") as c_file:
-        configuration = c_file.read()
-        for idx, line in enumerate(configuration.split("\n")):
-            if line.startswith("#") or line == "":
-                continue
-            if len(line.split("=")) == 2:
-                line = line.split("=")
-                # Check if assigned semantic label has legal a name
-                if grass_major_version < 8 or Rast_legal_semantic_label(line[1]) == 1:
-                    semantic_label[line[0]] = line[1]
-                else:
-                    gs.fatal(
-                        _(
-                            "Line {line_nr} in configuration file <{conf_file}> "
-                            "contains an illegal band name".format(
-                                line_nr=idx + 1, conf_file=conf_file
-                            )
-                        )
-                    )
+    configuration = Path(conf_file).read_text()
+    for idx, line in enumerate(configuration.split("\n")):
+        if line.startswith("#") or line == "":
+            continue
+        if len(line.split("=")) == 2:
+            line = line.split("=")
+            # Check if assigned semantic label has legal a name
+            if grass_major_version < 8 or Rast_legal_semantic_label(line[1]) == 1:
+                semantic_label[line[0]] = line[1]
             else:
                 gs.fatal(
                     _(
-                        "Invalid format of semantic label configuration in file <{}>".format(
-                            conf_file
-                        )
-                    )
+                        "Line {line_nr} in configuration file <{conf_file}> "
+                        "contains an illegal band name"
+                    ).format(line_nr=idx + 1, conf_file=conf_file)
                 )
+        else:
+            gs.fatal(
+                _("Invalid format of semantic label configuration in file <{}>").format(
+                    conf_file
+                )
+            )
 
     return semantic_label
 
@@ -341,21 +331,17 @@ def map_semantic_labels(
 
     ds = gdal.Open(raster_dataset)
     if not ds:
-        gs.warning(_("Cannot open dataset <{}>".format(raster_dataset)))
+        gs.warning(_("Cannot open dataset <{}>").format(raster_dataset))
         return []
 
     # Map subdatasets if present
     subdatasets = ds.GetSubDatasets()
     nc_metadata = ds.GetMetadata()
-    geotransforms = [
-        key for key in ds.GetMetadata().keys() if "geotransform" in key.lower()
-    ]
+    geotransforms = [key for key in ds.GetMetadata() if "geotransform" in key.lower()]
     if subdatasets:
         if semantic_label_dict and not any(
-            [
-                reference[1].split(" ")[1] in semantic_label_dict
-                for reference in subdatasets
-            ]
+            reference[1].split(" ")[1] in semantic_label_dict
+            for reference in subdatasets
         ):
             gs.warning(_("No subdatasets to import."))
             return []
@@ -510,9 +496,8 @@ def create_vrt(subdataset, gisenv, nodata, geotransform, recreate=False):
     if geotransform:
         vrt.SetGeoTransform(geotransform)
     vrt = None
-    vrt = vrt_name
 
-    return vrt
+    return vrt_name
 
 
 def timestamp_from_filename(file_path, pattern, second_is_stop=False):
@@ -532,12 +517,11 @@ def timestamp_from_filename(file_path, pattern, second_is_stop=False):
                 datetime.strptime(time_string_match[0], pattern),
                 datetime.strptime(time_string_match[1], pattern),
             )
-        else:
-            gs.warning(
-                _(
-                    "No second time stamp found in file <{path}> with pattern {pattern}"
-                ).format(path=file_path, pattern=pattern)
-            )
+        gs.warning(
+            _(
+                "No second time stamp found in file <{path}> with pattern {pattern}"
+            ).format(path=file_path, pattern=pattern)
+        )
     return (
         datetime.strptime(time_string_match[0], pattern),
         None,
@@ -567,7 +551,7 @@ def import_data(
     )
     suffix = (
         f"_{import_tuple[2]}"
-        if import_tuple[2] and not import_tuple[2] in import_tuple[0]
+        if import_tuple[2] and import_tuple[2] not in import_tuple[0]
         else ""
     )
     output_name = (
@@ -588,7 +572,7 @@ def import_data(
     try:
         MultiModule(list(mods.values())).run()
     except:
-        gs.warning(_("Cannot register file <{}>".format(import_tuple[0])))
+        gs.warning(_("Cannot register file <{}>").format(import_tuple[0]))
         return None
 
     return (
@@ -771,8 +755,9 @@ def main():
 
     # Register imported maps in STRDS using register file
     map_file = gs.tempfile()
-    with open(map_file, "w") as m_f:
-        m_f.write("\n".join({r_s for r_s in register_string if r_s is not None}))
+    Path(map_file).write_text(
+        "\n".join({r_s for r_s in register_string if r_s is not None})
+    )
 
     register_maps_in_space_time_dataset(
         "raster",

@@ -121,13 +121,12 @@ COPYRIGHT:	(C) 2023 by NVE, Stefan Blumentrath
 import sys
 from datetime import datetime
 from functools import partial
+from itertools import starmap
 from multiprocessing import Pool
 from pathlib import Path
 
-
-import numpy as np
-
 import grass.script as gs
+import numpy as np
 
 
 def get_raster_gdalpath(map_name, check_linked=True):
@@ -292,8 +291,8 @@ def get_target_geometry(bpol, geojson_file=None, crs_wkt=None):
         for bpol_geom in bpol:
             if bpol_geom.GetGeometryCount() <= 0:
                 bpol_geom = [bpol_geom]
-            for geom_n in bpol_geom:
-                point_arrays.append(
+            point_arrays.extend(
+                [
                     np.array(
                         [
                             crs_transformer.TransformPoint(
@@ -303,14 +302,16 @@ def get_target_geometry(bpol, geojson_file=None, crs_wkt=None):
                             for vertex_id in range(geom_n.GetPointCount())
                         ]
                     )[:, 0:2]
-                )
+                    for geom_n in bpol_geom
+                ]
+            )
         if len(point_arrays) > 1:
             point_arrays = np.concatenate(point_arrays, axis=0)
         else:
             point_arrays = point_arrays[0]
         return point_arrays
 
-    return np.array([crs_transformer.TransformPoint(*point) for point in bpol])[:, 0:2]
+    return np.array(list(starmap(crs_transformer.TransformPoint, bpol)))[:, 0:2]
 
 
 def gdar_geocode(
@@ -431,7 +432,6 @@ def gdar_geocode(
     # Geocode
     gec = geocoding(s1_file, dem, order=3, out_type=out_type, grid=grid)
 
-    #
     register_strings = []
     for polarization in polarizations:
         map_name = f"{s1_file_path.stem}_{suffix}_{polarization}_{out_type}_{track}_{direction}"
@@ -522,7 +522,7 @@ if __name__ == "__main__":
     try:
         from gdar import rastertools
         from gdar.fileformats import write_crs
-        from gdar.gridtools import is_descending, build_crsgrid
+        from gdar.gridtools import build_crsgrid, is_descending
         from gdar.readers import reader, sentinel1_orbit
         from gdargeocoding.geocode import geocoding
     except ImportError:
@@ -533,7 +533,7 @@ if __name__ == "__main__":
         )
 
     try:
-        from osgeo import ogr, osr, gdal
+        from osgeo import gdal, ogr, osr
 
     except ImportError:
         gs.fatal(

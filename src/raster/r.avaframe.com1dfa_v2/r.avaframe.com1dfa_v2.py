@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 
 """
- MODULE:       r.avaframe.com1dfa
- AUTHOR(S):    Stefan Blumentrath and Yngve Antonsen
- PURPOSE:      Run com1dfa avalanche simulations using AvaFrame
- COPYRIGHT:    (C) 2022 by Stefan Blumentrath
+MODULE:       r.avaframe.com1dfa
+AUTHOR(S):    Stefan Blumentrath and Yngve Antonsen
+PURPOSE:      Run com1dfa avalanche simulations using AvaFrame
+COPYRIGHT:    (C) 2022 by Stefan Blumentrath
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
 """
 
@@ -136,14 +136,14 @@
 
 import os
 import sys
-
 from functools import partial
-from pathlib import Path
 from multiprocessing import Pool
+from pathlib import Path
 from urllib import parse
 
 # Local imports
 import grass.script as gs
+from grass.pygrass.modules.interface import Module
 
 
 def write_avaframe_config(
@@ -285,7 +285,6 @@ def import_result(asc_path):
 
 
 def convert_result(asc_path, config=None, results_df=None, directory="/tmp"):
-
     """Convert ascii file to GeoTiff"""
     result_prefix = {
         "pft": "MaxFlowThickness",
@@ -368,13 +367,19 @@ def get_shape_file_and_config(area_type, module_config, module_options):
     Allowed area_type "RES" and "ENT"
     See avaframe documentation
     """
+    location_crs = osr.SpatialReference()
+    location_crs.ImportFromWkt(gs.read_command("g.proj", flags="w"))
     area = "{url}/{layer_id}/query?where=id+%3D+{id}&outFields=*&f=json".format(
         url=module_options["url"],
-        layer_id=module_options[
-            {"ENT": "entrainment_area_layer_id", "RES": "resistance_area_layer_id"}[
-                area_type
+        layer_id=(
+            module_options[
+                {"ENT": "entrainment_area_layer_id", "RES": "resistance_area_layer_id"}[
+                    area_type
+                ]
             ]
-        ],
+            if area_type != "REL"
+            else 0
+        ),
         id=module_options["id"],
     )
     ogr_dataset_area = gdal.OpenEx(area, gdal.OF_VECTOR)
@@ -382,25 +387,50 @@ def get_shape_file_and_config(area_type, module_config, module_options):
     if not ogr_dataset_area:
         ogr_dataset_area = gdal.OpenEx(parse.unquote(area), gdal.OF_VECTOR)
     layer_area = ogr_dataset_area.GetLayerByIndex(0)
-    config_area = dict(
-        layer_area.GetNextFeature()
-    )  # first feature contains config attributes
+    layer_crs = layer_area.GetSpatialRef()
+    feat = layer_area.GetNextFeature()
+    if area_type == "REL":
+        crs_transformer = osr.CoordinateTransformation(layer_crs, location_crs)
+        geom = feat.GetGeometryRef()
+        geom.Transform(crs_transformer)
+        release_extent = geom.GetEnvelope()
+        buffer = float(module_options["buffer"])
+        region = gs.parse_command(
+            "g.region",
+            flags="g",
+            align=module_options["elevation"],
+            n=release_extent[3] + buffer,
+            s=release_extent[2] - buffer,
+            e=release_extent[1] + buffer,
+            w=release_extent[0] - buffer,
+        )
+        release_shape = str(
+            module_config["avalanche_dir"] / f"{module_config['release_name']}.shp"
+        )
+    else:
+        release_shape = str(
+            module_config["avalanche_dir"]
+            / area_type
+            / f"{module_config['release_name']}.shp"
+        )
+    config_area = dict(feat)  # first feature contains config attributes
     entries_to_remove = ("OBJECTID", "Id", "Shape__Area", "Shape__Length")
     for key in entries_to_remove:
         if key in config_area:
             del config_area[key]
     module_config.update(config_area)
     (module_config["avalanche_dir"] / area_type).mkdir(parents=True, exist_ok=True)
-    gdal.VectorTranslate(
-        str(
-            module_config["avalanche_dir"]
-            / area_type
-            / f"{module_config['release_name']}.shp"
-        ),
+    ds = gdal.VectorTranslate(
+        release_shape,
         ogr_dataset_area,
-        options='-f "ESRI Shapefile"',
+        format="ESRI Shapefile",
+        dstSRS=location_crs,
+        srcSRS=layer_crs,
+        reproject=True,
     )
-
+    ds = None
+    if area_type == "REL":
+        return module_config, region
     return module_config
 
 
@@ -419,33 +449,14 @@ def main():
     if options["export_directory"]:
         if not Path(options["export_directory"]).exists():
             gs.fatal(
-                _("Directory <{}> does not exist".format(options["export_directory"]))
+                _("Directory <{}> does not exist").format(options["export_directory"])
             )
         if not os.access(options["export_directory"], os.W_OK):
             gs.fatal(
-                _("Directory <{}> is not writable".format(options["export_directory"]))
+                _("Directory <{}> is not writable").format(options["export_directory"])
             )
 
-    # Get release area
-    release_area = "{url}/{layerId}/query?where=id+%3D+{id}&outFields=*&f=json".format(
-        url=options["url"], layerId=options["release_area_layer_id"], id=options["id"]
-    )
-    ogr_dataset_release_area = gdal.OpenEx(release_area, gdal.OF_VECTOR)
-
-    # actinia requires input URLs to be quoted if eg & is used
-    if not ogr_dataset_release_area:
-        ogr_dataset_release_area = gdal.OpenEx(
-            parse.unquote(release_area), gdal.OF_VECTOR
-        )
-    layer_release_area = ogr_dataset_release_area.GetLayerByIndex(0)
-    release_extent = (
-        layer_release_area.GetExtent()
-    )  # Extent is west, east, south, north
-    config = dict(
-        layer_release_area.GetNextFeature()
-    )  # first feature contains config attributes
-
-    release_name = f"com1DFAV2{config['id']}"
+    release_name = f"com1DFAV2{options['id']}"
 
     # Define directory for simulations
     avalanche_dir = Path(gs.tempfile(create=False))
@@ -453,19 +464,16 @@ def main():
     # Create simulation base directory
     (avalanche_dir).mkdir(mode=0o777, parents=True, exist_ok=True)
 
-    # Set relevant region from release area, buffer and DTM
-    region = gs.parse_command(
-        "g.region",
-        flags="g",
-        align=options["elevation"],
-        n=release_extent[3] + buffer,
-        s=release_extent[2] - buffer,
-        e=release_extent[1] + buffer,
-        w=release_extent[0] - buffer,
-    )
+    config = {
+        "avalanche_dir": avalanche_dir,
+        "release_name": release_name,
+        "nCPU": options["nprocs"],
+    }
+
+    # Get release area
+    config, region = get_shape_file_and_config("REL", config, options)
 
     config["mesh_cell_size"] = region["nsres"]
-    config["avalanche_dir"] = avalanche_dir
     config["frictionModel"] = friction_model_dict[config["frictionModel"]]
 
     # Configue avaframe
@@ -476,8 +484,6 @@ def main():
     config_main["MAIN"]["avalancheDir"] = str(avalanche_dir)
 
     config["main"] = config_main
-    config["release_name"] = release_name
-    config["nCPU"] = options["nprocs"]
 
     # Get entrainment area
     if options["entrainment_area_layer_id"]:
@@ -487,13 +493,6 @@ def main():
     if options["resistance_area_layer_id"]:
         config = get_shape_file_and_config("RES", config, options)
 
-    # Write release area to shape
-    gdal.VectorTranslate(
-        str(avalanche_dir / f"{release_name}.shp"),
-        ogr_dataset_release_area,
-        options='-f "ESRI Shapefile"',
-    )
-
     # Export DTM to ASCII
     Module(
         "r.out.gdal",
@@ -501,6 +500,7 @@ def main():
         output=str(avalanche_dir / "raster.asc"),
         nodata=-9999,
         format="AAIGrid",
+        createopt="FORCE_CELLSIZE=YES",
         overwrite=True,
         verbose=True,
     )
@@ -508,7 +508,6 @@ def main():
     com1dfa_results_pd = pd.DataFrame(run_com1dfa(config_dict=config)[3])
 
     if options["format"]:
-
         if options["format"] == "json":
             print(com1dfa_results_pd.to_json())
         if options["format"] == "csv":
@@ -535,17 +534,13 @@ if __name__ == "__main__":
     options, flags = gs.parser()
 
     # lazy imports
-    from grass.pygrass.modules.interface import Module
-
     try:
-        from avaframe.in3Utils import initializeProject
         from avaframe.com1DFA import com1DFA
-        from avaframe.in3Utils import logUtils
-        from avaframe.in3Utils import cfgUtils
+        from avaframe.in3Utils import cfgUtils, initializeProject, logUtils
     except ImportError:
         gs.fatal(_("Unable to load avaframe library"))
     try:
-        from osgeo import gdal
+        from osgeo import gdal, osr
     except ImportError:
         gs.fatal(_("Unable to load GDAL library"))
     try:

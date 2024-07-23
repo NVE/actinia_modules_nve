@@ -7,9 +7,9 @@ for details.
 
 :authors: Stefan Blumentrath
 """
+
 import os
 
-import grass.pygrass.modules as pymod
 from grass.gunittest.case import TestCase
 from grass.gunittest.gmodules import SimpleModule
 
@@ -45,7 +45,6 @@ class TestAggregationAbsolute(TestCase):
 
     def tearDown(self):
         """Remove generated data"""
-        pass
 
     def test_reclass_with_null_maps(self):
         """Reclassify and register also maps with only NoData"""

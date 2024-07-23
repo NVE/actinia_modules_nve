@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 
 """
- MODULE:       i.pytorch.predict
- AUTHOR(S):    Stefan Blumentrath
- PURPOSE:      Apply Deep Learning model to imagery group using pytorch
- COPYRIGHT:    (C) 2023-2024 by Norwegian Water and Energy Directorate
-               (NVE), Stefan Blumentrath and the GRASS GIS Development Team
+MODULE:       i.pytorch.predict
+AUTHOR(S):    Stefan Blumentrath
+PURPOSE:      Apply Deep Learning model to imagery group using pytorch
+COPYRIGHT:    (C) 2023-2024 by Norwegian Water and Energy Directorate
+              (NVE), Stefan Blumentrath and the GRASS GIS Development Team
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
- ToDo:
- - tiling from vector map (to avoid unnecessary data reads outside core AOI)
- - test case
+ToDo:
+- tiling from vector map (to avoid unnecessary data reads outside core AOI)
+- test case
 """
 
 # %module
@@ -130,25 +130,21 @@
 # - Handle divisible by x (e.g. 8) for tile size to avoid:
 #     RuntimeError: Sizes of tensors must match except in dimension 1
 
-
 import atexit
 import json
-import sys
 import re
-
+import sys
 from copy import deepcopy
 from functools import partial
 from itertools import product
+from multiprocessing import Pool
 from pathlib import Path
-
-# from multiprocessing import Pool
 
 import grass.script as gs
 from grass.exceptions import CalledModuleError
-from grass.pygrass.raster import raster2numpy, numpy2raster
 from grass.pygrass.gis.region import Region
+from grass.pygrass.raster import numpy2raster, raster2numpy
 from grass.pygrass.vector import Bbox
-
 
 TMP_NAME = gs.tempname(12)
 
@@ -223,8 +219,8 @@ def group_to_dict(
             .strip()
             .split()
         )
-    except CalledModuleError as cme:
-        raise cme
+    except CalledModuleError:
+        gs.fatal(_("Could not parse imagery group <{}>").format(imagery_group_name))
 
     if dict_keys not in ["indices", "map_names", "semantic_labels"]:
         raise ValueError(f"Invalid dictionary keys <{dict_keys}> requested")
@@ -397,7 +393,7 @@ def read_config(module_options):
             continue
 
         if not module_options[img_group]:
-            if config_key in config and config[config_key]:
+            if config.get(config_key):
                 gs.fatal(
                     _(
                         "{} required according to model configuration but missing from input."
@@ -491,7 +487,7 @@ def read_config(module_options):
         mask_rules_list = []
         for idx, mask_config in enumerate(mask_rules.values()):
             raster_map, rules = list(mask_config.items())[0]
-            if any([symbol in rules for symbol in "<>=,"]):
+            if any(symbol in rules for symbol in "<>=,"):
                 mask_rules_list.extend(
                     [f"{raster_map}{rule}" for rule in rules.split(",")]
                 )
@@ -702,7 +698,6 @@ def write_result(np_array, map_name, bbox):
 
 
 def tiled_prediction(
-    idx,
     bboxes,
     group_dict=None,
     dl_config=None,
@@ -930,17 +925,14 @@ def main():
     )
     nprocs = int(options["nprocs"])
 
-    if device == "cpu":
-        torch.set_num_threads(nprocs)
-    # if nprocs > 1:
-    #    with Pool(nprocs) as pool:
-    #        pool.starmap(tiled_group_rediction, tile_set.items())
-    # else:
-    idx = 0
-    for idx, tile_def in tile_set.items():
-        gs.percent(idx, len(tile_set), 3)
-        tiled_group_rediction(idx, tile_def)
-        idx += 1
+    if device == "cpu" and nprocs > 1:
+        torch.set_num_threads(1)
+        with Pool(nprocs) as pool:
+            pool.map(tiled_group_rediction, tile_set.values())
+    else:
+        for idx, tile_def in enumerate(tile_set.values()):
+            gs.percent(idx, len(tile_set), 3)
+            tiled_group_rediction(tile_def)
 
     # Patch or rename results and write metadata
     for output_band in dl_config["output_bands"]:
@@ -981,25 +973,22 @@ if __name__ == "__main__":
     try:
         import torch
     except ImportError:
-        gs.fatal(("Could not import pytorch. Please make sure it is installed."))
+        gs.fatal(_("Could not import pytorch. Please make sure it is installed."))
     try:
         import numpy as np
     except ImportError:
-        gs.fatal(("Could not import pytorch. Please make sure it is installed."))
+        gs.fatal(_("Could not import pytorch. Please make sure it is installed."))
 
     gs.utils.set_path(modulename="i.pytorch", dirname="", path="..")
     try:
         from pytorchlib.utils import (
-            # numpy2torch,
-            # torch2numpy,
-            validate_config,
-            # transform_axes,
             load_model,
             predict_torch,
+            validate_config,
         )
     except ImportError:
         gs.fatal(
-            (
+            _(
                 "Could not import included unet library. Please check the addon installation."
             )
         )

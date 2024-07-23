@@ -173,22 +173,21 @@ GNU General Public License for more details.
 import sys
 from copy import deepcopy
 
-import grass.script as gs
 import grass.pygrass.modules as pymod
+import grass.script as gs
 import grass.temporal as tgis
-
-from grass.temporal.space_time_datasets import RasterDataset
-from grass.temporal.datetime_math import (
-    create_suffix_from_datetime,
-    create_time_suffix,
-    create_numeric_suffix,
-)
 from grass.temporal.core import (
     get_current_mapset,
     get_tgis_message_interface,
     init_dbif,
 )
+from grass.temporal.datetime_math import (
+    create_numeric_suffix,
+    create_suffix_from_datetime,
+    create_time_suffix,
+)
 from grass.temporal.open_stds import open_old_stds
+from grass.temporal.space_time_datasets import RasterDataset
 from grass.temporal.spatio_temporal_relationships import SpatioTemporalTopologyBuilder
 
 
@@ -538,7 +537,7 @@ def get_registered_maps_grouped(
             if connection_state_changed:
                 dbif.close()
             stds.msgr.error(
-                _("Unable to get map ids from register table " "<{}>").format(
+                _("Unable to get map ids from register table <{}>").format(
                     stds.get_map_register()
                 )
             )
