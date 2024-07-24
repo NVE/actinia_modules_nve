@@ -507,7 +507,7 @@ class CLCCryoDownloader:
         credits_file = Path(credits_file or os.path.expanduser("~/.cryo_land"))
         if credits_file.exists():
             try:
-                user, password = credits_file.strip().read_text().split("\n", 1)
+                user, password = credits_file.read_text().strip().split("\n", 1)
             except OSError:
                 gs.fatal(
                     _("Unable to get credentials from credentials file {}").format(
