@@ -197,8 +197,9 @@ def predict_torch(data_cube, config_dict=None, device=None, dl_model=None):
 
 def not_in_types(data_type, allowed_types):
     """Check if data_type is not an element of allowed_types"""
+
     allowed_types = (
-        tuple(allowed_types) if isinstance(allowed_types, type) else allowed_types
+        (allowed_types,) if isinstance(allowed_types, type) else allowed_types
     )
     if data_type is None:
         data_type_str = "'None'"
