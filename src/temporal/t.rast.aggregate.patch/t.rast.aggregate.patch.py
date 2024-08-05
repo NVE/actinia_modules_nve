@@ -245,6 +245,7 @@ def patch_by_topology(
     count = 0
     current_mapset = get_current_mapset()
 
+    # Handle semantic labels (one granule_list per semantic label)
     for semantic_label, raster_map_list in map_dict.items():
         topo_builder = SpatioTemporalTopologyBuilder()
         topo_builder.build(mapsA=granularity_list, mapsB=raster_map_list)
@@ -253,48 +254,20 @@ def patch_by_topology(
             msgr.percent(count, len(granularity_list), 1)
             count += 1
 
-            start_time = granule.temporal_extent.get_start_time()
-            end_time = granule.temporal_extent.get_end_time()
+            start_time, end_time = granule.get_temporal_extent_as_tuple()
 
             aggregation_list = []
 
-            # Handle semantic labels (one granule per semantic label)
-            if "equal" in topo_list and granule.equal:
-                aggregation_list.extend(
-                    [map_layer.get_name() for map_layer in granule.equal]
-                )
-            if "contains" in topo_list and granule.contains:
-                aggregation_list.extend(
-                    [map_layer.get_name() for map_layer in granule.equal]
-                )
-            if "during" in topo_list and granule.during:
-                aggregation_list.extend(
-                    [map_layer.get_name() for map_layer in granule.equal]
-                )
-            if "starts" in topo_list and granule.starts:
-                aggregation_list.extend(
-                    [map_layer.get_name() for map_layer in granule.equal]
-                )
-            if "started" in topo_list and granule.started:
-                aggregation_list.extend(
-                    [map_layer.get_name() for map_layer in granule.equal]
-                )
-            if "finishes" in topo_list and granule.finishes:
-                aggregation_list.extend(
-                    [map_layer.get_name() for map_layer in granule.equal]
-                )
-            if "finished" in topo_list and granule.finished:
-                aggregation_list.extend(
-                    [map_layer.get_name() for map_layer in granule.equal]
-                )
-            if "overlaps" in topo_list and granule.overlaps:
-                aggregation_list.extend(
-                    [map_layer.get_name() for map_layer in granule.equal]
-                )
-            if "overlapped" in topo_list and granule.overlapped:
-                aggregation_list.extend(
-                    [map_layer.get_name() for map_layer in granule.equal]
-                )
+            for topology in topo_list:
+                matching_objects = getattr(granule, topology)
+                # Check if any maps are temporally related to the granule with the given topology
+                if matching_objects:
+                    aggregation_list.extend(
+                        [map_layer.get_name() for map_layer in matching_objects]
+                    )
+            # Reset Spatio-Temporal-Topology
+            granule.set_spatial_topology_build_false()
+            granule.set_temporal_topology_build_false()
 
             if aggregation_list:
                 msgr.verbose(
