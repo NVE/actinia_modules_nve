@@ -68,7 +68,7 @@ class TestAggregationAbsolute(TestCase):
         test_product = "SARWetSnow"
         self.assertModule(
             "t.import.hrsi",
-            flags="f",
+            flags="fw",
             product_type=test_product,
             aoi="./data/aoi.geojson",
             start_time="2023-04-05T00:00:00",

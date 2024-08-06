@@ -257,7 +257,7 @@ class CLCCryoDownloader:
         #: Attribute for storing a dictionary with the access token for downloading Copernicus Cryosphere data
         self.token = {}
         #: Attribute containg directory to which data is downloaded or written to
-        self.output_directory = output_directory
+        self.output_directory = Path(output_directory)
         # Check if download directory is writable
         check_permissions(self.output_directory, "Download")
         #: Attribute containg a maximum number for retries for incomplete downloads (may happen if connection is closed prematurely or empty chunk of data is send
@@ -407,7 +407,6 @@ class CLCCryoDownloader:
 
     def fetch_data(self, query_params, product_metadata):
         """Wrapper method to execute download in batches"""
-        check_permissions(self.output_directory, "Download")
         # Minimize pageing
         query_params["maxRecords"] = self.batch_size
         batches_n = int(
@@ -569,7 +568,7 @@ class CLCCryoDownloader:
                     if hrsi_file.endswith("xml")
                 ][0]
                 zip_data = zip_file.read(hrsi_file_xml)
-                hrsi_file_path = Path(self.output_directory) / Path(hrsi_file_xml).name
+                hrsi_file_path = self.output_directory / Path(hrsi_file_xml).name
                 hrsi_file_path.write_bytes(zip_data)
 
                 # temporal extend is not consistently represented in the
@@ -593,7 +592,7 @@ class CLCCryoDownloader:
                         continue
 
                     zip_data = zip_file.read(hrsi_file)
-                    hrsi_file_path = Path(self.output_directory) / Path(hrsi_file).name
+                    hrsi_file_path = self.output_directory / Path(hrsi_file).name
                     hrsi_file_path.write_bytes(zip_data)
                     map_name = legalize_name_string(hrsi_file_path.stem)
                     full_map_name = f"{map_name}@{self.gisenv['MAPSET']}"
