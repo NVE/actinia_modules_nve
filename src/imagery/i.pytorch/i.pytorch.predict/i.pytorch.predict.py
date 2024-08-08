@@ -926,14 +926,14 @@ def main():
     )
     nprocs = int(options["nprocs"])
 
-    if device == "cpu" and nprocs > 1:
-        torch.set_num_threads(1)
-        with Pool(nprocs) as pool:
-            pool.map(tiled_group_rediction, tile_set.values())
-    else:
-        for idx, tile_def in enumerate(tile_set.values()):
-            gs.percent(idx, len(tile_set), 3)
-            tiled_group_rediction(tile_def)
+    if device == "cpu":  # and nprocs > 1:
+        torch.set_num_threads(nprocs)
+        # with Pool(nprocs) as pool:
+        #     pool.map(tiled_group_rediction, tile_set.values())
+    # else:
+    for idx, tile_def in enumerate(tile_set.values()):
+        gs.percent(idx, len(tile_set), 3)
+        tiled_group_rediction(tile_def)
 
     # Patch or rename results and write metadata
     for output_band in dl_config["output_bands"]:
@@ -973,14 +973,15 @@ if __name__ == "__main__":
     # Lazy imports
     try:
         import torch
-        from torch.multiprocessing import Pool, set_start_method
+
+        # from torch.multiprocessing import Pool, set_start_method
     except ImportError:
         gs.fatal(_("Could not import pytorch. Please make sure it is installed."))
 
-    try:
-        set_start_method("spawn")
-    except RuntimeError:
-        pass
+    # try:
+    #     set_start_method("spawn")
+    # except RuntimeError:
+    #     pass
 
     try:
         import numpy as np
