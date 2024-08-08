@@ -137,7 +137,8 @@ import sys
 from copy import deepcopy
 from functools import partial
 from itertools import product
-from multiprocessing import Pool
+
+# from multiprocessing import Pool
 from pathlib import Path
 
 import grass.script as gs
@@ -972,8 +973,15 @@ if __name__ == "__main__":
     # Lazy imports
     try:
         import torch
+        from torch.multiprocessing import Pool, set_start_method
     except ImportError:
         gs.fatal(_("Could not import pytorch. Please make sure it is installed."))
+
+    try:
+        set_start_method("spawn")
+    except RuntimeError:
+        pass
+
     try:
         import numpy as np
     except ImportError:
