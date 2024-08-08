@@ -413,7 +413,7 @@ def read_config(module_options):
                 ]
                 if mask_pattern_match:
                     mask_rules[semantic_label] = {
-                        raster_map: masks[mask_pattern_match[0]]
+                        raster_map: masks[mask_pattern_match[0].string]
                     }
 
             for label in config[config_key]:
