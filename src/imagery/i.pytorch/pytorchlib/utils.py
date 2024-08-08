@@ -21,6 +21,7 @@ COPYRIGHT:    (C) 2023 by Stefan Blumentrath
 import inspect
 import json
 import sys
+from copy import deepcopy
 from importlib import import_module
 
 import grass.script as gs
@@ -108,8 +109,11 @@ def numpy2torch(np_array, device="cpu", precision="float"):
 def torch2numpy(torch_tensor):
     """Create numpy array from torch variable"""
     if torch_tensor.device != "cpu":
-        return torch.Tensor.cpu(torch_tensor).numpy()
-    return torch_tensor.numpy()
+        torch_tensor_numpy = deepcopy(torch.Tensor.cpu(torch_tensor).numpy())
+    else:
+        torch_tensor_numpy = deepcopy(torch_tensor.numpy())
+    del torch_tensor
+    return torch_tensor_numpy
 
 
 def load_model_code(package_dir, object_name):
@@ -175,7 +179,7 @@ def predict_torch(data_cube, config_dict=None, device=None, dl_model=None):
     with torch.no_grad():
         data = numpy2torch(data_cube).to(device)
         torch_out = dl_model(data)
-
+        del data
         # Apply extra ouptut transformations
         if "extra_ouptut_transformations" in config_dict["model"]:
             if "apply_softmax" in config_dict["model"]["extra_ouptut_transformations"]:
