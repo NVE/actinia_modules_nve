@@ -794,7 +794,7 @@ def patch_results(
     if len(input_maps) == 1:
         gs.run_command(
             "g.rename",
-            raster=f"{input_maps[0]},{output_map_name}",
+            raster=f"{input_maps[0]},{patch_map_name}",
             quiet=True,
         )
     else:
