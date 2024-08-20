@@ -174,8 +174,13 @@ ToDo:
 # %end
 
 # %flag
-# %key: l
+# % key: l
 # % description: Limit output to valid range (data outside the valid range is set to valid min/max)
+# %end
+
+# %flag
+# % key: s
+# % description: Skip incomplete groups (do not fail)
 # %end
 
 # # %flag
@@ -703,6 +708,7 @@ def process_scene_group(
     basename=None,
     module_options=None,
     torch_flags=None,
+    skip_incomplete=False,
 ):
     """Create an imagery group from semantic labels of a temporal extent and
     run a pytorch prediction on the imagery group"""
@@ -755,7 +761,13 @@ def process_scene_group(
         ]
         return "\n".join(register_strings)
     except RuntimeError as error:
-        gs.fatal(
+        if not skip_incomplete:
+            gs.fatal(
+                _(
+                    "Failed to produce output for {output_name} with the following error message: {error}."
+                ).format(output_name=output_name, error=error)
+            )
+        gs.warning(
             _(
                 "Failed to produce output for {output_name} with the following error message: {error}."
             ).format(output_name=output_name, error=error)
