@@ -428,7 +428,10 @@ def read_config(module_options):
             if not band_pattern_match:
                 continue
 
-            if raster_map_info["min"] and raster_map_info["max"]:
+            if (
+                raster_map_info["min"] is not None
+                and raster_map_info["max"] is not None
+            ):
                 # Check valid range of non-empty input maps
                 valid_range = config[config_key][matched_label]["valid_range"]
                 if (
@@ -644,6 +647,11 @@ def read_bands(raster_map_dict, bbox, null_value=0):
                 max_value = np.inf
             npa = np.clip(npa, min_value, max_value)
 
+        gs.debug(
+            f"Before scaling:\n{raster_map_dict[band_number][0]}\n"
+            f"min: {np.nanmin(npa):.3f}\nmean: {np.nanmean(npa):.3f}\n"
+            f"max: {np.nanmax(npa):.3f}"
+        )
         # Abort if (any) map only contains nan
         if np.nansum(npa) == 0:
             return None, None
@@ -655,6 +663,12 @@ def read_bands(raster_map_dict, bbox, null_value=0):
         # Apply scale
         if raster_map_dict[band_number][2]["scale"] != 1:
             npa = npa * np.array(raster_map_dict[band_number][2]["scale"])
+
+        gs.debug(
+            f"After scaling:\n{raster_map_dict[band_number][0]}\n"
+            f"min: {np.nanmin(npa):.3f}\nmean: {np.nanmean(npa):.3f}\n"
+            f"max: {np.nanmax(npa):.3f}"
+        )
 
         data_cube.append(npa)
     data_cube = np.stack(data_cube, axis=-1)
@@ -711,7 +725,13 @@ def tiled_prediction(
     if data_cube is None:
         return None
     prediction_result = predict_torch(
-        data_cube, config_dict=dl_config, device=device, dl_model=dl_model
+        data_cube, model_config=dl_config["model"], device=device, dl_model=dl_model
+    )
+    gs.debug(
+        f"Raw output: min: {np.nanmin(prediction_result)}"
+        f"mean: {np.nanmean(prediction_result)}"
+        f"max: {np.nanmax(prediction_result)}"
+        f"shape: {prediction_result.shape}"
     )
     inner_mask = get_inner_bbox(mask, bboxes["outer"], bboxes["inner"])
     prediction_result = get_inner_bbox(
@@ -719,12 +739,20 @@ def tiled_prediction(
     )
 
     # Write each output band
+    gs.debug(dl_config["output_bands"])
     for idx, output_band in enumerate(dl_config["output_bands"]):
         output_dtype = dl_config["output_bands"][output_band]["dtype"]
         # Clip result to valid output range
         if dl_config["output_bands"][output_band]["valid_output_range"]:
             if limit:
                 out_numpy = prediction_result[..., idx]
+                gs.debug(
+                    f"Output {output_band} before scaling clipping:"
+                    f"min: {np.nanmin(prediction_result[..., idx])}"
+                    f"mean: {np.nanmean(prediction_result[..., idx])}"
+                    f"max: {np.nanmax(prediction_result[..., idx])}"
+                    f"shape: {prediction_result[..., idx].shape}"
+                )
                 # Limit to valid min
                 out_numpy[
                     out_numpy
@@ -755,6 +783,12 @@ def tiled_prediction(
             # out_numpy[np.isnan(out_numpy)] = dl_config["output_bands"][output_band]["fill_value"]
         else:
             out_numpy[inner_mask] = np.nan
+
+        gs.debug(
+            f"Output: min: {np.nanmin(out_numpy)}"
+            f"mean: {np.nanmean(out_numpy)}"
+            f"max: {np.nanmax(out_numpy)}"
+        )
 
         if out_numpy.dtype != np.dtype(output_dtype):
             if output_dtype.startswith("float"):
