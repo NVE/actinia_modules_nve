@@ -519,6 +519,7 @@ def build_group_dict(
                 "input": group_dict,
                 "reference_group": reference_dict,
             }
+
     return maps_dict
 
 
@@ -734,7 +735,7 @@ def process_scene_group(
             **module_options,
             flags=torch_flags,
             run_=False,
-            # stderr_=PIPE,
+            stderr_=PIPE,
             quiet=True,
         )
         for group in ["input", "reference_group"]:
@@ -745,9 +746,10 @@ def process_scene_group(
                     input=list(map_dict[group].values()),
                     quiet=True,
                 )
+                gs.debug(f"Maps in {group}: {', '.join(map_dict[group].values())}")
                 torch_mod.inputs[group].value = f"{TMP_NAME}_{group}_{output_name}"
         torch_mod.run()
-
+        gs.debug(torch_mod.outputs.stderr)
         register_strings = [
             "|".join(
                 [
@@ -760,17 +762,23 @@ def process_scene_group(
             for output_band, band_dict in output_bands.items()
         ]
         return "\n".join(register_strings)
-    except RuntimeError as error:
+    except Exception:
         if not skip_incomplete:
             gs.fatal(
                 _(
                     "Failed to produce output for {output_name} with the following error message: {error}."
-                ).format(output_name=output_name, error=error)
+                ).format(
+                    output_name=output_name,
+                    error=torch_mod.outputs["stderr"].value.strip(),
+                )
             )
+            return None
         gs.warning(
             _(
                 "Failed to produce output for {output_name} with the following error message: {error}."
-            ).format(output_name=output_name, error=error)
+            ).format(
+                output_name=output_name, error=torch_mod.outputs["stderr"].value.strip()
+            )
         )
         return None
 
@@ -883,6 +891,7 @@ def main():
         module_options=module_options,
         basename=options["basename"],
         torch_flags=torch_flags,
+        skip_incomplete=flags["s"],
     )
 
     # Run predictions and collect
@@ -907,7 +916,13 @@ def main():
 
     # Write registration file with unique lines
     tmp_file = Path(gs.tempfile(create=False))
-    tmp_file.write_text("\n".join(register_strings) + "\n", encoding="UTF8")
+    tmp_file.write_text(
+        "\n".join(
+            register_string for register_string in register_strings if register_string
+        )
+        + "\n",
+        encoding="UTF8",
+    )
 
     # Register results in output STRDS
     register_maps_in_space_time_dataset(
