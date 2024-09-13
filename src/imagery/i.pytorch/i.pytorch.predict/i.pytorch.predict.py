@@ -145,7 +145,7 @@ import grass.script as gs
 from grass.exceptions import CalledModuleError
 from grass.pygrass.gis.region import Region
 from grass.pygrass.raster import numpy2raster, raster2numpy
-from grass.pygrass.vector import Bbox
+from grass.pygrass.vector import Bbox, VectorTopo
 
 TMP_NAME = gs.tempname(12)
 
@@ -523,6 +523,53 @@ def apply_mask(input_map, output_map, fill_value, masking):
         else input_map
     )
     gs.mapcalc(f"{output_map}={valid_pixels}")
+
+
+def create_tiling_from_vector(vector_map, overlap=128, region=None):
+    """Create tiling aligned to a given or current region with
+    tiles of a fixed number of rows and column and at least
+    overlap number of pixels around
+    Returns a dictionary with inner and outer region of a tile
+    """
+    tiling_dict = {}
+    vector_map = VectorTopo(vector_map)
+    vector_map.open(mode="r")
+    for area in vector_map.find_by_bbox.areas(bbox=Region().get_bbox()):
+        bbox = area.bbox()
+        reg_outer = gs.parse_command(
+            "g.region",
+            flags="ug",
+            n=bbox.north,
+            s=bbox.south,
+            e=bbox.east,
+            w=bbox.west,
+            grow=overlap,
+        )
+        tiling_dict[area.cat] = {
+            "inner": {
+                "cat": area.cat,
+                "n": bbox.north,
+                "s": bbox.south,
+                "w": bbox.west,
+                "e": bbox.east,
+                "rows": int(reg_outer["rows"]) - 2 * overlap,
+                "cols": int(reg_outer["cols"]) - 2 * overlap,
+                "ewres": reg_outer["ewres"],
+                "nsres": reg_outer["nsres"],
+            },
+            "outer": {
+                "n": float(reg_outer["n"]),
+                "s": float(reg_outer["s"]),
+                "w": float(reg_outer["w"]),
+                "e": float(reg_outer["e"]),
+                "rows": int(reg_outer["rows"]),
+                "cols": int(reg_outer["cols"]),
+                "ewres": reg_outer["ewres"],
+                "nsres": reg_outer["nsres"],
+            },
+        }
+    vector_map.close()
+    return tiling_dict
 
 
 def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
@@ -946,7 +993,7 @@ def main():
             gs.fatal(_("Invalid input in tile_size option"))
     # Check tile size
     elif options["vector_tiles"]:
-        pass
+        tile_set = create_tiling_from_vector(options["vector_tiles"], overlap=overlap)
     else:
         tile_set = create_tiling(tile_size, overlap=overlap, region=None)
 
@@ -1011,11 +1058,6 @@ if __name__ == "__main__":
         # from torch.multiprocessing import Pool, set_start_method
     except ImportError:
         gs.fatal(_("Could not import pytorch. Please make sure it is installed."))
-
-    # try:
-    #     set_start_method("spawn")
-    # except RuntimeError:
-    #     pass
 
     try:
         import numpy as np
