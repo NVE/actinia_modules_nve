@@ -79,6 +79,14 @@ COPYRIGHT:    (C) 2022 by Stefan Blumentrath
 # % description: Comma separated list of files to register
 # %end
 
+# %option GOPT_F_INPUT
+# % key: file
+# % required: no
+# % multiple: yes
+# % key_desc: CSV-like file with files to import containing map_name,start,stop,semantic_label,file_name,metadata_json
+# % description: CSV-like file with files to import containing map_name,start,stop,semantic_label,file_name,metadata_json
+# %end
+
 # %option G_OPT_STRDS_OUTPUT
 # % required: yes
 # % multiple: no
@@ -185,8 +193,10 @@ COPYRIGHT:    (C) 2022 by Stefan Blumentrath
 
 # %rules
 # % excludes: file_pattern,files
+# % excludes: file_pattern,file
+# % excludes: files,file
 # % excludes: semantic_labels,semantic_label_pattern
-# % required: file_pattern,files
+# % required: file_pattern,files,file
 # % collective: file_pattern,suffix
 # %end
 
@@ -329,8 +339,9 @@ def map_semantic_labels(
             return []
         return [[raster_dataset, 1, legalize_name_string(semantic_label)]]
 
-    ds = gdal.Open(raster_dataset)
-    if not ds:
+    try:
+        ds = gdal.Open(raster_dataset)
+    except Exception:
         gs.warning(_("Cannot open dataset <{}>").format(raster_dataset))
         return []
 
@@ -580,6 +591,48 @@ def import_data(
     )
 
 
+def import_data_from_file_row(
+    file_row, metadata_dict=None, modules_dict=None, separator="|"
+):
+    """
+    Link (import) external raster data and set relevant metadata
+    Implemented as a sequence of modules to run
+    Returns a line for registering the linked map in a STRDS
+    :param import_tuple: tuple containing Path to the raster data file to link/import, band/subdataset, semantic_label
+    :param metadata_dict: dictionary containing relevant metadata for the link/import
+    :param modules_dict: Dictionary containing pyGRASS modules to run for link/import
+    :return: str with one line for registering the linked raster map in an STRDS
+    :rtype: str
+    """
+
+    register_row = file_row.strip().split(separator)
+
+    map_name = register_row[0]
+    start_time = register_row[1]
+    end_time = register_row[2]
+    semantic_label = register_row[3]
+    file_path = Path(register_row[-1])
+
+    mods = deepcopy(modules_dict)
+    mods["import"].inputs.input = str(file_path)
+    mods["import"].outputs.output = map_name
+    mods["metadata"].inputs.map = map_name
+    mods["metadata"].inputs.units = metadata_dict["units"]
+    mods["metadata"].inputs.title = metadata_dict["long_name"]
+    mods["metadata"].inputs.semantic_label = semantic_label
+    mods["timestamp"].inputs.map = map_name
+    mods["timestamp"].inputs.date = datetime.fromisoformat(start_time).strftime(
+        "%-d %b %Y"
+    )
+    try:
+        MultiModule(list(mods.values())).run()
+    except:
+        gs.warning(_("Cannot register file <{}>").format(str(file_path)))
+        return None
+
+    return f"{map_name},{start_time},{end_time},{semantic_label}"
+
+
 def main():
     """run the main workflow"""
     # Get the current mapset
@@ -623,13 +676,28 @@ def main():
         semantic_labels = None
 
     # Identify files to import
+    register_from_file = False
     if options["files"]:
-        raster_files = [
-            Path(options["input"]) / raster_file
-            for raster_file in options["files"].split(",")
-            if Path(options["input"]).joinpath(raster_file).exists()
-        ]
+        # Files list mode
+        files_input = options["files"].split(",")
+        if len(files_input) > 1:
+            raster_files = [
+                Path(options["input"]) / raster_file
+                for raster_file in files_input
+                if (Path(options["input"]) / raster_file).exists()
+            ]
+        else:
+            # Register file mode
+            files_input = Path(files_input[0])
+            try:
+                ds = gdal.Open(str(files_input))
+                del ds
+            except Exception:
+                register_from_file = True
+                files_input = files_input.read_text(encoding="UTF8").strip().split()
+
     else:
+        # Directory mode
         raster_files = Path(options["input"]).rglob(
             f"{options['file_pattern']}.{options['suffix']}"
         )
@@ -665,7 +733,7 @@ def main():
             ]
 
     # Abort if no files to import are found
-    if not raster_files:
+    if not raster_files and not register_from_file:
         gs.fatal(_("No files found to import."))
 
     # Initialize TGIS
@@ -700,6 +768,7 @@ def main():
             "r.external",
             quiet=True,
             run_=False,
+            band=1,
             flags="".join([flag for flag in "amro" if flags[flag]]),
             title=options["long_name"],
         ),
@@ -717,12 +786,13 @@ def main():
         ),
     }
 
-    # Pre-define kwargs for import-function
-    match_semantic_labels = partial(
-        map_semantic_labels,
-        semantic_label_dict=semantic_labels,
-        input_option_dict=options,
-    )
+    if not register_from_file:
+        # Pre-define kwargs for import-function
+        match_semantic_labels = partial(
+            map_semantic_labels,
+            semantic_label_dict=semantic_labels,
+            input_option_dict=options,
+        )
 
     # Pre-define kwargs for import-function
     run_import = partial(
@@ -743,15 +813,21 @@ def main():
         vrt_dir.mkdir()
     gs.verbose(_("Files filtered"))
 
-    # Match semantic labels and create VRTs if needed
-    with Pool(processes=nprocs) as pool:
-        import_tuples = pool.map(match_semantic_labels, raster_files)
-    gs.verbose(_("Semantic labels matched"))
+    if not register_from_file:
+        # Match semantic labels and create VRTs if needed
+        with Pool(processes=nprocs) as pool:
+            import_tuples = pool.map(match_semantic_labels, raster_files)
+        gs.verbose(_("Semantic labels matched"))
 
-    # Import / Link raster maps into mapset
-    with Pool(processes=nprocs) as pool:
-        register_string = pool.map(run_import, chain(*import_tuples))
-    gs.verbose(_("Maps imported"))
+        # Import / Link raster maps into mapset
+        with Pool(processes=nprocs) as pool:
+            register_string = pool.map(run_import, chain(*import_tuples))
+        gs.verbose(_("Maps imported"))
+    else:
+        # Import / Link raster maps into mapset
+        with Pool(processes=nprocs) as pool:
+            register_string = pool.map(run_import, chain(*import_tuples))
+        gs.verbose(_("Maps imported"))
 
     # Register imported maps in STRDS using register file
     map_file = gs.tempfile()
@@ -779,6 +855,8 @@ if __name__ == "__main__":
     # lazy imports
     try:
         from osgeo import gdal
+
+        gdal.UseExceptions()
     except ImportError:
         gs.fatal(
             _(
