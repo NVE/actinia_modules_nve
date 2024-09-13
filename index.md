@@ -9,6 +9,7 @@
 - [r.avaframe.com1dfa](./r.avaframe.com1dfa.html)
 - [r.avaframe.com1dfa_v2](./r.avaframe.com1dfa_v2.html)
 - [r.timeseries.locations](./r.timeseries.locations.html)
+- [t.avalanche.stats](./t.avalanche.stats.html)
 - [t.import.hrsi](./t.import.hrsi.html)
 - [t.pytorch.predict](./t.pytorch.predict.html)
 - [t.rast.aggregate.condition](./t.rast.aggregate.condition.html)

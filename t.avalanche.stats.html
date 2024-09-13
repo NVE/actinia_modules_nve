@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>t.avalanche.stats - GRASS GIS manual</title>
+ <meta name="description" content="t.avalanche.stats: Extract avalanche parameters from avalanches detected in Sentinel-1 imagery">
+ <meta name="keywords" content="temporal, imagery, satellite, Sentinel-1, avalanche, statistics">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass84/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>t.avalanche.stats</b></em>  - Extract avalanche parameters from avalanches detected in Sentinel-1 imagery
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass84/docs/html/temporal.html">temporal</a>, <a href="file:///usr/lib/grass84/docs/html/topic_imagery.html">imagery</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#satellite">satellite</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#Sentinel-1">Sentinel-1</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#avalanche">avalanche</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#statistics">statistics</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>t.avalanche.stats</b><br></div>
+<b>t.avalanche.stats --help</b><br>
+<div id="synopsis"><b>t.avalanche.stats</b> <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]  <b>elevation</b>=<em>name</em> <b>slope</b>=<em>name</em> <b>aspect</b>=<em>name</em> <b>input</b>=<em>name</em>  [<b>valid_area_range</b>=<em>integer</em>[,<i>integer</i>,...]]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the input space time raster dataset</dd>
+
+<dt><b>where</b>=<em>sql_query</em></dt>
+<dd>WHERE conditions of SQL statement without 'where' keyword used in the temporal GIS framework</dd>
+<dd>Example: start_time &gt; '2001-01-01 12:30:00'</dd>
+
+<dt><b>elevation</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of input elevation raster map</dd>
+
+<dt><b>slope</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Topographic slope in degrees (0-90)</dd>
+
+<dt><b>aspect</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Topographic aspect in degrees (-180-180) where 0 is North and -90 is West</dd>
+
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to output directory where Shape files with avalanches and avalanche parameters will be stored</dd>
+
+<dt><b>valid_area_range</b>=<em>integer[,<i>integer</i>,...]</em></dt>
+<dd>Valide range of avalanche size in m2</dd>
+<dd>Default: <em>2000,200000</em></dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>t.avalanche.stats</em> extracts avalanche parameters for avalanches
+detected in Sentinel-1 imagery.
+
+<p>
+Avalanche parameters are:
+<ul>
+<li>minimum, mean, and maximum elevation in avalanche polygon</li>
+<li>minimum, mean, and maximum slope in avalanche polygon</li>
+<li>minimum, mean, and maximum aspect in avalanche polygon</li>
+<li>start and end time (reference image sensing time and current image sensing time)</li>
+<li>relative orbit number</li>
+<li>orbit direction</li>
+<li>algorithm name</li>
+</ul>
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<div class="code"><pre>
+t.avalanche.stats input=SatSkred elevation=DTM_20m slope=DTM_20m_slope \
+  aspect=DTM_20m_aspect --o --v
+</pre></div>
+
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+<a href="file:///usr/lib/grass84/docs/html/i.satskred.html">i.satskred</a>,
+<a href="file:///usr/lib/grass84/docs/html/t.pytorch.predict.html">t.pytorch.predict</a>,
+</em>
+<p>
+<a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">t.avalanche.stats source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Friday Sep 13 11:49:17 2024
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass84/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass84/docs/html/temporal.html">Temporal index</a> |
+<a href="file:///usr/lib/grass84/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass84/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass84/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass84/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2024
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.0 Reference Manual
+</p>
+
+</div>
+</body>
+</html>
