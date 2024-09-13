@@ -166,16 +166,16 @@ def load_model(dl_model_path, dl_backbone, dl_kwargs, device="gpu"):
     return dl_model
 
 
-def predict_torch(data_cube, config_dict=None, device=None, dl_model=None):
+def predict_torch(data_cube, model_config=None, device=None, dl_model=None):
     """Apply a deep learning model to a numpy array on a given device (cpu or cuda)
     after applying the given transform function"""
     dl_model.to(device)
     dl_model.eval()
-    if config_dict["model"]["model_dimensions"]["input_dimensions"] != "HWC":
+    if model_config["model_dimensions"]["input_dimensions"] != "HWC":
         data_cube = transform_axes(
             data_cube,
             "HWC",
-            config_dict["model"]["model_dimensions"]["input_dimensions"],
+            model_config["model_dimensions"]["input_dimensions"],
         )
 
     with torch.no_grad():
@@ -183,19 +183,31 @@ def predict_torch(data_cube, config_dict=None, device=None, dl_model=None):
         torch_out = dl_model(data)
         del data
         # Apply extra ouptut transformations
-        if "extra_ouptut_transformations" in config_dict["model"]:
-            if "apply_softmax" in config_dict["model"]["extra_ouptut_transformations"]:
-                torch_out = F.softmax(torch_out, dim=1)
-            if (
-                "apply_classifier"
-                in config_dict["model"]["extra_ouptut_transformations"]
-            ):
-                _, torch_out = torch.max(torch_out, dim=1, keepdims=True)
+        if "extra_ouptut_transformations" in model_config:
+            for transformation, transformation_config in model_config[
+                "extra_ouptut_transformations"
+            ].items():
+                if transformation == "apply_softmax":
+                    torch_out = F.softmax(
+                        torch_out, dim=transformation_config["dimension"]
+                    )
+                if transformation == "apply_classifier":
+                    _, torch_out = torch.max(
+                        torch_out,
+                        dim=transformation_config["dimension"],
+                        keepdims=transformation_config["keep_dimensions"],
+                    )
+                if transformation == "apply_argmax":
+                    torch_out = torch.argmax(
+                        torch_out,
+                        dim=transformation_config["dimension"],
+                        keepdims=transformation_config["keep_dimensions"],
+                    )
 
-    if config_dict["model"]["model_dimensions"]["output_dimensions"] != "HWC":
+    if model_config["model_dimensions"]["output_dimensions"] != "HWC":
         return transform_axes(
             torch2numpy(torch_out),
-            config_dict["model"]["model_dimensions"]["output_dimensions"],
+            model_config["model_dimensions"]["output_dimensions"],
             "HWC",
         )
     return torch2numpy(torch_out)
@@ -255,6 +267,41 @@ def validate_config(json_path, package_dir):
                             "Key '{0}' missing in description of 'model_dimensions' in 'model' section of configuration file <{1}>"
                         ).format(dim_description, str(json_path))
                     )
+    output_transformations = config_dict["model"].get("extra_ouptut_transformations")
+    if not output_transformations:
+        pass
+    elif not isinstance(output_transformations, dict):
+        gs.fatal(
+            _("Invalid definition of extra output transformations. Needs to be a dict.")
+        )
+    else:
+        for config_sub_key, transformation_dict in output_transformations.items():
+            if config_sub_key not in {
+                "apply_softmax",
+                "apply_classifier",
+                "apply_argmax",
+            }:
+                gs.fatal(
+                    _("Unsupported output transformation <{}>").format(config_sub_key)
+                )
+            if not isinstance(transformation_dict, dict):
+                gs.fatal(
+                    _(
+                        "Invalid definition of transformation <{}>. Needs to be a dict."
+                    ).format(config_sub_key)
+                )
+            if not isinstance(transformation_dict.get("dimension"), int):
+                gs.fatal(
+                    _("Missing or invalid definition of 'dimension' in <{}>").format(
+                        config_sub_key
+                    )
+                )
+            if not isinstance(transformation_dict.get("keep_dimensions"), bool):
+                gs.fatal(
+                    _(
+                        "Missing or invalid definition of 'keep_dimensions' in <{}>"
+                    ).format(config_sub_key)
+                )
 
     # Try to load model
     backbone = load_model_code(package_dir, config_dict["model"]["model_backbone"])

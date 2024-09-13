@@ -145,7 +145,7 @@ import grass.script as gs
 from grass.exceptions import CalledModuleError
 from grass.pygrass.gis.region import Region
 from grass.pygrass.raster import numpy2raster, raster2numpy
-from grass.pygrass.vector import Bbox
+from grass.pygrass.vector import Bbox, VectorTopo
 
 TMP_NAME = gs.tempname(12)
 
@@ -428,7 +428,10 @@ def read_config(module_options):
             if not band_pattern_match:
                 continue
 
-            if raster_map_info["min"] and raster_map_info["max"]:
+            if (
+                raster_map_info["min"] is not None
+                and raster_map_info["max"] is not None
+            ):
                 # Check valid range of non-empty input maps
                 valid_range = config[config_key][matched_label]["valid_range"]
                 if (
@@ -520,6 +523,53 @@ def apply_mask(input_map, output_map, fill_value, masking):
         else input_map
     )
     gs.mapcalc(f"{output_map}={valid_pixels}")
+
+
+def create_tiling_from_vector(vector_map, overlap=128, region=None):
+    """Create tiling aligned to a given or current region with
+    tiles of a fixed number of rows and column and at least
+    overlap number of pixels around
+    Returns a dictionary with inner and outer region of a tile
+    """
+    tiling_dict = {}
+    vector_map = VectorTopo(vector_map)
+    vector_map.open(mode="r")
+    for area in vector_map.find_by_bbox.areas(bbox=Region().get_bbox()):
+        bbox = area.bbox()
+        reg_outer = gs.parse_command(
+            "g.region",
+            flags="ug",
+            n=bbox.north,
+            s=bbox.south,
+            e=bbox.east,
+            w=bbox.west,
+            grow=overlap,
+        )
+        tiling_dict[area.cat] = {
+            "inner": {
+                "cat": area.cat,
+                "n": bbox.north,
+                "s": bbox.south,
+                "w": bbox.west,
+                "e": bbox.east,
+                "rows": int(reg_outer["rows"]) - 2 * overlap,
+                "cols": int(reg_outer["cols"]) - 2 * overlap,
+                "ewres": reg_outer["ewres"],
+                "nsres": reg_outer["nsres"],
+            },
+            "outer": {
+                "n": float(reg_outer["n"]),
+                "s": float(reg_outer["s"]),
+                "w": float(reg_outer["w"]),
+                "e": float(reg_outer["e"]),
+                "rows": int(reg_outer["rows"]),
+                "cols": int(reg_outer["cols"]),
+                "ewres": reg_outer["ewres"],
+                "nsres": reg_outer["nsres"],
+            },
+        }
+    vector_map.close()
+    return tiling_dict
 
 
 def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
@@ -644,6 +694,11 @@ def read_bands(raster_map_dict, bbox, null_value=0):
                 max_value = np.inf
             npa = np.clip(npa, min_value, max_value)
 
+        gs.debug(
+            f"Before scaling:\n{raster_map_dict[band_number][0]}\n"
+            f"min: {np.nanmin(npa):.3f}\nmean: {np.nanmean(npa):.3f}\n"
+            f"max: {np.nanmax(npa):.3f}"
+        )
         # Abort if (any) map only contains nan
         if np.nansum(npa) == 0:
             return None, None
@@ -655,6 +710,12 @@ def read_bands(raster_map_dict, bbox, null_value=0):
         # Apply scale
         if raster_map_dict[band_number][2]["scale"] != 1:
             npa = npa * np.array(raster_map_dict[band_number][2]["scale"])
+
+        gs.debug(
+            f"After scaling:\n{raster_map_dict[band_number][0]}\n"
+            f"min: {np.nanmin(npa):.3f}\nmean: {np.nanmean(npa):.3f}\n"
+            f"max: {np.nanmax(npa):.3f}"
+        )
 
         data_cube.append(npa)
     data_cube = np.stack(data_cube, axis=-1)
@@ -711,7 +772,13 @@ def tiled_prediction(
     if data_cube is None:
         return None
     prediction_result = predict_torch(
-        data_cube, config_dict=dl_config, device=device, dl_model=dl_model
+        data_cube, model_config=dl_config["model"], device=device, dl_model=dl_model
+    )
+    gs.debug(
+        f"Raw output: min: {np.nanmin(prediction_result)}"
+        f"mean: {np.nanmean(prediction_result)}"
+        f"max: {np.nanmax(prediction_result)}"
+        f"shape: {prediction_result.shape}"
     )
     inner_mask = get_inner_bbox(mask, bboxes["outer"], bboxes["inner"])
     prediction_result = get_inner_bbox(
@@ -719,12 +786,20 @@ def tiled_prediction(
     )
 
     # Write each output band
+    gs.debug(dl_config["output_bands"])
     for idx, output_band in enumerate(dl_config["output_bands"]):
         output_dtype = dl_config["output_bands"][output_band]["dtype"]
         # Clip result to valid output range
         if dl_config["output_bands"][output_band]["valid_output_range"]:
             if limit:
                 out_numpy = prediction_result[..., idx]
+                gs.debug(
+                    f"Output {output_band} before scaling clipping:"
+                    f"min: {np.nanmin(prediction_result[..., idx])}"
+                    f"mean: {np.nanmean(prediction_result[..., idx])}"
+                    f"max: {np.nanmax(prediction_result[..., idx])}"
+                    f"shape: {prediction_result[..., idx].shape}"
+                )
                 # Limit to valid min
                 out_numpy[
                     out_numpy
@@ -755,6 +830,12 @@ def tiled_prediction(
             # out_numpy[np.isnan(out_numpy)] = dl_config["output_bands"][output_band]["fill_value"]
         else:
             out_numpy[inner_mask] = np.nan
+
+        gs.debug(
+            f"Output: min: {np.nanmin(out_numpy)}"
+            f"mean: {np.nanmean(out_numpy)}"
+            f"max: {np.nanmax(out_numpy)}"
+        )
 
         if out_numpy.dtype != np.dtype(output_dtype):
             if output_dtype.startswith("float"):
@@ -912,7 +993,7 @@ def main():
             gs.fatal(_("Invalid input in tile_size option"))
     # Check tile size
     elif options["vector_tiles"]:
-        pass
+        tile_set = create_tiling_from_vector(options["vector_tiles"], overlap=overlap)
     else:
         tile_set = create_tiling(tile_size, overlap=overlap, region=None)
 
@@ -977,11 +1058,6 @@ if __name__ == "__main__":
         # from torch.multiprocessing import Pool, set_start_method
     except ImportError:
         gs.fatal(_("Could not import pytorch. Please make sure it is installed."))
-
-    # try:
-    #     set_start_method("spawn")
-    # except RuntimeError:
-    #     pass
 
     try:
         import numpy as np
