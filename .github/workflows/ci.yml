@@ -102,7 +102,7 @@ jobs:
           cd grass-addons/src
           ../.github/workflows/test.sh
       - name: Make HTML test report available
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: testreport-grass-${{ matrix.grass-version }}-python-${{ matrix.python-version }}
           path: grass-addons/src/testreport
