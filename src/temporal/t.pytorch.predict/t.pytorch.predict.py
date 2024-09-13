@@ -489,7 +489,7 @@ def build_group_dict(
         group_dict = {}
         reference_dict = {}
         temporal_extent = [raster_map_row["start_time"], raster_map_row["end_time"]]
-        if offset and 0 < idx + offset < len(map_list):
+        if offset and 0 <= idx + offset < len(map_list):
             temporal_extent.extend(
                 [
                     map_list[idx + offset]["start_time"],
