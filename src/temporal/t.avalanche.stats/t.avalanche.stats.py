@@ -223,11 +223,8 @@ def main():
     tgis.init()
 
     # Output could be defined as directory (G_OPT_M_DIR)
-    options["output"] = Path(
-        options["output"]
-        if options["output"].endswith(".gpkg")
-        else f"{options['output']}.gpkg"
-    )
+    options["output"] = Path(options["output"])
+    options["output"].mkdir(parents=True, exist_ok=True)
     options["valid_area_range"] = list(
         map(float, options.get("valid_area_range").split(",", maxsplit=1))
     )
