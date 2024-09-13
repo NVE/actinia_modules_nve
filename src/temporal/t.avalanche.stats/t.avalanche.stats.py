@@ -47,8 +47,8 @@ COPYRIGHT: (C) 2024 by NVE, Stefan Blumentrath
 # % description: Topographic aspect in degrees (-180-180) where 0 is North and -90 is West
 # %end
 
-# %option G_OPT_F_OUTPUT
-# % description: Output GeoPackage file with avalanches and avalanche parameters
+# %option G_OPT_M_DIR
+# % description: Path to output directory where Shape files with avalanches and avalanche parameters will be stored
 # %end
 
 # %option
@@ -91,8 +91,8 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
     avalanche_map_id = avalanche_map_row["id"]
     avalanche_map = avalanche_map_id.split("@")[0]
     gs.verbose(_("Processing avalanche map {}").format(avalanche_map))
-    start_time = avalanche_map_row["start_time"]
-    end_time = avalanche_map_row["end_time"]
+    t_0 = avalanche_map_row["t_0"]
+    t_1 = avalanche_map_row["t_1"]
     # semantic_label = avalanche_map_row["semantic_label"]
     name_components = avalanche_map_row["id"].split("_")
     polarization, sat_geom, direction = (
@@ -117,15 +117,15 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
         "v.db.addcolumn",
         map=avalanche_map,
         columns=(
-            "start_time TEXT, end_time TEXT,"
+            "t_0 TEXT, t_1 TEXT,"
             "polarization TEXT,"
             "sat_geom INTEGER, polarization TEXT,"
             "direction TEXT, algoritme TEXT,"
             "dtm_min REAL,dtm_mean REAL,"
-            "dtm_max REAL,slope_min REAL,"
-            "slope_mean REAL, slope_max REAL,"
-            "aspect_min REAL, aspect_mean REAL,"
-            "aspect_max REAL"
+            "dtm_max REAL,slp_min REAL,"
+            "slp_mean REAL, slp_max REAL,"
+            "asp_min REAL, asp_mean REAL,"
+            "asp_max REAL"
         ),
     )
     # https://grass.osgeo.org/grass84/manuals/libpython/pygrass.vector.html
@@ -151,8 +151,8 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
             area_bbox = area.bbox()
             area_attributes = area.attrs
             area_attributes["algoritme"] = "unet"
-            area_attributes["start_time"] = start_time.strftime("%Y%m%dT%H%M%S")
-            area_attributes["end_time"] = end_time.strftime("%Y%m%dT%H%M%S")
+            area_attributes["t_0"] = t_0.strftime("%Y%m%dT%H%M%S")
+            area_attributes["t_1"] = t_1.strftime("%Y%m%dT%H%M%S")
             # area_attributes["polarization"] = polarization
             area_attributes["direction"] = direction
             area_attributes["sat_geom"] = sat_geom
@@ -178,7 +178,7 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
                 overwrite=True,
             )
             for map_type in ["elevation", "slope", "aspect"]:
-                prefix = "dtm" if map_type == "elevation" else map_type
+                prefix = {"elevation": "dtm", "slope": "slp", "aspect": "asp"}[map_type]
                 rmap = kwargs.get(map_type)
                 univar_stats = (
                     Module(
@@ -212,15 +212,9 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
     export_module = Module(
         "v.out.ogr",
         input=avalanche_map,
-        output=str(kwargs["output"]),
-        format="GPKG",
-        run_=False,
+        output=str(kwargs["output"] / f"{avalanche_map}.shp"),
+        format="ESRI_Shapefile",
     )
-    if kwargs["output"].exists():
-        export_module.flags.u = True
-        export_module.overwrite = True
-        # export_module.inputs.output_layer = avalanche_map
-    export_module.run()
 
 
 def main():
