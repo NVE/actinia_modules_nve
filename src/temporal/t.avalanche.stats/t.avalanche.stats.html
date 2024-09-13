@@ -1,0 +1,37 @@
+<h2>DESCRIPTION</h2>
+
+<em>t.avalanche.stats</em> extracts avalanche parameters for avalanches
+detected in Sentinel-1 imagery.
+
+<p>
+Avalanche parameters are:
+<ul>
+<li>minimum, mean, and maximum elevation in avalanche polygon</li>
+<li>minimum, mean, and maximum slope in avalanche polygon</li>
+<li>minimum, mean, and maximum aspect in avalanche polygon</li>
+<li>start and end time (reference image sensing time and current image sensing time)</li>
+<li>relative orbit number</li>
+<li>orbit direction</li>
+<li>algorithm name</li>
+</ul>
+
+<h2>EXAMPLES</h2>
+
+<div class="code"><pre>
+t.avalanche.stats input=SatSkred elevation=DTM_20m slope=DTM_20m_slope \
+  aspect=DTM_20m_aspect --o --v
+</pre></div>
+
+
+<h2>SEE ALSO</h2>
+
+<em>
+<a href="i.satskred.html">i.satskred</a>,
+<a href="t.pytorch.predict.html">t.pytorch.predict</a>,
+</em>
+<p>
+<a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath
