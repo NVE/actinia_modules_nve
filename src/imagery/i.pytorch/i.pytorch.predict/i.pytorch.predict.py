@@ -703,6 +703,10 @@ def read_bands(raster_map_dict, bbox, null_value=0):
         if raster_map_dict[band_number][2]["scale"] != 1:
             npa = npa * np.array(raster_map_dict[band_number][2]["scale"])
 
+        # Abort if (any) map only contains nan after scaling
+        if np.nansum(npa) == 0:
+            return None, None
+
         data_cube.append(npa)
     data_cube = np.stack(data_cube, axis=-1)
     data_cube[np.isnan(data_cube)] = null_value
