@@ -48,6 +48,7 @@ COPYRIGHT: (C) 2024 by NVE, Stefan Blumentrath
 # %end
 
 # %option G_OPT_M_DIR
+# % key: output
 # % description: Path to output directory where Shape files with avalanches and avalanche parameters will be stored
 # %end
 
