@@ -19,7 +19,6 @@ COPYRIGHT:   (C) 2023-2024 by Norwegian Water and Energy Directorate
  GNU General Public License for more details.
 
 ToDo:
-- tiling from vector map (to avoid unnecessary data reads outside core AOI)
 - test case
 """
 
@@ -746,10 +745,8 @@ def process_scene_group(
                     input=list(map_dict[group].values()),
                     quiet=True,
                 )
-                gs.debug(f"Maps in {group}: {', '.join(map_dict[group].values())}")
                 torch_mod.inputs[group].value = f"{TMP_NAME}_{group}_{output_name}"
         torch_mod.run()
-        gs.debug(torch_mod.outputs.stderr)
         register_strings = [
             "|".join(
                 [
