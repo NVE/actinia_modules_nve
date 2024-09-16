@@ -691,7 +691,6 @@ def read_bands(raster_map_dict, bbox, null_value=0):
                 max_value = np.inf
             npa = np.clip(npa, min_value, max_value)
 
-
         # Abort if (any) map only contains nan
         if np.nansum(npa) == 0:
             return None, None
@@ -703,7 +702,6 @@ def read_bands(raster_map_dict, bbox, null_value=0):
         # Apply scale
         if raster_map_dict[band_number][2]["scale"] != 1:
             npa = npa * np.array(raster_map_dict[band_number][2]["scale"])
-
 
         data_cube.append(npa)
     data_cube = np.stack(data_cube, axis=-1)
