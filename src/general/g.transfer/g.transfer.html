@@ -1,0 +1,24 @@
+<h2>DESCRIPTION</h2>
+
+<em>g.transfer</em> is a simple helper module to be used in actinia to
+transfer files or directories from local storage on a worker node
+to persistent network storage.
+<p>
+If the <b>target</b> directory does not exist it is created. The
+<b>source</b> option supports the use of wildcards (*), so multiple
+files and/or directories can be transfered. The <b>nprocs</b> option
+allows to transfer multiple files or directories in parallel. With
+the <b>m</b>-flag the source is moved and not copied (the default).
+
+
+<h2>EXAMPLES</h2>
+
+<div class="code"><pre>
+temp_file=$(g.tempfile pid=12345)
+g.transfer -f source="$temp_file" target=/tmp
+</pre></div>
+
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath
