@@ -20,7 +20,7 @@ comes with GRASS for details.
 # %end
 
 # %option
-# % key: paths
+# % key: path
 # % description: Path to the file or directory to remove
 # % required: yes
 # %end
@@ -50,9 +50,9 @@ import grass.script as gs
 def main():
     """Do the main work"""
     options, flags = gs.parser()
-    paths_to_remove = glob(options["paths"])
+    paths_to_remove = glob(options["path"])
     if not paths_to_remove:
-        gs.warning(_("Nothing found to remove with <{}>.").format(options["paths"]))
+        gs.warning(_("Nothing found to remove with <{}>.").format(options["path"]))
 
     if flags["f"]:
         gs.info(_("Removing the following files and directories:"))
