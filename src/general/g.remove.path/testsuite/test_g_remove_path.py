@@ -45,7 +45,7 @@ class TestGUnzipParallel(TestCase):
         # Check that g.remove.path runs successfully
         g_remove_list = SimpleModule(
             "g.remove.path",
-            paths=f"{self.tempdir}/*",
+            path=f"{self.tempdir}/*",
         ).run()
 
         tmp_files_after = list(self.tempdir.glob("*"))
@@ -68,7 +68,7 @@ class TestGUnzipParallel(TestCase):
         tmp_files_before.sort()
         # Check that g.remove.path runs successfully
         g_remove_list = SimpleModule(
-            "g.remove.path", paths=f"{self.tempdir}/dir*", flags="f"
+            "g.remove.path", path=f"{self.tempdir}/dir*", flags="f"
         ).run()
 
         tmp_files_after = list(self.tempdir.glob("dir*"))
@@ -88,9 +88,9 @@ class TestGUnzipParallel(TestCase):
     def test_g_remove_path_wildcard_with_removal(self):
         """Test file removal with wildcard"""
         # Check that g.remove.path runs successfully
-        g_remove_list = SimpleModule(
+        SimpleModule(
             "g.remove.path",
-            paths=f"{self.tempdir}/dir_3/*",
+            path=f"{self.tempdir}/dir_3/*",
             flags="rf",
         ).run()
 
@@ -102,7 +102,7 @@ class TestGUnzipParallel(TestCase):
         # Check that g.remove.path runs successfully
         g_remove_list = SimpleModule(
             "g.remove.path",
-            paths=f"{self.tempdir}/dir_4/*",
+            path=f"{self.tempdir}/dir_4/*",
             flags="f",
         ).run()
 
