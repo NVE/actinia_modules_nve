@@ -1,14 +1,17 @@
 <h2>DESCRIPTION</h2>
 
-<em>g.remove.path</em> is a simple helper module to unzip all zip-files in a directory
-in parallel. The user can select an <b>output</b> directory, the number of parallel
-processes (<b>nprocs</b>) and to remove the extracted zip-file (<b>r-flag</b>).
+<em>g.remove.path</em> is a simple helper module to be used in actinia to
+clean-up temporary files and directories on a worker node.
+In line with <em>g.remove</em> no files or directories are removed without
+the <b>f</b>-flag. For directories also the <b>r</b>-flag is needed.
+The <b>path</b> option supports the use of wildcards (*), handle with care.
 
 
 <h2>EXAMPLES</h2>
 
 <div class="code"><pre>
-g.remove.path -f path="$(g.tempfile pid=12345)"
+temp_file=$(g.tempfile pid=12345)
+g.remove.path -f path="$temp_file"
 </pre></div>
 
 
