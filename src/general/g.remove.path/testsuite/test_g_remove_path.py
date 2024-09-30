@@ -1,6 +1,6 @@
-"""Test i.satskred
+"""Test g.remove.path
 
-(C) 2023 by NVE, Stefan Blumentrath and the GRASS GIS Development Team
+(C) 2024 by NVE, Stefan Blumentrath and the GRASS GIS Development Team
 This program is free software under the GNU General Public
 License (>=v2). Read the file COPYING that comes with GRASS
 for details.
@@ -15,7 +15,7 @@ from grass.gunittest.case import TestCase
 from grass.gunittest.gmodules import SimpleModule
 
 
-class TestGUnzipParallel(TestCase):
+class TestGRemovePath(TestCase):
     """Test case for removing files and directories"""
 
     @classmethod
