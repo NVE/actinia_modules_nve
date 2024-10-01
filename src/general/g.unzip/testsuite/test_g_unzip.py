@@ -53,6 +53,22 @@ class TestGUnzipParallel(TestCase):
             len(list((self.tempdir / "testdir").glob("testfile_*.txt"))) == 4
         )
 
+    def test_g_unzip_single_zip(self):
+        """Test unzipping a single zip file"""
+        # Check that zip-files are created
+        self.assertTrue(len(list(self.tempdir.glob("testfile_*.zip"))) == 4)
+        # Check that g.unzip runs successfully
+        self.assertModule(
+            "g.unzip",
+            input=str(self.tempdir / "testfile_1.zip"),
+            output=str(self.tempdir / "testdir_file"),
+            verbose=True,
+        )
+        # Check that unzipped-files exist in the file system
+        self.assertFileExists(
+            str(self.tempdir / "testdir_file" / "testdir" / "testfile_1.txt")
+        )
+
     def test_g_unzip_empty_dir(self):
         """Test unzipping if input directory is empty (should not fail)"""
         # Check that zip-files are created
