@@ -6,7 +6,6 @@
 - [i.asf.download](./i.asf.download.html)
 - [i.pytorch](./i.pytorch.html)
 - [i.satskred](./i.satskred.html)
-- [i.sentinel1.gdargeocode](./i.sentinel1.gdargeocode.html)
 - [i.sentinel1.pyrosargeocode](./i.sentinel1.pyrosargeocode.html)
 - [r.avaframe.com1dfa](./r.avaframe.com1dfa.html)
 - [r.avaframe.com1dfa_v2](./r.avaframe.com1dfa_v2.html)
