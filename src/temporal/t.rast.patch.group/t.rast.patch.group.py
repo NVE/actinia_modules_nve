@@ -66,6 +66,11 @@
 # %end
 
 # %flag
+# % key: g
+# % description: Use r.buildvrt.gdal for patching (for GDAL-linked raster maps)
+# %end
+
+# %flag
 # % key: z
 # % description: Use zero (0) for transparency instead of NULL
 # %end
@@ -88,7 +93,8 @@
 # %end
 
 # %rules
-# % excludes: -v,-s,-z
+# % excludes: -v,-s,-z,-g
+# % excludes: -g,-s,-z,-v
 # %end
 
 import sys
@@ -119,7 +125,17 @@ def main():
     add_time = flags["t"]
     patch_s = flags["s"]
     patch_z = flags["z"]
-    patch_module = "r.buildvrt" if flags["v"] else "r.patch"
+
+    if flags["g"] and not gs.find_program("r.buildvrt.gdal", "--help"):
+        gs.fatal(
+            _("Cannot find addon <r.buildvrt.gdal>. Please make sure it is installed.")
+        )
+    if flags["v"]:
+        patch_module = "r.buildvrt"
+    elif flags["g"]:
+        patch_module = "r.buildvrt.gdal"
+    else:
+        patch_module = "r.patch"
 
     # Make sure the temporal database exists
     dbif = tgis.init()
