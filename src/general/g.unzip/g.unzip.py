@@ -3,7 +3,7 @@
 MODULE:    g.unzip
 AUTHOR(S): Stefan Blumentrath
 PURPOSE:	 Unzip zip-files in a directory in parallel
-COPYRIGHT: (C) 2023 by Stefan Blumentrath and the GRASS Development Team
+COPYRIGHT: (C) 2023-2024 by Stefan Blumentrath and the GRASS Development Team
 
 This program is free software under the GNU General
 Public License (>=v2). Read the file COPYING that
@@ -18,9 +18,10 @@ comes with GRASS for details.
 # % keyword: unpack
 # %end
 
-# %option G_OPT_M_DIR
+# %option
 # % key: input
-# % description: Path to the input directory with zip-files to extract
+# % type: string
+# % description: Path to the input zip-file or directory with zip-files to extract
 # % required: yes
 # %end
 
@@ -88,19 +89,30 @@ def unzip_file(file_path, out_dir=None, remove=False):
 
 def main():
     """Do the main work"""
-    input_directory = Path(options["input"])
-    if not input_directory.exists():
-        gs.fatal(_("Input directory <{}> does not exist").format(str(input_directory)))
-    output_directory = input_directory
+    input_path = Path(options["input"])
+
+    if not input_path.exists():
+        gs.fatal(_("Input file or directory <{}> not found").format(str(input_path)))
+    elif input_path.is_dir():
+        output_directory = input_path
+        input_files = list(input_path.glob("*.[zZ][iI][pP]"))
+    elif input_path.is_file():
+        output_directory = input_path.parent
+        input_files = [input_path]
+
+    if len(input_files) <= 0:
+        gs.warning(
+            _("No zip-files found in input directory <{}>").format(str(input_path))
+        )
+        sys.exit(0)
+
     if options["output"]:
         output_directory = Path(options["output"])
-    if not output_directory.exists():
-        try:
-            output_directory.mkdir(parents=True)
-        except OSError:
-            gs.fatal(
-                _("Cannot create output directory <{}>").format(str(output_directory))
-            )
+
+    try:
+        output_directory.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        gs.fatal(_("Cannot create output directory <{}>").format(str(output_directory)))
     if not os.access(output_directory, os.W_OK):
         gs.fatal(
             _("Output directory <{}> is not writeable").format(str(output_directory))
@@ -108,23 +120,16 @@ def main():
 
     unzip = partial(unzip_file, out_dir=str(output_directory), remove=flags["r"])
 
-    input_files = list(input_directory.glob("*.[zZ][iI][pP]"))
-    if len(input_files) <= 0:
-        gs.warning(
-            _("No zip-files found in input directory <{}>").format(str(input_directory))
-        )
-        sys.exit(0)
-
     nprocs = min(int(options["nprocs"]), len(input_files))
-    gs.verbose(
-        _("Unzipping {} files to {} using {} parallel processes").format(
-            len(input_files), str(output_directory), nprocs
-        )
-    )
     if nprocs == 1:
         for zip_file in input_files:
             unzip(zip_file)
     else:
+        gs.verbose(
+            _("Unzipping {} files to {} using {} parallel processes").format(
+                len(input_files), str(output_directory), nprocs
+            )
+        )
         with Pool(nprocs) as pool:
             pool.map(unzip, input_files)
 
