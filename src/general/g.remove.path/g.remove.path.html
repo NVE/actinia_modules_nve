@@ -1,0 +1,20 @@
+<h2>DESCRIPTION</h2>
+
+<em>g.remove.path</em> is a simple helper module to be used in actinia to
+clean-up temporary files and directories on a worker node.
+In line with <em>g.remove</em> no files or directories are removed without
+the <b>f</b>-flag. For directories also the <b>r</b>-flag is needed.
+The <b>path</b> option supports the use of wildcards (*), handle with care.
+
+
+<h2>EXAMPLES</h2>
+
+<div class="code"><pre>
+temp_file=$(g.tempfile pid=12345)
+g.remove.path -f path="$temp_file"
+</pre></div>
+
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath
