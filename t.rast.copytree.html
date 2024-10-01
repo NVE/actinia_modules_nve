@@ -1,0 +1,182 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>t.rast.copytree - GRASS GIS manual</title>
+ <meta name="description" content="t.rast.copytree: Transfer raster map files from STRDS in external GDAL format to target directory">
+ <meta name="keywords" content="temporal, move, copy, GDAL, directory">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass84/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>t.rast.copytree</b></em>  - Transfer raster map files from STRDS in external GDAL format to target directory
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass84/docs/html/temporal.html">temporal</a>, <a href="file:///usr/lib/grass84/docs/html/topic_move.html">move</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#copy">copy</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#GDAL">GDAL</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#directory">directory</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>t.rast.copytree</b><br></div>
+<b>t.rast.copytree --help</b><br>
+<div id="synopsis"><b>t.rast.copytree</b> [-<b>ms</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]  <b>output_directory</b>=<em>name</em>  [<b>source_directory</b>=<em>name</em>]   [<b>suffix</b>=<em>string</em>]   [<b>temporal_tree</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-m</b></dt>
+<dd>Move files into destination (default is copy)</dd>
+<dd>Move files into destination (default is copy)</dd>
+
+<dt><b>-s</b></dt>
+<dd>Use semantic label in directory structure</dd>
+<dd>Use semantic label in directory structure</dd>
+
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the input space time raster dataset</dd>
+
+<dt><b>where</b>=<em>sql_query</em></dt>
+<dd>WHERE conditions of SQL statement without 'where' keyword used in the temporal GIS framework</dd>
+<dd>Example: start_time &gt; '2001-01-01 12:30:00'</dd>
+
+<dt><b>output_directory</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to the output / destination directory</dd>
+
+<dt><b>source_directory</b>=<em>name</em></dt>
+<dd>Path to the source directory</dd>
+
+<dt><b>suffix</b>=<em>string</em></dt>
+<dd>Suffix of files to transfer</dd>
+
+<dt><b>temporal_tree</b>=<em>string</em></dt>
+<dd>Strftime format to create temporal directory name or tree (e.g. "%Y/%m/%d")</dd>
+
+<dt><b>nprocs</b>=<em>integer</em></dt>
+<dd>Number of threads for parallel computing</dd>
+<dd>Default: <em>1</em></dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>t.rast.copytree</em> is a simple helper module to copy extrenal registered raster
+maps from a STRDS into a temporal directory tree. The tree structure can be defined
+with the <b>temporal_tree</b> option and the <b>s</b>-flag (to include the
+<em>semantic_label</em> in the directory structure). The output directory needs to
+exist, but the directory structure below will be created if necessary. Parallel
+transfer of files is supported with the <b>nprocs</b> option. Using the <b>m</b>-flag
+files can be moved instead of copied.
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<div class="code"><pre>
+temp_dir=$(g.tempfile -d pid=1)
+mkdir $temp_dir
+target_dir=$(g.tempfile -d pid=1)
+mkdir $target_dir
+
+g.region -ag s=0 n=80 w=0 e=120 res=1
+r.external.out format="GTiff" directory=$temp_dir extension="tif" options="COMPRESS=LZW"
+for rmap_idx in 1 2 3
+do
+  for prefix in a b
+  do
+    r.mapcalc expression="${prefix}_${rmap_idx} = ${rmap_idx}00 --overwrite
+    r.support map="${prefix}_${rmap_idx} semantic_label=$prefix
+  done
+done
+t.create type="strds" temporaltype="absolute" output="A" \
+    title="A test" description="A test" --overwrite
+t.register -i type="raster" input="A" maps="a_1,a_2,a_3" \
+    start="2001-01-01" increment="3 months" --overwrite
+t.create type="strds" temporaltype="absolute" output="B" \
+    title="B test" description="B test" --overwrite
+t.register -i type="raster" input="B" maps="b_1,b_2,b_3" \
+    start="2001-01-01" increment="1 day" --overwrite
+
+t.rast.copytree -m input="A" temporal_tree="%Y/%m" nprocs=2 \
+    output_directory=$target_dir
+
+t.rast.copytree -s input="B" temporal_tree="%Y/%m/%d" nprocs=2 \
+output_directory=$target_dir
+</pre></div>
+
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">t.rast.copytree source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Tuesday Oct 01 05:54:41 2024
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass84/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass84/docs/html/temporal.html">Temporal index</a> |
+<a href="file:///usr/lib/grass84/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass84/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass84/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass84/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2024
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.0 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

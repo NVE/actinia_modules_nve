@@ -5,9 +5,9 @@
  <meta name="Author" content="GRASS Development Team">
  <meta http-equiv="content-language" content="en-us">
  <meta name="viewport" content="width=device-width, initial-scale=1">
- <title>g.unzip - GRASS GIS manual</title>
- <meta name="description" content="g.unzip: Unzip zip-files in a directory in parallel">
- <meta name="keywords" content="general, zip, unzip, unpack">
+ <title>g.transfer - GRASS GIS manual</title>
+ <meta name="description" content="g.transfer: Move or copy files or directories from source to target">
+ <meta name="keywords" content="general, file, directory, move, copy">
  <link rel="stylesheet" href="grassdocs.css" type="text/css">
 </head>
 <body bgcolor="white">
@@ -38,21 +38,21 @@ grassLogoLink.after(temp.content);
 <hr class="header">
 
 <h2>NAME</h2>
-<em><b>g.unzip</b></em>  - Unzip zip-files in a directory in parallel
+<em><b>g.transfer</b></em>  - Move or copy files or directories from source to target
 <h2>KEYWORDS</h2>
-<a href="file:///usr/lib/grass84/docs/html/general.html">general</a>, <a href="file:///usr/lib/grass84/docs/html/topic_zip.html">zip</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#unzip">unzip</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#unpack">unpack</a>
+<a href="file:///usr/lib/grass84/docs/html/general.html">general</a>, <a href="file:///usr/lib/grass84/docs/html/topic_file.html">file</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#directory">directory</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#move">move</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#copy">copy</a>
 <h2>SYNOPSIS</h2>
-<div id="name"><b>g.unzip</b><br></div>
-<b>g.unzip --help</b><br>
-<div id="synopsis"><b>g.unzip</b> [-<b>r</b>] <b>input</b>=<em>name</em>  [<b>output</b>=<em>name</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="name"><b>g.transfer</b><br></div>
+<b>g.transfer --help</b><br>
+<div id="synopsis"><b>g.transfer</b> [-<b>m</b>] <b>source</b>=<em>string</em> <b>target</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
 <h3>Flags:</h3>
 <dl>
-<dt><b>-r</b></dt>
-<dd>Remove zip-file(s) after extraction</dd>
-<dd>Remove zip-file(s) after extraction</dd>
+<dt><b>-m</b></dt>
+<dd>Move files or directories (default is copy)</dd>
+<dd>Move files or directories (default is copy)</dd>
 
 <dt><b>--help</b></dt>
 <dd>Print usage summary</dd>
@@ -68,11 +68,11 @@ grassLogoLink.after(temp.content);
 <div id="parameters">
 <h3>Parameters:</h3>
 <dl>
-<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
-<dd>Path to the input directory with zip-files to extract</dd>
+<dt><b>source</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to source of files or directories to transfer (supports wildcards (*))</dd>
 
-<dt><b>output</b>=<em>name</em></dt>
-<dd>Path to the output directory to extract zip-files to</dd>
+<dt><b>target</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to target to transfer files or directories to</dd>
 
 <dt><b>nprocs</b>=<em>integer</em></dt>
 <dd>Number of threads for parallel computing</dd>
@@ -90,15 +90,22 @@ grassLogoLink.after(temp.content);
 </div>
 <h2><a name="description">DESCRIPTION</a></h2>
 
-<em>g.unzip</em> is a simple helper module to unzip all zip-files in a directory
-in parallel. The user can select an <b>output</b> directory, the number of parallel
-processes (<b>nprocs</b>) and to remove the extracted zip-file (<b>r-flag</b>).
+<em>g.transfer</em> is a simple helper module to be used in actinia to
+transfer files or directories from local storage on a worker node
+to persistent network storage.
+<p>
+If the <b>target</b> directory does not exist it is created. The
+<b>source</b> option supports the use of wildcards (*), so multiple
+files and/or directories can be transfered. The <b>nprocs</b> option
+allows to transfer multiple files or directories in parallel. With
+the <b>m</b>-flag the source is moved and not copied (the default).
 
 
 <h2><a name="examples">EXAMPLES</a></h2>
 
 <div class="code"><pre>
-g.unizip -r nprocs=5 input="./"
+temp_file=$(g.tempfile pid=12345)
+g.transfer -f source="$temp_file" target=/tmp
 </pre></div>
 
 
@@ -108,11 +115,11 @@ Stefan Blumentrath
 <h2>SOURCE CODE</h2>
 <p>
   Available at:
-  <a href="">g.unzip source code</a>
+  <a href="">g.transfer source code</a>
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Tuesday Oct 01 05:54:53 2024
+  Accessed: Tuesday Oct 01 05:54:54 2024
 </p>
 <hr class="header">
 <p>

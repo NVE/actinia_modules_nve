@@ -5,9 +5,9 @@
  <meta name="Author" content="GRASS Development Team">
  <meta http-equiv="content-language" content="en-us">
  <meta name="viewport" content="width=device-width, initial-scale=1">
- <title>g.unzip - GRASS GIS manual</title>
- <meta name="description" content="g.unzip: Unzip zip-files in a directory in parallel">
- <meta name="keywords" content="general, zip, unzip, unpack">
+ <title>g.remove.path - GRASS GIS manual</title>
+ <meta name="description" content="g.remove.path: Remove temporary files or directories">
+ <meta name="keywords" content="general, remove, file, directory, cleanup">
  <link rel="stylesheet" href="grassdocs.css" type="text/css">
 </head>
 <body bgcolor="white">
@@ -38,21 +38,25 @@ grassLogoLink.after(temp.content);
 <hr class="header">
 
 <h2>NAME</h2>
-<em><b>g.unzip</b></em>  - Unzip zip-files in a directory in parallel
+<em><b>g.remove.path</b></em>  - Remove temporary files or directories
 <h2>KEYWORDS</h2>
-<a href="file:///usr/lib/grass84/docs/html/general.html">general</a>, <a href="file:///usr/lib/grass84/docs/html/topic_zip.html">zip</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#unzip">unzip</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#unpack">unpack</a>
+<a href="file:///usr/lib/grass84/docs/html/general.html">general</a>, <a href="file:///usr/lib/grass84/docs/html/topic_remove.html">remove</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#file">file</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#directory">directory</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#cleanup">cleanup</a>
 <h2>SYNOPSIS</h2>
-<div id="name"><b>g.unzip</b><br></div>
-<b>g.unzip --help</b><br>
-<div id="synopsis"><b>g.unzip</b> [-<b>r</b>] <b>input</b>=<em>name</em>  [<b>output</b>=<em>name</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="name"><b>g.remove.path</b><br></div>
+<b>g.remove.path --help</b><br>
+<div id="synopsis"><b>g.remove.path</b> [-<b>fr</b>] <b>path</b>=<em>string</em>  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
 <h3>Flags:</h3>
 <dl>
+<dt><b>-f</b></dt>
+<dd>Force removal</dd>
+<dd>Force removal of files or directories</dd>
+
 <dt><b>-r</b></dt>
-<dd>Remove zip-file(s) after extraction</dd>
-<dd>Remove zip-file(s) after extraction</dd>
+<dd>Remove directories recursively</dd>
+<dd>Remove directories recursively</dd>
 
 <dt><b>--help</b></dt>
 <dd>Print usage summary</dd>
@@ -68,15 +72,8 @@ grassLogoLink.after(temp.content);
 <div id="parameters">
 <h3>Parameters:</h3>
 <dl>
-<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
-<dd>Path to the input directory with zip-files to extract</dd>
-
-<dt><b>output</b>=<em>name</em></dt>
-<dd>Path to the output directory to extract zip-files to</dd>
-
-<dt><b>nprocs</b>=<em>integer</em></dt>
-<dd>Number of threads for parallel computing</dd>
-<dd>Default: <em>1</em></dd>
+<dt><b>path</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to the file or directory to remove</dd>
 
 </dl>
 </div>
@@ -90,15 +87,18 @@ grassLogoLink.after(temp.content);
 </div>
 <h2><a name="description">DESCRIPTION</a></h2>
 
-<em>g.unzip</em> is a simple helper module to unzip all zip-files in a directory
-in parallel. The user can select an <b>output</b> directory, the number of parallel
-processes (<b>nprocs</b>) and to remove the extracted zip-file (<b>r-flag</b>).
+<em>g.remove.path</em> is a simple helper module to be used in actinia to
+clean-up temporary files and directories on a worker node.
+In line with <em>g.remove</em> no files or directories are removed without
+the <b>f</b>-flag. For directories also the <b>r</b>-flag is needed.
+The <b>path</b> option supports the use of wildcards (*), handle with care.
 
 
 <h2><a name="examples">EXAMPLES</a></h2>
 
 <div class="code"><pre>
-g.unizip -r nprocs=5 input="./"
+temp_file=$(g.tempfile pid=12345)
+g.remove.path -f path="$temp_file"
 </pre></div>
 
 
@@ -108,11 +108,11 @@ Stefan Blumentrath
 <h2>SOURCE CODE</h2>
 <p>
   Available at:
-  <a href="">g.unzip source code</a>
+  <a href="">g.remove.path source code</a>
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Tuesday Oct 01 05:54:53 2024
+  Accessed: Tuesday Oct 01 05:54:54 2024
 </p>
 <hr class="header">
 <p>

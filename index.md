@@ -1,5 +1,7 @@
 # Manual pages for actinia modules from NVE
  
+- [g.remove.path](./g.remove.path.html)
+- [g.transfer](./g.transfer.html)
 - [g.unzip](./g.unzip.html)
 - [i.asf.download](./i.asf.download.html)
 - [i.pytorch](./i.pytorch.html)
@@ -14,6 +16,7 @@
 - [t.pytorch.predict](./t.pytorch.predict.html)
 - [t.rast.aggregate.condition](./t.rast.aggregate.condition.html)
 - [t.rast.aggregate.patch](./t.rast.aggregate.patch.html)
+- [t.rast.copytree](./t.rast.copytree.html)
 - [t.rast.patch.group](./t.rast.patch.group.html)
 - [t.rast.reclass](./t.rast.reclass.html)
 - [t.rast.stats](./t.rast.stats.html)
