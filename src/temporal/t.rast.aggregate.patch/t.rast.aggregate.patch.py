@@ -117,6 +117,11 @@ GNU General Public License for more details.
 # %end
 
 # %flag
+# % key: g
+# % description: Use r.buildvrt.gdal for patching (for GDAL-linked raster maps)
+# %end
+
+# %flag
 # % key: n
 # % description: Register Null maps
 # %end
@@ -137,7 +142,8 @@ GNU General Public License for more details.
 # %end
 
 # %rules
-# % excludes: -v,-s,-z
+# % excludes: -v,-s,-z,-g
+# % excludes: -g,-s,-z,-v
 # % collective: title,description
 # % required: -e,title,description
 # %end
@@ -427,6 +433,18 @@ def main():
 
         granularity_list.append(granule)
 
+    if flags["g"] and not gs.find_program("r.buildvrt.gdal", "--help"):
+        gs.fatal(
+            _("Cannot find addon <r.buildvrt.gdal>. Please make sure it is installed.")
+        )
+
+    if flags["v"]:
+        patch_module = "r.buildvrt"
+    elif flags["g"]:
+        patch_module = "r.buildvrt.gdal"
+    else:
+        patch_module = "r.patch"
+
     output_list = patch_by_topology(
         granularity_list=granularity_list,
         granularity=gran,
@@ -435,7 +453,7 @@ def main():
         basename=options["basename"],
         time_suffix=options["suffix"],
         offset=options["offset"],
-        module="r.buildvrt" if flags["v"] else "r.patch",
+        module=patch_module,
         nprocs=int(options["nprocs"]),
         sort=options["sort"],
         overwrite=overwrite,
