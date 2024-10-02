@@ -46,7 +46,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>t.rast.aggregate.patch</b><br></div>
 <b>t.rast.aggregate.patch --help</b><br>
-<div id="synopsis"><b>t.rast.aggregate.patch</b> [-<b>enzsv</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]   [<b>sort</b>=<em>string</em>]  <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]   [<b>basename</b>=<em>string</em>]   [<b>offset</b>=<em>integer</em>]   [<b>suffix</b>=<em>string</em>]  <b>granularity</b>=<em>string</em>  [<b>sampling</b>=<em>name</em>[,<i>name</i>,...]]   [<b>nprocs</b>=<em>integer</em>]   [<b>region_relation</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>t.rast.aggregate.patch</b> [-<b>egnzsv</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]   [<b>sort</b>=<em>string</em>]  <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]   [<b>basename</b>=<em>string</em>]   [<b>offset</b>=<em>integer</em>]   [<b>suffix</b>=<em>string</em>]  <b>granularity</b>=<em>string</em>  [<b>sampling</b>=<em>name</em>[,<i>name</i>,...]]   [<b>nprocs</b>=<em>integer</em>]   [<b>region_relation</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -54,6 +54,9 @@ grassLogoLink.after(temp.content);
 <dl>
 <dt><b>-e</b></dt>
 <dd>Extend existing STRDS (requires overwrite flag)</dd>
+
+<dt><b>-g</b></dt>
+<dd>Use r.buildvrt.gdal for patching (for GDAL-linked raster maps)</dd>
 
 <dt><b>-n</b></dt>
 <dd>Register Null maps</dd>
@@ -246,7 +249,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Tuesday Oct 01 20:44:35 2024
+  Accessed: Wednesday Oct 02 12:23:53 2024
 </p>
 <hr class="header">
 <p>
