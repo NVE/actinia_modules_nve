@@ -33,6 +33,7 @@ comes with GRASS for details.
 
 # %option G_OPT_M_DIR
 # % key: source_directory
+# % guisection: output
 # % description: Path to the source directory
 # % required: no
 # %end
@@ -61,6 +62,12 @@ comes with GRASS for details.
 # %end
 
 # %flag
+# % key: o
+# % label: Overwrite existing files
+# % description: Overwrite existing files
+# %end
+
+# %flag
 # % key: s
 # % label: Use semantic label in directory structure
 # % description: Use semantic label in directory structure
@@ -72,12 +79,38 @@ comes with GRASS for details.
 
 import shutil
 import sys
-from itertools import starmap
 from multiprocessing import Pool
 from pathlib import Path
 
 import grass.script as gs
 import grass.temporal as tgis
+
+OVERWRITE = False
+
+
+def _move(source, target):
+    """Wrapper for shutil.move"""
+    target = Path(target)
+    if target.exists():
+        if not OVERWRITE:
+            gs.fatal(
+                _("Target <{}> exists. Please use the overvrite flag.").format(
+                    str(target)
+                )
+            )
+        target.unlink()
+
+    shutil.move(source, target)
+
+
+def _copy(source, target):
+    """Wrapper for shutil.copy2"""
+    target = Path(target)
+    if target.exists() and not OVERWRITE:
+        gs.fatal(
+            _("Target <{}> exists. Please use the overvrite flag.").format(str(target))
+        )
+    shutil.copy2(source, target)
 
 
 def transfer_results(
@@ -88,7 +121,7 @@ def transfer_results(
     sep="|",
     suffix="tif",
     use_semantic_label=False,
-    move=False,
+    transfer_function=_copy,
     nprocs=1,
 ):
     """Transfer resulting maps to Network storage"""
@@ -109,7 +142,7 @@ def transfer_results(
         transfer_tuples.append(
             (
                 f"{source_directory / map_row['name']!s}{suffix}",
-                str(target_directory),
+                f"{target_directory / map_row['name']!s}{suffix}",
             )
         )
         return_list.append(
@@ -129,20 +162,20 @@ def transfer_results(
         target_directory.mkdir(exist_ok=True, parents=True)
 
     # Transfer files in parallel
-    # Support several functions (move, copy, ...)
-    transfer_function = shutil.move if move else shutil.copy
-
     if nprocs > 1:
         with Pool(nprocs) as pool:
             pool.starmap(transfer_function, transfer_tuples)
     else:
-        list(starmap(transfer_function, transfer_tuples))
+        for transfer_tuple in transfer_tuples:
+            transfer_function(*transfer_tuple)
     return return_list
 
 
 def main():
     """Do the main work"""
     options, flags = gs.parser()
+    global OVERWRITE
+    OVERWRITE = flags["o"]
 
     # Check if maps are exported to GDAL formats
     if options["source_directory"]:
@@ -182,7 +215,7 @@ def main():
         sep="|",
         suffix=suffix,
         use_semantic_label=flags["s"],
-        move=flags["m"],
+        transfer_function=_move if flags["m"] else _copy,
         nprocs=1,
     )
 
