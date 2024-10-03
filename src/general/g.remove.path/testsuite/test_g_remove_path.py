@@ -26,6 +26,7 @@ class TestGRemovePath(TestCase):
         (cls.tempdir / "dir_2").mkdir(parents=True, exist_ok=True)
         (cls.tempdir / "dir_3").mkdir(parents=True, exist_ok=True)
         (cls.tempdir / "dir_4").mkdir(parents=True, exist_ok=True)
+        (cls.tempdir / "dir_5").mkdir(parents=True, exist_ok=True)
         (cls.tempdir / "dir_4" / "dir_1").mkdir(parents=True, exist_ok=True)
         (cls.tempdir / "file_1").write_text("", encoding="UTF8")
         (cls.tempdir / "file_2").write_text("", encoding="UTF8")
@@ -109,6 +110,19 @@ class TestGRemovePath(TestCase):
         self.assertTrue("WARNING" in g_remove_list.outputs.stderr)
         # Check that no dirs are removed
         self.assertTrue(len(list((self.tempdir / "dir_4").glob("*"))) == 1)
+
+    def test_g_remove_path_single_dir_removal(self):
+        """Test removal of single dir"""
+        # Check that g.remove.path runs successfully
+        g_remove_list = SimpleModule(
+            "g.remove.path",
+            path=f"{self.tempdir}/dir_5",
+            flags="rf",
+        ).run()
+        print(g_remove_list.outputs.stderr)
+        # Check that the dir is removed
+        self.assertFalse((self.tempdir / "dir_5").exists())
+        self.assertTrue("WARNING" not in g_remove_list.outputs.stderr)
 
 
 if __name__ == "__main__":
