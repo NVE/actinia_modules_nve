@@ -40,6 +40,12 @@ comes with GRASS for details.
 # % description: Move files or directories (default is copy)
 # %end
 
+# %flag
+# % key: o
+# % label: Overwrite existing files
+# % description: Overwrite existing files
+# %end
+
 # ruff: noqa: PTH207
 
 import shutil
@@ -52,23 +58,41 @@ from pathlib import Path
 import grass.script as gs
 
 
-def transfer(source, target=None, move=False):
+def transfer(source, target=None, move=False, overwrite=False):
     """Function to transfer files from source to target"""
     source = Path(source)
-    if move:
-        gs.verbose(
-            _("Moving <{source}> to <{target}>").format(source=source, target=target)
-        )
-        shutil.move(source, target)
+    if source.is_file():
+        target_name = target / source.name
+        if target_name.exists():
+            if not overwrite:
+                gs.fatal(_("Target <{}> exists. Please use the overwrite flag."))
+            target_name.unlink()
+        if move:
+            gs.verbose(
+                _("Moving <{source}> to <{target}>").format(
+                    source=source, target=target
+                )
+            )
+            shutil.move(source, target)
+            return
+        shutil.copy2(source, target)
         return
     if source.is_dir():
         gs.verbose(
-            _("Copying directory tree <{source}> to <{target}>").format(
-                source=source, target=target
+            _("{method} directory tree <{source}> to <{target}>").format(
+                method="Moving" if move else "Copying", source=source, target=target
             )
         )
         target_dir = target / source.name
+        if target_dir.exists() and not overwrite:
+            gs.fatal(
+                _("Target <{}> exists. Please use the overwrite flag.").format(
+                    str(target_dir)
+                )
+            )
         shutil.copytree(source, target_dir, dirs_exist_ok=True)
+        if move:
+            shutil.rmtree(source)
         return
     gs.verbose(
         _("Copying file <{source}> to <{target}>").format(source=source, target=target)
@@ -78,7 +102,6 @@ def transfer(source, target=None, move=False):
 
 def main():
     """Do the main work"""
-    options, flags = gs.parser()
     paths_to_transfer = glob(options["source"])
     if not paths_to_transfer:
         gs.warning(
@@ -94,7 +117,9 @@ def main():
         )
     target_directory.mkdir(exist_ok=True, parents=True)
 
-    transfer_function = partial(transfer, target=target_directory, move=flags["m"])
+    transfer_function = partial(
+        transfer, target=target_directory, move=flags["m"], overwrite=flags["o"]
+    )
     nprocs = int(options["nprocs"])
 
     if nprocs > 1:
@@ -106,4 +131,5 @@ def main():
 
 
 if __name__ == "__main__":
+    options, flags = gs.parser()
     sys.exit(main())
