@@ -73,11 +73,12 @@ def main():
                         gs.warning(
                             _("Could not remove directory <{}>").format(user_path)
                         )
-                gs.warning(
-                    _(
-                        "Cannot remove <{}>. It is a directory. Use the r-flag to remove it."
-                    ).format(user_path)
-                )
+                else:
+                    gs.warning(
+                        _(
+                            "Cannot remove <{}>. It is a directory. Use the r-flag to remove it."
+                        ).format(user_path)
+                    )
     else:
         gs.info(_("Set to remove the following files and directories:"))
         gs.info(_("Use the f-flag to actually remove them."))
