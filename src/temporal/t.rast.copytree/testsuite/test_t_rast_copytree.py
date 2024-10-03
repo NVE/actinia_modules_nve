@@ -36,7 +36,7 @@ class TestTRastCopytree(TestCase):
             extension="tif",
         )
         for rmap_idx in range(1, 4):
-            for prefix in ("a", "b"):
+            for prefix in ("a", "b", "c"):
                 cls.runModule(
                     "r.mapcalc",
                     expression=f"{prefix}_{rmap_idx} = {rmap_idx}00",
@@ -86,6 +86,26 @@ class TestTRastCopytree(TestCase):
             overwrite=True,
         )
 
+        cls.runModule(
+            "t.create",
+            type="strds",
+            temporaltype="absolute",
+            output="C",
+            title="C test",
+            description="C test",
+            overwrite=True,
+        )
+        cls.runModule(
+            "t.register",
+            flags="i",
+            type="raster",
+            input="C",
+            maps="c_1,c_2,c_3",
+            start="2001-01-01",
+            increment="1 day",
+            overwrite=True,
+        )
+
     @classmethod
     def tearDownClass(cls):
         """Remove the temporary region"""
@@ -104,8 +124,11 @@ class TestTRastCopytree(TestCase):
             input="A",
             temporal_tree="%Y/%m",
             output_directory=str(self.tempdir_target),
-            nprocs="1",
+            nprocs="2",
         )
+        self.assertFalse((self.tempdir / "a_1.tif").exists())
+        self.assertFalse((self.tempdir / "a_2.tif").exists())
+        self.assertFalse((self.tempdir / "a_3.tif").exists())
 
         self.assertFileExists(str(self.tempdir_target / "2001/01/a_1.tif"))
         self.assertFileExists(str(self.tempdir_target / "2001/04/a_2.tif"))
@@ -120,7 +143,7 @@ class TestTRastCopytree(TestCase):
             input="B",
             temporal_tree="%Y/%m/%d",
             output_directory=str(self.tempdir_target),
-            nprocs="1",
+            nprocs="2",
         )
 
         self.assertFileExists(str(self.tempdir / "b_1.tif"))
@@ -129,6 +152,50 @@ class TestTRastCopytree(TestCase):
         self.assertFileExists(str(self.tempdir_target / "b/2001/01/01/b_1.tif"))
         self.assertFileExists(str(self.tempdir_target / "b/2001/01/02/b_2.tif"))
         self.assertFileExists(str(self.tempdir_target / "b/2001/01/03/b_3.tif"))
+
+    def test_t_rast_copytree_copy_overwrite(self):
+        """Check that t.rast.copytree handles overwriting"""
+        # Check that t.rast.copytree handles overwriting
+        self.assertModule(
+            "t.rast.copytree",
+            input="C",
+            temporal_tree="%Y/%m/%d",
+            output_directory=str(self.tempdir_target),
+            nprocs="2",
+        )
+
+        self.assertModuleFail(
+            "t.rast.copytree",
+            input="C",
+            temporal_tree="%Y/%m/%d",
+            output_directory=str(self.tempdir_target),
+            nprocs="2",
+        )
+
+        self.assertModuleFail(
+            "t.rast.copytree",
+            flags="m",
+            input="C",
+            temporal_tree="%Y/%m/%d",
+            output_directory=str(self.tempdir_target),
+            nprocs="2",
+        )
+
+        self.assertModule(
+            "t.rast.copytree",
+            flags="om",
+            input="C",
+            temporal_tree="%Y/%m/%d",
+            output_directory=str(self.tempdir_target),
+            nprocs="2",
+        )
+
+        self.assertFalse((self.tempdir / "c_1.tif").exists())
+        self.assertFalse((self.tempdir / "c_2.tif").exists())
+        self.assertFalse((self.tempdir / "c_3.tif").exists())
+        self.assertFileExists(str(self.tempdir_target / "2001/01/01/c_1.tif"))
+        self.assertFileExists(str(self.tempdir_target / "2001/01/02/c_2.tif"))
+        self.assertFileExists(str(self.tempdir_target / "2001/01/03/c_3.tif"))
 
 
 if __name__ == "__main__":
