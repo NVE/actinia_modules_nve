@@ -8,6 +8,7 @@ for details.
 :authors: Stefan Blumentrath
 """
 
+import os
 from pathlib import Path
 
 import grass.script as gs
@@ -26,12 +27,16 @@ class TestGTransfer(TestCase):
         (cls.tempdir / "dir_2").mkdir(parents=True, exist_ok=True)
         (cls.tempdir / "dir_3").mkdir(parents=True, exist_ok=True)
         (cls.tempdir / "dir_4").mkdir(parents=True, exist_ok=True)
+        (cls.tempdir / "dir_5").mkdir(parents=True, exist_ok=True)
+        (cls.tempdir / "dir_5" / "dir_1").mkdir(parents=True, exist_ok=True)
+        (cls.tempdir / "dir_5" / "file_1").write_text("Test", encoding="UTF8")
         (cls.tempdir / "dir_4" / "dir_1").mkdir(parents=True, exist_ok=True)
         (cls.tempdir / "file_1").write_text("Test", encoding="UTF8")
         (cls.tempdir / "file_2").write_text("Test", encoding="UTF8")
         (cls.tempdir / "file_3").write_text("Test", encoding="UTF8")
         (cls.tempdir / "dir_3" / "file_1").write_text("Test", encoding="UTF8")
         (cls.tempdir / "dir_4" / "file_1").write_text("Test", encoding="UTF8")
+        os.environ["GRASS_OVERWRITE"] = "0"
 
     @classmethod
     def tearDownClass(cls):
@@ -57,6 +62,43 @@ class TestGTransfer(TestCase):
         self.assertTrue((self.tempdir_target / "dir_4").is_dir())
         self.assertTrue((self.tempdir_target / "dir_4" / "dir_1").is_dir())
         self.assertFileExists(str(self.tempdir_target / "dir_4" / "file_1"))
+
+    def test_g_transfer_overwriting(self):
+        """Test overwriting files and directories"""
+
+        # Check that g.transfer runs successfully
+        self.assertModule(
+            "g.transfer",
+            source=f"{self.tempdir}/dir_5",
+            target=f"{self.tempdir_target}",
+        )
+
+        self.assertModuleFail(
+            "g.transfer",
+            source=f"{self.tempdir}/dir_5",
+            target=f"{self.tempdir_target}",
+        )
+
+        self.assertModule(
+            "g.transfer",
+            flags="o",
+            source=f"{self.tempdir}/dir_5",
+            target=f"{self.tempdir_target}",
+        )
+
+        self.assertModule(
+            "g.transfer",
+            flags="mo",
+            source=f"{self.tempdir}/dir_5",
+            target=f"{self.tempdir_target}",
+        )
+
+        # Check that no files are removed
+        self.assertFalse((self.tempdir / "dir_5").exists())
+        # Check that files are finally moved
+        self.assertTrue((self.tempdir_target / "dir_5").exists())
+        self.assertTrue((self.tempdir_target / "dir_5" / "dir_1").exists())
+        self.assertFileExists(str(self.tempdir_target / "dir_5" / "file_1"))
 
     def test_g_transfer_move(self):
         """Test moving files and directories"""
