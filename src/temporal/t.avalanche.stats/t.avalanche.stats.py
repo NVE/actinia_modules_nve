@@ -92,8 +92,8 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
     avalanche_map_id = avalanche_map_row["id"]
     avalanche_map = avalanche_map_id.split("@")[0]
     gs.verbose(_("Processing avalanche map {}").format(avalanche_map))
-    t_0 = avalanche_map_row["t_0"]
-    t_1 = avalanche_map_row["t_1"]
+    t_0 = avalanche_map_row["start_time"]
+    t_1 = avalanche_map_row["end_time"]
     # semantic_label = avalanche_map_row["semantic_label"]
     name_components = avalanche_map_row["id"].split("_")
     polarization, sat_geom, direction = (
