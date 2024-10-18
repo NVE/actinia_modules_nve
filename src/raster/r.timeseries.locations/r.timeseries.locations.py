@@ -102,6 +102,13 @@ COPYRIGHT:    (C) 2023 by Stefan Blumentrath
 # % multiple: no
 # %end
 
+# %option G_OPT_R_INPUT
+# % key: align
+# % description: Raster map to align pixels with
+# % required: no
+# % multiple: no
+# %end
+
 # %option
 # % key: domain_id
 # % type: integer
@@ -332,10 +339,11 @@ def main():
     gs.vector.vector_history(locations, replace=True)
 
     # Set computational region
+    gs.use_temp_region()
     Module(
         "g.region",
         vector=locations,
-        align=continuous_subdivision_map,
+        align=options["align"] or continuous_subdivision_map,
         flags="g",
     )
 
@@ -433,6 +441,9 @@ def main():
         )
         cursor.commit()
         conn.close()
+
+    # Remove the temporary region
+    gs.del_temp_region()
 
 
 if __name__ == "__main__":
