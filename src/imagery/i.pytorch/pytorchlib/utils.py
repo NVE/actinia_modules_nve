@@ -71,6 +71,8 @@ def transform_axes(np_array, from_format="HWC", to_format="NCHW"):
             else:
                 reorder[from_format.index(letter)] = to_format.index(letter)
         else:
+            if letter not in to_format:
+                continue
             # Expand dimension (adding at the end)
             reorder[len(from_format)] = to_format.index(letter)
             np_array = np.expand_dims(np_array, len(from_format))
