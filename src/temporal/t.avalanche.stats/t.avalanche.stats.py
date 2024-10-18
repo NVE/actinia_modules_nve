@@ -91,6 +91,17 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
 
     avalanche_map_id = avalanche_map_row["id"]
     avalanche_map = avalanche_map_id.split("@")[0]
+    max_val = gs.raster_info(avalanche_map_id)["max"]
+    if max_val > 1:
+        gs.warning(
+            _(
+                "Unexpected maximum value '{max}' encountered in map '{map}'. Skipping..."
+            ).format(max=max_val, map=avalanche_map_id)
+        )
+        return
+    if max_val < 1:
+        gs.warning(_("No avalanches detected in map {}.").format(avalanche_map_id))
+        return
     gs.verbose(_("Processing avalanche map {}").format(avalanche_map))
     t_0 = avalanche_map_row["start_time"]
     t_1 = avalanche_map_row["end_time"]
@@ -105,22 +116,22 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
     reclass_map = f"{TMP_PREFIX}_{avalanche_map}_rc"
     gs.use_temp_region()
     Module("g.region", align=avalanche_map, raster=avalanche_map)
+
     Module(
-        "r.reclass",
-        input=avalanche_map_id,
-        output=reclass_map,
-        rules="-",
-        stdin_="1 = 1\n* = NULL",
+        "r.mapcalc",
+        expression=f"{reclass_map}=int(if({avalanche_map_id}==1,1,null()))",
+        overwrite=True,
+        quiet=True,
     )
     Module("r.to.vect", input=reclass_map, output=avalanche_map, type="area")
-    # Module("v.to.db", input=avalanche_map, method=f"{TMP_PREFIX}_clumped_rc", column="areal_m2")
     Module(
         "v.db.addcolumn",
+        quiet=True,
         map=avalanche_map,
         columns=(
             "t_0 TEXT, t_1 TEXT,"
-            "polarization TEXT,"
-            "sat_geom INTEGER, polarization TEXT,"
+            "pol TEXT,"
+            "sat_geom INTEGER,"
             "direction TEXT, algoritme TEXT,"
             "dtm_min REAL,dtm_mean REAL,"
             "dtm_max REAL,slp_min REAL,"
@@ -137,18 +148,18 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
         for idx, area in enumerate(avalanche_vmap.viter("areas")):
             # Skip islands and areas outside the valid area range
             gs.percent(idx + 1, areas_n, 3)
-            if (
-                area.area() < valid_area_range[0]
-                or area.area() > valid_area_range[1]
-                or not area.cat
-            ):
+
+            # Skip areas without centroid / cat
+            if not area.centroid().cat:
+                continue
+            if not valid_area_range[0] < area.area() < valid_area_range[1]:
                 gs.verbose(
                     _("Skipping area <{cat}> with {area_m2} m2.").format(
                         cat=area.cat, area_m2=area.area()
                     )
                 )
                 continue
-            tmp_map = f"{TMP_PREFIX}_{area.cat}_raster"
+            tmp_map = f"{TMP_PREFIX}_{area.centroid().cat}_raster"
             area_bbox = area.bbox()
             area_attributes = area.attrs
             area_attributes["algoritme"] = "unet"
@@ -209,9 +220,16 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
             area_attributes.commit()
             gs.del_temp_region()
 
-    Module("v.edit", map=avalanche_map, tool="delete", where="algoritme IS NULL")
-    export_module = Module(
+    Module(
+        "v.edit",
+        quiet=True,
+        map=avalanche_map,
+        tool="delete",
+        where="algoritme IS NULL",
+    )
+    Module(
         "v.out.ogr",
+        quiet=True,
         input=avalanche_map,
         output=str(kwargs["output"] / f"{avalanche_map}.shp"),
         format="ESRI_Shapefile",
