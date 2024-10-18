@@ -49,7 +49,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>r.timeseries.locations</b><br></div>
 <b>r.timeseries.locations --help</b><br>
-<div id="synopsis"><b>r.timeseries.locations</b> <b>locations</b>=<em>Map name for the managed locations</em>  [<b>locations_subunits</b>=<em>Map name for subunits of the managed locations</em>]  <b>locations_url</b>=<em>string</em>  [<b>layer</b>=<em>string</em>]   [<b>where</b>=<em>sql_query</em>]   [<b>snap</b>=<em>float</em>]   [<b>method</b>=<em>string</em>]   [<b>keepass_file</b>=<em>Input KeePass file to get DB credentials from</em>]   [<b>keepass_title</b>=<em>string</em>]   [<b>continuous_subdivision_map</b>=<em>name</em>]  <b>domain_id</b>=<em>integer</em>  [<b>class_number</b>=<em>integer</em>]   [<b>round_to_closest</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>r.timeseries.locations</b> <b>locations</b>=<em>Map name for the managed locations</em>  [<b>locations_subunits</b>=<em>Map name for subunits of the managed locations</em>]  <b>locations_url</b>=<em>string</em>  [<b>layer</b>=<em>string</em>]   [<b>where</b>=<em>sql_query</em>]   [<b>snap</b>=<em>float</em>]   [<b>method</b>=<em>string</em>]   [<b>keepass_file</b>=<em>Input KeePass file to get DB credentials from</em>]   [<b>keepass_title</b>=<em>string</em>]   [<b>continuous_subdivision_map</b>=<em>name</em>]   [<b>align</b>=<em>name</em>]  <b>domain_id</b>=<em>integer</em>  [<b>class_number</b>=<em>integer</em>]   [<b>round_to_closest</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -104,6 +104,9 @@ grassLogoLink.after(temp.content);
 
 <dt><b>continuous_subdivision_map</b>=<em>name</em></dt>
 <dd>Name of input raster map</dd>
+
+<dt><b>align</b>=<em>name</em></dt>
+<dd>Raster map to align pixels with</dd>
 
 <dt><b>domain_id</b>=<em>integer</em>&nbsp;<b>[required]</b></dt>
 <dd>Domain ID of locations to import</dd>
@@ -170,7 +173,7 @@ Stefan Blumentrath
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Friday Oct 18 12:19:57 2024
+  Accessed: Friday Oct 18 14:37:54 2024
 </p>
 <hr class="header">
 <p>
