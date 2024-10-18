@@ -329,8 +329,7 @@ def main():
         "v.in.ogr",
         flags="o",
         # Until GDAL 3.6 is available UID and PWD have to be provided in the connection string
-        input=options["locations_url"]
-        + f";Tables={schema}.{layer};UID={os.environ.get('MSSQLSPATIAL_UID')};PWD={os.environ.get('MSSQLSPATIAL_PWD')}",
+        input=options["locations_url"] + f";Tables={schema}.{layer}",
         layer=layer if schema == "dbo" else f"{schema}.{layer}",
         where=where + " AND " + options["where"] if options["where"] else where,
         output=locations,
