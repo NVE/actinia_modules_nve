@@ -117,6 +117,11 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
     gs.use_temp_region()
     Module("g.region", align=avalanche_map, raster=avalanche_map)
 
+    # ToDo: use r.clump to get same ID across raster and vector
+    #       allows to
+    #         - remove v.to.rast and v.edit step,
+    #         - filter areas by size before vectorization, and
+    #         - to clump diagonal
     Module(
         "r.mapcalc",
         expression=f"{reclass_map}=int(if({avalanche_map_id}==1,1,null()))",
@@ -165,10 +170,9 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
             area_attributes["algoritme"] = "unet"
             area_attributes["t_0"] = t_0.strftime("%Y%m%dT%H%M%S")
             area_attributes["t_1"] = t_1.strftime("%Y%m%dT%H%M%S")
-            # area_attributes["polarization"] = polarization
             area_attributes["direction"] = direction
             area_attributes["sat_geom"] = sat_geom
-            area_attributes["polarization"] = polarization
+            area_attributes["pol"] = polarization
             gs.use_temp_region()
             Module(
                 "g.region",
@@ -216,6 +220,7 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
                 }
                 for method in ("min", "mean", "max"):
                     area_attributes[f"{prefix}_{method}"] = univar_stats.get(method)
+
             # Write new attributes to DB
             area_attributes.commit()
             gs.del_temp_region()
