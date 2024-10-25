@@ -65,6 +65,7 @@ import atexit
 import sys
 from pathlib import Path
 from subprocess import PIPE
+from zipfile import ZipFile
 
 import grass.script as gs
 import grass.temporal as tgis
@@ -84,6 +85,24 @@ def cleanup():
         flags="f",
         quiet=True,
     )
+
+
+def zip_shape(shape_file):
+    """Move shape file components into zip archive in the same directory"""
+    # Extract shape file path components
+    directory = shape_file.parent
+    base_name = shape_file.stem
+    # Get only shp, dbf, shx and prj components
+    shape_file_parts = [
+        file_path
+        for file_path in directory.glob(f"{base_name}.*")
+        if file_path.suffix.lower() in {".shp", ".dbf", ".shx", ".prj"}
+    ]
+    # Write to zip-file
+    with ZipFile(str(directory / f"{base_name}.zip"), "w") as zf:
+        for shape_file_part in shape_file_parts:
+            zf.write(shape_file_part)
+            shape_file_part.unlink()
 
 
 def process_avalanche_map(avalanche_map_row, **kwargs):
@@ -232,6 +251,13 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
         tool="delete",
         where="algoritme IS NULL",
     )
+    with VectorTopo(avalanche_map, mode="r") as avalanche_vmap:
+        if avalanche_vmap.number_of("areas") <= 0:
+            gs.warning(
+                _("No valid avalanche areas detected for {}").format(avalanche_map)
+            )
+            return
+
     Module(
         "v.out.ogr",
         quiet=True,
@@ -239,6 +265,7 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
         output=str(kwargs["output"] / f"{avalanche_map}.shp"),
         format="ESRI_Shapefile",
     )
+    zip_shape(kwargs["output"] / f"{avalanche_map}.shp")
 
 
 def main():
