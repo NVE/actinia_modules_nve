@@ -35,6 +35,12 @@ comes with GRASS for details.
 # %end
 
 # %flag
+# % key: s
+# % label: Skip corrupt zip-file(s)
+# % description: Skip corrupt zip-file(s)
+# %end
+
+# %flag
 # % key: r
 # % label: Remove zip-file(s) after extraction
 # % description: Remove zip-file(s) after extraction
@@ -60,25 +66,31 @@ def unzip_file(file_path, out_dir=None, remove=False):
 
     out_dir = Path("./") if not out_dir else Path(out_dir)
 
-    with ZipFile(file_path) as zip_file_object:
-        for zipped_file in zip_file_object.infolist():
-            file_name, file_date_time = (
-                zipped_file.filename.lstrip("/").lstrip("\\"),
-                zipped_file.date_time,
-            )
-            out_file_name = out_dir / file_name
-            # Create directory if path in zipfile is a directory
-            if zipped_file.is_dir():
-                out_file_name.mkdir(parents=True, exist_ok=True)
-            else:
-                # Create parent directory if needed
-                if not out_file_name.parent.exists():
-                    out_file_name.parent.mkdir(parents=True, exist_ok=True)
-                # Extract file
-                with zip_file_object.open(zipped_file) as zip_content:
-                    out_file_name.write_bytes(zip_content.read())
-            file_date_time = time.mktime((*file_date_time, 0, 0, -1))
-            os.utime(out_file_name, (file_date_time, file_date_time))
+    try:
+        with ZipFile(file_path) as zip_file_object:
+            for zipped_file in zip_file_object.infolist():
+                file_name, file_date_time = (
+                    zipped_file.filename.lstrip("/").lstrip("\\"),
+                    zipped_file.date_time,
+                )
+                out_file_name = out_dir / file_name
+                # Create directory if path in zipfile is a directory
+                if zipped_file.is_dir():
+                    out_file_name.mkdir(parents=True, exist_ok=True)
+                else:
+                    # Create parent directory if needed
+                    if not out_file_name.parent.exists():
+                        out_file_name.parent.mkdir(parents=True, exist_ok=True)
+                    # Extract file
+                    with zip_file_object.open(zipped_file) as zip_content:
+                        out_file_name.write_bytes(zip_content.read())
+                file_date_time = time.mktime((*file_date_time, 0, 0, -1))
+                os.utime(out_file_name, (file_date_time, file_date_time))
+    except OSError:
+        if flags["s"]:
+            return 0
+        else:
+            gs.fatal(_("Could not unzip file <{}>.").format(file_path))
 
     if not remove:
         return 0
