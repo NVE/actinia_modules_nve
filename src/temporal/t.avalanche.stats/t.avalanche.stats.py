@@ -174,7 +174,7 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
             gs.percent(idx + 1, areas_n, 3)
 
             # Skip areas without centroid / cat
-            if not area.centroid().cat:
+            if not area.centroid() or not area.centroid().cat:
                 continue
             if not valid_area_range[0] < area.area() < valid_area_range[1]:
                 gs.verbose(
