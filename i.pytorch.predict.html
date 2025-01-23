@@ -147,12 +147,16 @@ option describing the model together with it`s input and output.
 The imagery group provided in the <b>input</b> option has to contain raster maps for all bands
 required by the deep learning <b>model</b>. Raster maps are matched to the input bands using
 <em>semantic labels</em> and based on the meta information provided in the <b>configuration</b>
-option.
+option. In addition, an <b>auxillary_group</b> and a <b>reference_group</b> can be provided.
+Those options can be useful if e.g. input data from different points in time, with the same,
+semantic labels are supposed to be fed to model. Often, collecting all input bands in the
+<b>input</b> group can be sufficient.
 
 <h2><a name="configuration">CONFIGURATION</a></h2>
 The configuration is a JSON file that contains relevant information for initialisation
-of the model and describes all relevant input variables for applying the given deep learning model
-as well as the output.
+of the model and describes all relevant input variables, potentially together with
+auxillary or reference data, that are needed for applying the given deep learning
+model. The JSON file also describes the output bands accordingly.
 
 It is excpected to be structure as follows:
 <div class="code"><pre>
@@ -222,8 +226,8 @@ It is excpected to be structure as follows:
 <h2><a name="notes">NOTES</a></h2>
 
 <p>
-All input raster maps are expected to have <em>semantic_labels</em> assigned to them,
-as they are used to match bands to the model.
+All raster maps in the input groups are expected to have <em>semantic_labels</em> assigned to them,
+because the <em>semantic_labels</em> are used to match the bands to the model.
 
 Processing on GPU may require a smaller <b>tile_size</b> setting in order to fit
 data to available GPU memory. Smaller tile sizes however lead to an increased number
@@ -262,7 +266,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Thursday Jan 23 09:44:43 2025
+  Accessed: Thursday Jan 23 09:45:22 2025
 </p>
 <hr class="header">
 <p>
