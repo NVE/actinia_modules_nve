@@ -1,0 +1,75 @@
+<h2>DESCRIPTION</h2>
+
+<em>i.earthaccess.download</em> searches and downloads NASA EarthData datasets
+using the <em>earthaccess</em> libary.
+
+<p>
+The module options largely represent search parameters for collections and
+archives (granules). 
+
+<p>
+The temporal search parameters (<b>temporal</b>, <b>created_at</b>,
+<b>production_date</b>, <b>revision_date</b>) are given as a comma separated
+pair of ISO-formated datetime strings.
+
+<p>
+In order to be able to download data the user has to create an EarthData
+account and provide credentials to the module add earthaccess library
+respectively. Credentials can be provided in form of a <em>~/.netrc</em>
+file, environment variables named <em>EARTHDATA_USERNAME</em> and
+<em>EARTHDATA_PASSWORD</em>.
+
+
+<h2>EXAMPLES</h2>
+
+<h3>Retrieve and print metadata for available data(-sets)</h3>
+List short-names of available datasets (collections)
+<div class="code"><pre>
+i.earthaccess.download keyword=SWOT* print=collection_names
+</pre></div>
+
+Get core metadata of available datasets (collections)
+<div class="code"><pre>
+i.earthaccess.download keyword=SWOT* print=collections
+</pre></div>
+
+Get full metadata of available datasets (collections) in JSON format
+<div class="code"><pre>
+i.earthaccess.download keyword=SWOT* print=collections format=json
+</pre></div>
+
+Get full metadata of selected archives (granules) in JSON format
+<div class="code"><pre>
+i.earthaccess.download short_name=SWOT_L2_HR_Raster_100m_2.0 \
+  print=granule_metadata format=json
+</pre></div>
+
+<h3>Search and download data</h3>
+
+Search selected archives (granules) using sensinig time
+<div class="code"><pre>
+i.earthaccess.download short_name=SWOT_L2_HR_Raster_100m_2.0 \
+  temporal="2024-04-20,2024-06-10 12:34:56"
+</pre></div>
+
+<h3>Search selected archives (granules) using modification time</h3>
+<div class="code"><pre>
+i.earthaccess.download short_name=SWOT_L2_HR_Raster_100m_2.0 \
+  revision_date="2024-04-20,2024-06-10 12:34:56" \
+  output=/data/SWOT_L2_HR_Raster_100m/
+</pre></div>
+
+<h2>REQUIREMENTS</h2>
+<em>i.earthaccess.download</em> uses the following non-standard Python libraries:
+<ul>
+  <li>Python bindings for <a href="https://pypi.org/project/GDAL/">GDAL</a></li>
+  <li>the <a href="https://pypi.org/project/earthaccess/">earthaccess</a> Python library</li>
+</ul>
+
+<h2>REFERENCES</h2>
+
+<a href="https://docs.asf.alaska.edu/asf_search/basics/">asf_search Basics</a>
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath
