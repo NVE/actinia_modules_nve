@@ -1,0 +1,265 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>i.earthaccess.download - GRASS GIS manual</title>
+ <meta name="description" content="i.earthaccess.download: Searches and downloads earth observation data using the EarthAccess library for NASA Earthdata APIs.">
+ <meta name="keywords" content="imagery, satellite, download, EarthData, earthaccess">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass84/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#retrieve-and-print-metadata-for-available-data(-sets)">Retrieve and print metadata for available data(-sets)</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#search-and-download-data">Search and download data</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#search-selected-archives-(granules)-using-modification-time">Search selected archives (granules) using modification time</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#requirements">REQUIREMENTS</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#references">REFERENCES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>i.earthaccess.download</b></em>  - Searches and downloads earth observation data using the EarthAccess library for NASA Earthdata APIs.
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass84/docs/html/imagery.html">imagery</a>, <a href="file:///usr/lib/grass84/docs/html/topic_satellite.html">satellite</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#download">download</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#EarthData">EarthData</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#earthaccess">earthaccess</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>i.earthaccess.download</b><br></div>
+<b>i.earthaccess.download --help</b><br>
+<div id="synopsis"><b>i.earthaccess.download</b> [-<b>sw</b>]  [<b>output_directory</b>=<em>string</em>]   [<b>aoi</b>=<em>string</em>]   [<b>temporal</b>=<em>string</em>[,<i>string</i>,...]]   [<b>created_at</b>=<em>string</em>[,<i>string</i>,...]]   [<b>production_date</b>=<em>string</em>[,<i>string</i>,...]]   [<b>revision_date</b>=<em>string</em>[,<i>string</i>,...]]   [<b>keyword</b>=<em>string</em>]   [<b>short_name</b>=<em>string</em>]   [<b>granule_name</b>=<em>string</em>]   [<b>provider</b>=<em>string</em>]   [<b>limit</b>=<em>integer</em>]   [<b>print</b>=<em>string</em>]   [<b>format</b>=<em>string</em>]  <b>file</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]   [<b>check_scenes</b>=<em>string</em>]   [<b>scenes</b>=<em>string</em>]   [<b>order_by</b>=<em>string</em>[,<i>string</i>,...]]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-s</b></dt>
+<dd>Skip downloading existing scenes</dd>
+
+<dt><b>-w</b></dt>
+<dd>Write log file with download results</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>output_directory</b>=<em>string</em></dt>
+<dd>Directory where to store downloaded data</dd>
+<dd>Name for output directory where to store downloaded Sentinel data</dd>
+
+<dt><b>aoi</b>=<em>string</em></dt>
+<dd>GRASS GIS Map or OGR readable file with one polygon to delinate the Area of Interest (AOI)</dd>
+
+<dt><b>temporal</b>=<em>string[,<i>string</i>,...]</em></dt>
+<dd>Pair of ISO-formated time stamps (YYYY-MM-DD HH:MM:SS) for start end end of sensing time</dd>
+
+<dt><b>created_at</b>=<em>string[,<i>string</i>,...]</em></dt>
+<dd>Pair of ISO-formated time stamps (YYYY-MM-DD HH:MM:SS) for start end end of creation time</dd>
+
+<dt><b>production_date</b>=<em>string[,<i>string</i>,...]</em></dt>
+<dd>Pair of ISO-formated time stamps (YYYY-MM-DD HH:MM:SS) for start end end of production time</dd>
+
+<dt><b>revision_date</b>=<em>string[,<i>string</i>,...]</em></dt>
+<dd>Pair of ISO-formated time stamps (YYYY-MM-DD HH:MM:SS) for start end end of modification time</dd>
+
+<dt><b>keyword</b>=<em>string</em></dt>
+<dd>Keyword used for searching datasets or collection (supports wildcards)</dd>
+
+<dt><b>short_name</b>=<em>string</em></dt>
+<dd>Short name of dataset to download or collection to search</dd>
+
+<dt><b>granule_name</b>=<em>string</em></dt>
+<dd>File name of the granule to download (supports wildcards)</dd>
+
+<dt><b>provider</b>=<em>string</em></dt>
+<dd>Provider to download from</dd>
+
+<dt><b>limit</b>=<em>integer</em></dt>
+<dd>Limit number of matches to return / download</dd>
+
+<dt><b>print</b>=<em>string</em></dt>
+<dd>Print search result (do not download)</dd>
+<dd>Options: <em>collections, collection_names, granule_metadata</em></dd>
+
+<dt><b>format</b>=<em>string</em></dt>
+<dd>Print search result (do not download)</dd>
+
+<dt><b>file</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Write search result to file</dd>
+
+<dt><b>nprocs</b>=<em>integer</em></dt>
+<dd>Number of cores used for downloading</dd>
+<dd>Default: <em>1</em></dd>
+
+<dt><b>check_scenes</b>=<em>string</em></dt>
+<dd>Perform checksum / modification time test for the given set of scenes</dd>
+<dd>Perform checksum / modification time test</dd>
+<dd>Options: <em>existing, downloaded, all</em></dd>
+
+<dt><b>scenes</b>=<em>string</em></dt>
+<dd>Selected scenes to download from ASF</dd>
+<dd>Comma separated list of scenes or file with scenes (one per row)</dd>
+
+<dt><b>order_by</b>=<em>string[,<i>string</i>,...]</em></dt>
+<dd>Comma separated list of sort parameters</dd>
+<dd>Options: <em>temporal, revision_date</em></dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a>
+    <ul class="toc">
+        <li class="toc"><a href="#retrieve-and-print-metadata-for-available-data(-sets)" class="toc">Retrieve and print metadata for available data(-sets)</a></li>
+        <li class="toc"><a href="#search-and-download-data" class="toc">Search and download data</a></li>
+        <li class="toc"><a href="#search-selected-archives-(granules)-using-modification-time" class="toc">Search selected archives (granules) using modification time</a></li>
+    </ul></li>
+    <li class="toc"><a href="#requirements" class="toc">REQUIREMENTS</a></li>
+    <li class="toc"><a href="#references" class="toc">REFERENCES</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>i.earthaccess.download</em> searches and downloads NASA EarthData datasets
+using the <em>earthaccess</em> libary.
+
+<p>
+The module options largely represent search parameters for collections and
+archives (granules). 
+
+<p>
+The temporal search parameters (<b>temporal</b>, <b>created_at</b>,
+<b>production_date</b>, <b>revision_date</b>) are given as a comma separated
+pair of ISO-formated datetime strings.
+
+<p>
+In order to be able to download data the user has to create an EarthData
+account and provide credentials to the module add earthaccess library
+respectively. Credentials can be provided in form of a <em>~/.netrc</em>
+file, environment variables named <em>EARTHDATA_USERNAME</em> and
+<em>EARTHDATA_PASSWORD</em>.
+
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<h3><a name="retrieve-and-print-metadata-for-available-data(-sets)">Retrieve and print metadata for available data(-sets)</a></h3>
+List short-names of available datasets (collections)
+<div class="code"><pre>
+i.earthaccess.download keyword=SWOT* print=collection_names
+</pre></div>
+
+Get core metadata of available datasets (collections)
+<div class="code"><pre>
+i.earthaccess.download keyword=SWOT* print=collections
+</pre></div>
+
+Get full metadata of available datasets (collections) in JSON format
+<div class="code"><pre>
+i.earthaccess.download keyword=SWOT* print=collections format=json
+</pre></div>
+
+Get full metadata of selected archives (granules) in JSON format
+<div class="code"><pre>
+i.earthaccess.download short_name=SWOT_L2_HR_Raster_100m_2.0 \
+  print=granule_metadata format=json
+</pre></div>
+
+<h3><a name="search-and-download-data">Search and download data</a></h3>
+
+Search selected archives (granules) using sensinig time
+<div class="code"><pre>
+i.earthaccess.download short_name=SWOT_L2_HR_Raster_100m_2.0 \
+  temporal="2024-04-20,2024-06-10 12:34:56"
+</pre></div>
+
+<h3><a name="search-selected-archives-(granules)-using-modification-time">Search selected archives (granules) using modification time</a></h3>
+<div class="code"><pre>
+i.earthaccess.download short_name=SWOT_L2_HR_Raster_100m_2.0 \
+  revision_date="2024-04-20,2024-06-10 12:34:56" \
+  output=/data/SWOT_L2_HR_Raster_100m/
+</pre></div>
+
+<h2><a name="requirements">REQUIREMENTS</a></h2>
+<em>i.earthaccess.download</em> uses the following non-standard Python libraries:
+<ul>
+  <li>Python bindings for <a href="https://pypi.org/project/GDAL/">GDAL</a></li>
+  <li>the <a href="https://pypi.org/project/earthaccess/">earthaccess</a> Python library</li>
+</ul>
+
+<h2><a name="references">REFERENCES</a></h2>
+
+<a href="https://docs.asf.alaska.edu/asf_search/basics/">asf_search Basics</a>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">i.earthaccess.download source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Monday Jan 27 12:02:25 2025
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass84/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass84/docs/html/imagery.html">Imagery index</a> |
+<a href="file:///usr/lib/grass84/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass84/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass84/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass84/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2024
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.0 Reference Manual
+</p>
+
+</div>
+</body>
+</html>
