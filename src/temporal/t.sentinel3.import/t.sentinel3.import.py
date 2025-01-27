@@ -172,8 +172,8 @@ import grass.script as gs
 
 S3_FILE_PATTERN = {
     # "S3OL1ERF": None,
-    "S3SL1RBT": "S3*SL_1_RBT__*.zip",
-    "S3SL2LST": "S3*SL_2_LST__*.zip",
+    "S3SL1RBT": "**/S3*SL_1_RBT__*.zip",
+    "S3SL2LST": "**/S3*SL_2_LST__*.zip",
 }
 
 
