@@ -49,7 +49,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>t.register.local</b><br></div>
 <b>t.register.local --help</b><br>
-<div id="synopsis"><b>t.register.local</b> [-<b>eamorsf</b>] <b>input</b>=<em>name</em>  [<b>files</b>=<em>Comma separated list of files to register</em>[,<i>Comma separated list of files to register</i>,...]]   [<b>file</b>=<em>CSV-like file with files to import containing map_name,start,stop,semantic_label,file_name,metadata_json</em>[,<i>CSV-like file with files to import containing map_name,start,stop,semantic_label,file_name,metadata_json</i>,...]]  <b>output</b>=<em>name</em>  [<b>semantic_labels</b>=<em>Input file with configuration for semantic labels ("-" = stdin)</em>]   [<b>semantic_label_pattern</b>=<em>Pattern for reading semantic labels from file name (e.g.: "(VV|VH)_dbi_[0-9]+_(ascending|descending)")</em>]   [<b>long_name</b>=<em>string</em>]   [<b>suffix</b>=<em>string</em>]   [<b>time_format</b>=<em>string</em>]   [<b>file_pattern</b>=<em>string</em>]   [<b>start_time</b>=<em>string</em>]   [<b>end_time</b>=<em>string</em>]   [<b>color</b>=<em>style</em>]   [<b>nodata</b>=<em>Source nodata</em>]  <b>units</b>=<em>string</em>  [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>t.register.local</b> [-<b>eamorsf</b>]  [<b>input</b>=<em>name</em>]   [<b>files</b>=<em>Comma separated list of files to register</em>[,<i>Comma separated list of files to register</i>,...]]   [<b>register_file</b>=<em>string</em>]  <b>output</b>=<em>name</em>  [<b>semantic_labels</b>=<em>Input file with configuration for semantic labels ("-" = stdin)</em>]   [<b>semantic_label_pattern</b>=<em>Pattern for reading semantic labels from file name (e.g.: "(VV|VH)_dbi_[0-9]+_(ascending|descending)")</em>]   [<b>long_name</b>=<em>string</em>]   [<b>suffix</b>=<em>string</em>]   [<b>time_format</b>=<em>string</em>]   [<b>file_pattern</b>=<em>string</em>]   [<b>start_time</b>=<em>string</em>]   [<b>end_time</b>=<em>string</em>]   [<b>color</b>=<em>style</em>]   [<b>nodata</b>=<em>Source nodata</em>]   [<b>units</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -92,13 +92,13 @@ grassLogoLink.after(temp.content);
 <div id="parameters">
 <h3>Parameters:</h3>
 <dl>
-<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dt><b>input</b>=<em>name</em></dt>
 <dd>Name of input directory</dd>
 
 <dt><b>files</b>=<em>Comma separated list of files to register[,<i>Comma separated list of files to register</i>,...]</em></dt>
 <dd>Comma separated list of files to register</dd>
 
-<dt><b>file</b>=<em>CSV-like file with files to import containing map_name,start,stop,semantic_label,file_name,metadata_json[,<i>CSV-like file with files to import containing map_name,start,stop,semantic_label,file_name,metadata_json</i>,...]</em></dt>
+<dt><b>register_file</b>=<em>string</em></dt>
 <dd>CSV-like file with files to import containing map_name,start,stop,semantic_label,file_name,metadata_json</dd>
 
 <dt><b>output</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
@@ -198,7 +198,7 @@ grassLogoLink.after(temp.content);
 <dt><b>nodata</b>=<em>Source nodata</em></dt>
 <dd>NoData value in source raster maps</dd>
 
-<dt><b>units</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dt><b>units</b>=<em>string</em></dt>
 <dd>Units of the values in the input raster maps</dd>
 
 <dt><b>nprocs</b>=<em>integer</em></dt>
@@ -335,7 +335,7 @@ Stefan Blumentrath
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Monday Jan 27 12:02:13 2025
+  Accessed: Tuesday Feb 04 13:53:27 2025
 </p>
 <hr class="header">
 <p>
