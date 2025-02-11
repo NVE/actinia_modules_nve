@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-"""
-MODULE:    t.rast.aggregate.condition
+"""MODULE:    t.rast.aggregate.condition
 AUTHOR(S): Stefan Blumentrath
 
-PURPOSE:   Aggregates rasters maps in space and time, applying a condition for valid data using r.mapcalc
-COPYRIGHT: (C) 2024 by Stefan Blumentrath, Norwegian Water and Energy Directorate and the GRASS Development Team
+PURPOSE:   Aggregates rasters maps in space and time, applying a condition for valid
+           data using r.mapcalc
+COPYRIGHT: (C) 2024-2025 by Stefan Blumentrath, Norwegian Water and Energy Directorate
+               and the GRASS Development Team
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -115,6 +116,22 @@ GNU General Public License for more details.
 # % multiple: no
 # %end
 
+# %option
+# % key: temporal_buffer
+# % type: string
+# % description: Temporal buffer around the granule of the aggregation, format absolute time "x years, x months, x weeks, x days, x hours, x minutes, x seconds" or an integer value for relative time
+# % required: yes
+# % multiple: no
+# %end
+
+# %option
+# % key: temporal_offset
+# % type: string
+# % description: Temporal offset applied to the aggregation granularity, format absolute time "x years, x months, x weeks, x days, x hours, x minutes, x seconds" or an integer value for relative time
+# % required: yes
+# % multiple: no
+# %end
+
 # %option G_OPT_T_SAMPLE
 # % options: equal,overlaps,overlapped,starts,started,finishes,finished,during,contains
 # % answer: contains
@@ -158,11 +175,7 @@ GNU General Public License for more details.
 # % required: -e,title,description
 # %end
 
-# ToDo:
-# - Support granules from moving windows (even if leading to invalid temporal topology) with:
-#   m-flag for moving temporal window + d-flag for decrementing granule (default is increment)
-
-# - implement n-flag
+# TODO:
 # - Create a TemporalExtentTuple class based on
 #   https://grass.osgeo.org/grass84/manuals/libpython/_modules/grass/temporal/temporal_extent.html
 #   That would improve the performance if no more advanced temporal objects are needed
@@ -172,6 +185,7 @@ GNU General Public License for more details.
 
 import sys
 from copy import deepcopy
+from datetime import datetime
 
 import grass.pygrass.modules as pymod
 import grass.script as gs
@@ -191,20 +205,101 @@ from grass.temporal.space_time_datasets import RasterDataset
 from grass.temporal.spatio_temporal_relationships import SpatioTemporalTopologyBuilder
 
 
-def create_ganule_list(map_list, granularity, relative_time_unit=None):
-    """Create a list of empty RasterDataset with the given temporal
-    granularity from a list of input maps
+def initialize_raster_layer(
+    map_id: str,
+    temporal_extent: tuple[datetime, datetime],
+    semantic_label: str,
+) -> RasterDataset:
+    """Initialize the raster layer.
+    :param id: The id of the raster layer
+    :param temporal_extent: The temporal extent of the raster layer
+    :param semantic_label: The semantic label of the raster layer
+    :return: The raster layer
+    """
+    map_layer = RasterDataset(map_id)
+    map_layer.set_temporal_extent(temporal_extent)
+    map_layer.set_semantic_label(semantic_label)
+    return map_layer
+
+
+def check_absolute_granularity_string(
+    input_option: str,
+    granularity: str,
+) -> str | None:
+    """Check if the granularity string is a valid absolute time granularity string or None.
+
+    :param input_option: string representing the key of the input option
+    :param granularity: string to represent the granularity, temporal offset or temporal buffer
+    :return: The granularity string if the string is valid or None if granularity is None or
+             empty. The function throws a fatal error if the granularity string is not valid.
+    """
+    # Check if the granularity string is valid
+    if granularity:
+        if not tgis.check_granularity_string(granularity, "absolute"):
+            gs.fatal(
+                _(
+                    "Invalid granularity string <{gran}> absolute temporal type in {opt} option.",
+                ).format(gran=granularity, opt=input_option),
+            )
+        return granularity
+    return None
+
+
+def check_relative_granularity_string(input_option: str, granularity: str) -> int:
+    """Check if the granularity string empty / None or a valid integer value.
+
+    :param input_option: string representing the key of the input option
+    :param granularity: string to represent the granularity, temporal offset or temporal buffer
+    :return: The granularity string as integer or 0. The function throws a fatal error if
+                the string is not a valid integer
+    """
+    # Check if the granularity string is valid and can be converted to integer
+    if granularity:
+        try:
+            return int(granularity)
+        except ValueError:
+            gs.fatal(
+                _(
+                    "Invalid granularity string <{gran}> for relative temporal type in: {opt}",
+                ).format(gran=granularity, opt=input_option),
+            )
+    return 0
+
+
+def create_ganule_list(
+    map_list: list[dict],
+    granularity: str,
+    buffer: str | int,
+    offset: str | int,
+    *,
+    relative_time_unit: bool = False,
+) -> list[RasterDataset]:
+    """Create a list of empty RasterDataset with the requested temporal extent.
+
+    The function creates a list of empty RasterDatasets with the requested
+    granularity from a list of input maps. The temporal extent of the output
+    is determined by the first and last map in the input list as well as a
+    temporal buffer and offset if provided.
+
     :param map_list: List of database rows (SQLite or PostgreSQL)
     :param granularity: string describing the granularity of the output list,
                         is expected to be validated beforehand
     :relative_time_unit: string with the relative time unit of the input
                          STRDS, None means absolute time
-    :return granularity_list: a list of RasterDataset with temporal extent"""
+    :return granularity_list: a list of RasterDataset with temporal extent
+    """
     start_time = map_list[0]["start_time"]
 
     if not relative_time_unit:
-        start_time = tgis.adjust_datetime_to_granularity(start_time, granularity)
-
+        start_time = tgis.increment_datetime_by_string(
+            tgis.decrement_datetime_by_string(
+                tgis.adjust_datetime_to_granularity(start_time, granularity),
+                buffer,
+            ),
+            offset,
+        )
+    else:
+        start_time = start_time - buffer + offset
     # We use the end time first
     end_time = map_list[-1]["end_time"]
     has_end_time = True
@@ -221,44 +316,49 @@ def create_ganule_list(map_list, granularity, relative_time_unit=None):
         if has_end_time is True:
             if start_time >= end_time:
                 break
-        else:
-            if start_time > end_time:
-                break
+        elif start_time > end_time:
+            break
 
         granule = tgis.RasterDataset(None)
         start = start_time
         if relative_time_unit:
             # For input STRDS with relative time
-            end = start_time + int(granularity)
+            end = start + granularity + 2 * buffer + offset
             granule.set_relative_time(start, end, relative_time_unit)
         else:
             # For input STRDS with absolute time
-            end = tgis.increment_datetime_by_string(start_time, granularity)
+            end = tgis.increment_datetime_by_string(
+                tgis.increment_datetime_by_string(
+                    tgis.increment_datetime_by_string(start, granularity),
+                    buffer,
+                ),
+                buffer,
+            )
             granule.set_absolute_time(start, end)
-        start_time = end
+        start_time = tgis.increment_datetime_by_string(start_time, granularity)
 
         granularity_list.append(granule)
     return granularity_list
 
 
 def aggregate_with_condition(
-    granularity_list,
-    granularity,
-    map_list,
-    time_unit=None,
-    basename=None,
-    time_suffix="gran",
-    offset=0,
-    topo_list=None,
-    mask_label=None,
-    mask_value=0,
-    condition_label=None,
-    aggregate_condition="nmax",
-    aggregation_labels=None,
-    nprocs=1,
-    dbif=None,
-):
-    """Aggregate a list of raster input maps with r.mapcalc
+    granularity_list: list,
+    granularity: str,
+    map_list: list[RasterDataset],
+    time_unit: str | None = None,
+    basename: str | None = None,
+    time_suffix: str | None = "gran",
+    offset: int | None = 0,
+    topo_list: list | None = None,
+    mask_label: str | None = None,
+    mask_value: int | None = 0,
+    condition_label: str | None = None,
+    aggregate_condition: str | None = "nmax",
+    aggregation_labels: list | None = None,
+    nprocs: int | None = 1,
+    dbif: object = None,
+) -> list[RasterDataset] | None:
+    """Aggregate a list of raster input maps with r.mapcalc.
 
     :param granularity_list: A list of AbstractMapDataset objects.
                              The temporal extents of the objects are used
@@ -285,9 +385,9 @@ def aggregate_with_condition(
     :param nprocs: The number of processes used for parallel computation (only used with )
     :param dbif: The database interface to be used
     :return: A list of RasterDataset objects that contain the new map names
-             and the temporal extent as well as semantic_labels for map registration
+             and the temporal extent as well as semantic_labels for map registration.
+             Returns None if map_list is None.
     """
-
     if not map_list:
         return None
 
@@ -303,7 +403,6 @@ def aggregate_with_condition(
         overwrite=gs.overwrite(),
         quiet=True,
         run_=False,
-        # finish_=False,
     )
 
     count = 0
@@ -318,11 +417,14 @@ def aggregate_with_condition(
         raster_map = tgis.RasterDataset(None)
         if time_unit:
             raster_map.set_relative_time(
-                raster_maps["start_time"], raster_maps["end_time"], time_unit
+                raster_maps["start_time"],
+                raster_maps["end_time"],
+                time_unit,
             )
         else:
             raster_map.set_absolute_time(
-                raster_maps["start_time"], raster_maps["end_time"]
+                raster_maps["start_time"],
+                raster_maps["end_time"],
             )
 
         map_dict[raster_map] = {
@@ -356,17 +458,19 @@ def aggregate_with_condition(
                 for matching_object in matching_objects:
                     map_ids = map_dict[matching_object]["id"].split(",")
                     semantic_labels = map_dict[matching_object]["semantic_label"].split(
-                        ","
+                        ",",
                     )
                     if len(map_ids) != len(semantic_labels):
                         gs.warning("Missing maps")
                         continue
-                    if not set(
-                        [mask_label, condition_label, *aggregation_labels]
-                    ).issubset(set(semantic_labels)):
+                    if not {
+                        mask_label,
+                        condition_label,
+                        *aggregation_labels,
+                    }.issubset(set(semantic_labels)):
                         gs.warning(
                             _(
-                                "Missing input some raster maps for {extent}. Found only the following semantic_labels: {labels}"
+                                "Missing input some raster maps for {extent}. Found only the following semantic_labels: {labels}",
                             ).format(
                                 extent=" - ".join(
                                     [
@@ -379,7 +483,7 @@ def aggregate_with_condition(
                                     if semantic_labels
                                     else None
                                 ),
-                            )
+                            ),
                         )
                         continue
 
@@ -391,7 +495,7 @@ def aggregate_with_condition(
                     # Create mask expression for aggregation map
                     for aggregation_label in aggregation_labels:
                         res_dict[aggregation_label].append(
-                            f"if({mask_map}=={mask_value},if({{output_condition_map}}=={condition_map},{map_ids[semantic_labels.index(aggregation_label)]},null()),null())"
+                            f"if({mask_map}=={mask_value},if({{output_condition_map}}=={condition_map},{map_ids[semantic_labels.index(aggregation_label)]},null()),null())",
                         )
                     res_dict["mask_labels"].append(mask_list)
 
@@ -399,43 +503,46 @@ def aggregate_with_condition(
         if res_dict != res_dict_template:
             if granule.is_time_absolute() is True and time_suffix == "gran":
                 suffix = create_suffix_from_datetime(
-                    granule.temporal_extent.get_start_time(), granularity
+                    granule.temporal_extent.get_start_time(),
+                    granularity,
                 )
             elif granule.is_time_absolute() is True and time_suffix == "time":
                 suffix = create_time_suffix(granule)
 
             else:
                 suffix = create_numeric_suffix(
-                    "", count + offset, time_suffix
+                    "",
+                    count + offset,
+                    time_suffix,
                 ).removeprefix("_")
             output_name = f"{basename}_{suffix}"
 
             # Compile expressions
             expression = f"{output_name}_{condition_label}_{aggregate_condition}={aggregate_condition}({','.join(res_dict['mask_labels'])})\n"
-            map_layer = RasterDataset(
-                f"{output_name}_{condition_label}_{aggregate_condition}@{current_mapset}"
+            map_layer = initialize_raster_layer(
+                f"{output_name}_{condition_label}_{aggregate_condition}@{current_mapset}",
+                granule_temporal_extent,
+                f"{condition_label}_{aggregate_condition}",
             )
-            map_layer.set_temporal_extent(granule_temporal_extent)
-            map_layer.set_semantic_label(f"{condition_label}_{aggregate_condition}")
             output_list.append(map_layer)
             condition_module = deepcopy(agg_module)
             condition_module.inputs.expression = expression
             expression = ""
             for aggregation_label in aggregation_labels:
-                expression += f"{output_name}_{aggregation_label}=nmedian({','.join([eval_expression for eval_expression in res_dict[aggregation_label]])})"
-                map_layer = RasterDataset(
-                    f"{output_name}_{aggregation_label}@{current_mapset}"
+                expression += f"{output_name}_{aggregation_label}=nmedian({','.join(list(res_dict[aggregation_label]))})"
+                map_layer = initialize_raster_layer(
+                    f"{output_name}_{aggregation_label}@{current_mapset}",
+                    granule_temporal_extent,
+                    aggregation_label,
                 )
-                map_layer.set_temporal_extent(granule_temporal_extent)
-                map_layer.set_semantic_label(aggregation_label)
                 output_list.append(map_layer)
             expression = expression.format(
-                output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}"
+                output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}",
             )
 
             mc_module = deepcopy(agg_module)
             mc_module.inputs.expression = expression.format(
-                output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}"
+                output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}",
             )
 
             # Add modules to process queue
@@ -451,14 +558,14 @@ def aggregate_with_condition(
 
 
 def get_registered_maps_grouped(
-    stds,
-    columns=None,
-    where=None,
-    group_by=None,
-    spatial_extent=None,
-    spatial_relation=None,
-    dbif=None,
-):
+    stds: tgis.SpaceTimeRasterDataset,
+    columns: list[str] | None = None,
+    where: str | None = None,
+    group_by: str | None = None,
+    spatial_extent: tuple[datetime, datetime] | None = None,
+    spatial_relation: str | None = None,
+    dbif: object | None = None,
+) -> list[dict]:
     """Return SQL rows of all registered maps.
 
     In case columns are not specified, each row includes all columns
@@ -487,7 +594,6 @@ def get_registered_maps_grouped(
     :return: SQL rows of all registered maps,
             In case nothing found None is returned
     """
-
     dbif, connection_state_changed = init_dbif(dbif)
 
     if not columns:
@@ -514,21 +620,21 @@ def get_registered_maps_grouped(
             )
         )
 
-        # filter by spatial extent
+        # Filter by spatial extent
         if spatial_extent and spatial_relation:
             where = stds._update_where_statement_by_spatial_extent(
-                where, spatial_extent, spatial_relation
+                where,
+                spatial_extent,
+                spatial_relation,
             )
 
-        sql = "SELECT %s FROM %s  WHERE %s.id IN (SELECT id FROM %s)" % (
-            columns,
-            map_view,
-            map_view,
-            stds.get_map_register(),
+        sql = (
+            f"SELECT {columns} FROM {map_view} "
+            f"WHERE {map_view}.id IN (SELECT id FROM {stds.get_map_register()})"
         )
 
-        if where is not None and where != "":
-            sql += " AND (%s)" % (where.split(";")[0])
+        if where:
+            sql += f" AND ({where.split(';')[0]})"
         sql += f" GROUP BY {group_columns};"
         try:
             dbif.execute(sql, mapset=stds.base.mapset)
@@ -538,8 +644,8 @@ def get_registered_maps_grouped(
                 dbif.close()
             stds.msgr.error(
                 _("Unable to get map ids from register table <{}>").format(
-                    stds.get_map_register()
-                )
+                    stds.get_map_register(),
+                ),
             )
             raise
 
@@ -549,12 +655,9 @@ def get_registered_maps_grouped(
     return rows
 
 
-def main():
-    """Main function"""
-    # lazy imports
-    overwrite = gs.overwrite()
-
-    # Get the options
+def main() -> None:
+    """Do the main work."""
+    # Get where option
     where = options["where"]
 
     # Make sure the temporal database exists
@@ -562,7 +665,6 @@ def main():
 
     dbif = tgis.SQLDatabaseInterfaceConnection()
     dbif.connect()
-    current_mapset = get_current_mapset()
 
     spatial_extent = None
     if options["region_relation"]:
@@ -570,8 +672,17 @@ def main():
     input_strds = open_old_stds(options["input"], "strds")
 
     # We will create the strds later, but need to check here
-    tgis.check_new_stds(options["output"], "strds", dbif, overwrite)
+    tgis.check_new_stds(options["output"], "strds", dbif, gs.overwrite())
     relative_time_unit = input_strds.get_relative_time_unit()
+
+    # Validate the granularity options input
+    validate_granularity = (
+        check_relative_granularity_string
+        if relative_time_unit
+        else check_absolute_granularity_string
+    )
+    for opt in ("granularity", "temporal_buffer", "temporal_offset"):
+        options[opt] = validate_granularity(opt, options[opt])
 
     # Get and check semantic labels
     semantic_labels = [
@@ -580,13 +691,14 @@ def main():
         *options["aggregation_labels"].split(","),
     ]
     missing_labels = set(semantic_labels).difference(
-        input_strds.metadata.semantic_labels.split(",")
+        input_strds.metadata.semantic_labels.split(","),
     )
     if missing_labels:
         gs.fatal(
             _("Semantic labels <{labels}> are missing from STRDS <{strds}>").format(
-                strds=input_strds.get_id(), labels=", ".join(missing_labels)
-            )
+                strds=input_strds.get_id(),
+                labels=", ".join(missing_labels),
+            ),
         )
     semantic_labels = ",".join(
         [f"'{semantic_label}'" for semantic_label in semantic_labels]
@@ -609,15 +721,19 @@ def main():
     if not map_list:
         gs.warning(
             _("No maps found to process in Space time raster dataset <{}>.").format(
-                options["input"]
-            )
+                options["input"],
+            ),
         )
         dbif.close()
         sys.exit(0)
 
     # Create granule list from map list
     granularity_list = create_ganule_list(
-        map_list, options["granularity"], relative_time_unit=relative_time_unit
+        map_list,
+        options["granularity"],
+        options["temporal_buffer"],
+        options["temporal_offset"],
+        relative_time_unit=relative_time_unit,
     )
 
     output_list = aggregate_with_condition(
@@ -649,20 +765,21 @@ def main():
         description = options["description"] or description
 
         # Initialize SpaceTimeRasterDataset (STRDS) using tgis
-        strds_long_name = f"{options['output']}@{current_mapset}"
-        output_strds = tgis.SpaceTimeRasterDataset(strds_long_name)
+        output_strds = tgis.SpaceTimeRasterDataset(
+            f"{options['output']}@{get_current_mapset()}",
+        )
 
         # Check if target STRDS exists and create it if not or abort if overwriting is not allowed
-        if output_strds.is_in_db() and not overwrite:
+        if output_strds.is_in_db() and not gs.overwrite():
             gs.fatal(
                 _(
                     "Output STRDS <{}> exists."
-                    "Use --overwrite together with -e to modify the existing STRDS."
-                ).format(options["output"])
+                    "Use --overwrite together with -e to modify the existing STRDS.",
+                ).format(options["output"]),
             )
 
         # Create STRDS if needed
-        if not output_strds.is_in_db() or (overwrite and not flags["e"]):
+        if not output_strds.is_in_db() or (gs.overwrite() and not flags["e"]):
             output_strds = tgis.open_new_stds(
                 options["output"],
                 "strds",
@@ -671,7 +788,7 @@ def main():
                 description,
                 semantic_type,
                 dbif,
-                overwrite,
+                gs.overwrite(),
             )
         else:
             output_strds = open_old_stds(options["output"], "strds")
@@ -684,9 +801,6 @@ def main():
             relative_time_unit,
             dbif,
         )
-
-        # Update the raster metadata table entries with aggregation type
-        # output_strds.set_aggregation_type(method)
         output_strds.metadata.update(dbif)
 
     dbif.close()
