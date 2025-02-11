@@ -9,7 +9,22 @@ naming of the output raster maps, like:
 
 <p>
 Which and how many maps are aggregated can be controled using the
-<b>granularity</b> and <b>sampling</b> options.
+<b>granularity</b>, <b>temporal_buffer</b>, <b>temporal_offset</b>,
+and <b>sampling</b> options.<p> The temporal extent of the resulting
+raster maps is calculated as follows:
+<em>new_start_time</em> = adjust_datetime_to_granularity(start_time) +
+<em>temporal_offset</em> - <em>temporal_buffer</em><br>
+<em>new_end_time</em> = adjust_datetime_to_granularity(start_time) + 
+<em>granularity</em> + <em>temporal_offset</em> + <em>temporal_buffer</em>
+  
+<p>
+For example, if <b>granularity</b> is set to "1 day" and the
+<b>temporal_buffer</b> is set to "1 day", and the <b>temoral_offset</b> is
+not given or 0, the granule for a raster map with the start_time 
+"2024-12-12 13:45" will have a start_time of "2024-12-11 00:00"
+and an end_time of "2024-12-14 00:00". If the <b>temporal_offset</b> is
+set to "-1 day", the start_time will be "2024-12-10 00:00" and the end_time
+will be "2024-12-13 00:00".
 
 <p>
 <em>t.rast.aggregate.condition</em> applies a mask (given in <b>mask_label</b>) while
