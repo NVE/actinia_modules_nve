@@ -120,7 +120,7 @@ GNU General Public License for more details.
 # % key: temporal_buffer
 # % type: string
 # % description: Temporal buffer around the granule of the aggregation, format absolute time "x years, x months, x weeks, x days, x hours, x minutes, x seconds" or an integer value for relative time
-# % required: yes
+# % required: no
 # % multiple: no
 # %end
 
@@ -128,7 +128,7 @@ GNU General Public License for more details.
 # % key: temporal_offset
 # % type: string
 # % description: Temporal offset applied to the aggregation granularity, format absolute time "x years, x months, x weeks, x days, x hours, x minutes, x seconds" or an integer value for relative time
-# % required: yes
+# % required: no
 # % multiple: no
 # %end
 
@@ -165,6 +165,11 @@ GNU General Public License for more details.
 # %end
 
 # %flag
+# % key: i
+# % description: Do not process granules that are incomplete (not completely within the temporal extend of the (selected) maps of the input STRDS)
+# %end
+
+# %flag
 # % key: n
 # % description: Register Null maps
 # %end
@@ -192,7 +197,6 @@ import grass.script as gs
 import grass.temporal as tgis
 from grass.temporal.core import (
     get_current_mapset,
-    get_tgis_message_interface,
     init_dbif,
 )
 from grass.temporal.datetime_math import (
@@ -211,6 +215,7 @@ def initialize_raster_layer(
     semantic_label: str,
 ) -> RasterDataset:
     """Initialize the raster layer.
+
     :param id: The id of the raster layer
     :param temporal_extent: The temporal extent of the raster layer
     :param semantic_label: The semantic label of the raster layer
@@ -234,15 +239,15 @@ def check_absolute_granularity_string(
              empty. The function throws a fatal error if the granularity string is not valid.
     """
     # Check if the granularity string is valid
-    if granularity:
-        if not tgis.check_granularity_string(granularity, "absolute"):
-            gs.fatal(
-                _(
-                    "Invalid granularity string <{gran}> absolute temporal type in {opt} option.",
-                ).format(gran=granularity, opt=input_option),
-            )
-        return granularity
-    return None
+    if not granularity:
+        return None
+    if not tgis.check_granularity_string(granularity, "absolute"):
+        gs.fatal(
+            _(
+                "Invalid granularity string <{gran}> absolute temporal type in {opt} option.",
+            ).format(gran=granularity, opt=input_option),
+        )
+    return granularity
 
 
 def check_relative_granularity_string(input_option: str, granularity: str) -> int:
@@ -254,25 +259,26 @@ def check_relative_granularity_string(input_option: str, granularity: str) -> in
                 the string is not a valid integer
     """
     # Check if the granularity string is valid and can be converted to integer
-    if granularity:
-        try:
-            return int(granularity)
-        except ValueError:
-            gs.fatal(
-                _(
-                    "Invalid granularity string <{gran}> for relative temporal type in: {opt}",
-                ).format(gran=granularity, opt=input_option),
-            )
-    return 0
+    if not granularity:
+        return 0
+    try:
+        return int(granularity)
+    except ValueError:
+        gs.fatal(
+            _(
+                "Invalid granularity string <{gran}> for relative temporal type in: {opt}",
+            ).format(gran=granularity, opt=input_option),
+        )
 
 
-def create_ganule_list(
+def create_granule_list(
     map_list: list[dict],
     granularity: str,
     buffer: str | int,
     offset: str | int,
     *,
     relative_time_unit: bool = False,
+    process_incomplete_granules: bool = False,
 ) -> list[RasterDataset]:
     """Create a list of empty RasterDataset with the requested temporal extent.
 
@@ -286,41 +292,54 @@ def create_ganule_list(
                         is expected to be validated beforehand
     :relative_time_unit: string with the relative time unit of the input
                          STRDS, None means absolute time
-    :return granularity_list: a list of RasterDataset with temporal extent
+    :process_incomplete_granules: Process granules that are not comletely
+                                  within the temporal extent of the map list
+    :return granularity_list: a list of initialized RasterDataset with temporal extent
     """
-    start_time = map_list[0]["start_time"]
+    # Get the start time of the series
+    series_start_time = map_list[0]["start_time"]
 
     if not relative_time_unit:
+        series_start_time = tgis.adjust_datetime_to_granularity(
+            series_start_time,
+            granularity,
+        )
         start_time = tgis.increment_datetime_by_string(
             tgis.decrement_datetime_by_string(
-                tgis.adjust_datetime_to_granularity(start_time, granularity),
+                series_start_time,
                 buffer,
             ),
             offset,
         )
     else:
-        start_time = start_time - buffer + offset
-    # We use the end time first
-    end_time = map_list[-1]["end_time"]
+        start_time = series_start_time - buffer + offset
+
+    # Get the end time of the series
+    # Try using the last map's end time
+    series_end_time = map_list[-1]["end_time"]
     has_end_time = True
 
-    # In case no end time is available, then we use the start time of the last map layer
-    if end_time is None:
-        end_time = map_list[-1]["start_time"]
+    # In case no end time is available for the series, the start time of the last map layer is used
+    if series_end_time is None:
+        series_end_time = map_list[-1]["start_time"]
         has_end_time = False
 
     granularity_list = []
 
     # Build the granularity list
     while True:
-        if has_end_time is True:
-            if start_time >= end_time:
-                break
-        elif start_time > end_time:
+        if (
+            has_end_time and start_time >= series_end_time
+        ) or start_time > series_end_time:
             break
-
+        if not process_incomplete_granules and start_time < series_start_time:
+            start_time = tgis.increment_datetime_by_string(start_time, granularity)
+            continue
+        # Initialize granule
         granule = tgis.RasterDataset(None)
+        # Set start
         start = start_time
+        # Set end
         if relative_time_unit:
             # For input STRDS with relative time
             end = start + granularity + 2 * buffer + offset
@@ -335,9 +354,14 @@ def create_ganule_list(
                 buffer,
             )
             granule.set_absolute_time(start, end)
+        # Check if granule is covered by series if required
+        if not process_incomplete_granules and end > series_end_time:
+            break
+        # Compute new start time for next granule
         start_time = tgis.increment_datetime_by_string(start_time, granularity)
 
         granularity_list.append(granule)
+
     return granularity_list
 
 
@@ -345,6 +369,7 @@ def aggregate_with_condition(
     granularity_list: list,
     granularity: str,
     map_list: list[RasterDataset],
+    *,
     time_unit: str | None = None,
     basename: str | None = None,
     time_suffix: str | None = "gran",
@@ -394,8 +419,6 @@ def aggregate_with_condition(
     if not topo_list:
         topo_list = ["contains"]
 
-    msgr = get_tgis_message_interface()
-
     dbif, connection_state_changed = init_dbif(dbif)
 
     agg_module = pymod.Module(
@@ -405,13 +428,11 @@ def aggregate_with_condition(
         run_=False,
     )
 
-    count = 0
     output_list = []
     current_mapset = get_current_mapset()
 
     # The module queue for parallel execution
     process_queue = pymod.ParallelModuleQueue(nprocs)
-
     map_dict = {}
     for raster_maps in map_list:
         raster_map = tgis.RasterDataset(None)
@@ -439,10 +460,7 @@ def aggregate_with_condition(
         "condition_labels": [],  # Condition label
         "mask_labels": [],  # Mask label
     }
-    for granule in granularity_list:
-        msgr.percent(count, len(granularity_list), 1)
-        count += 1
-
+    for count, granule in enumerate(granularity_list):
         granule_temporal_extent = granule.get_temporal_extent()
 
         for aggregation_label in aggregation_labels:
@@ -544,21 +562,31 @@ def aggregate_with_condition(
             mc_module.inputs.expression = expression.format(
                 output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}",
             )
-
-            # Add modules to process queue
             process_queue.put(pymod.MultiModule([condition_module, mc_module]))
+
+    if not process_queue.get_num_run_procs() > 0:
+        gs.info(_("No enough maps found for aggregation"))
+        return []
+    gs.verbose(
+        _("Aggregating a total of %s time steps within %s granules")
+        % (
+            len(map_dict),
+            process_queue.get_num_run_procs(),
+        ),
+    )
+    # Add modules to process queue
+
     process_queue.wait()
 
     if connection_state_changed:
         dbif.close()
-
-    msgr.percent(1, 1, 1)
 
     return output_list
 
 
 def get_registered_maps_grouped(
     stds: tgis.SpaceTimeRasterDataset,
+    *,
     columns: list[str] | None = None,
     where: str | None = None,
     group_by: str | None = None,
@@ -728,12 +756,13 @@ def main() -> None:
         sys.exit(0)
 
     # Create granule list from map list
-    granularity_list = create_ganule_list(
+    granularity_list = create_granule_list(
         map_list,
         options["granularity"],
         options["temporal_buffer"],
         options["temporal_offset"],
         relative_time_unit=relative_time_unit,
+        process_incomplete_granules=not flags["i"],
     )
 
     output_list = aggregate_with_condition(
