@@ -16,7 +16,7 @@ raster maps is calculated as follows:
 <em>temporal_offset</em> - <em>temporal_buffer</em><br>
 <em>new_end_time</em> = adjust_datetime_to_granularity(start_time) + 
 <em>granularity</em> + <em>temporal_offset</em> + <em>temporal_buffer</em>
-  
+
 <p>
 For example, if <b>granularity</b> is set to "1 day" and the
 <b>temporal_buffer</b> is set to "1 day", and the <b>temoral_offset</b> is
@@ -37,8 +37,8 @@ pixels in the temporally corresponding (=equal) raster maps with the
 <p>
 The module assumes and requires that the input STRDS is equipped with
 <em>semantic_labels</em>. <em>semantic_labels</em> are used to compile
-mapcalculator expressions for each ganule and temporal extent selected
-for the given granule.
+mapcalculator expressions for each ganule (temporal extent) selected
+for the given granularity.
 
 <p>
 Per granule, one raster map is produced for the <b>condition_label</b>,
@@ -59,8 +59,18 @@ cloud mask is applied at the same time.
 <p>
 Both input and output of this module is a single space time raster dataset.
 A subset of the input space time raster dataset can be selected using the
-<b>where</b> option. In addition, input maps can be filtered spatially using
+<b>where</b> option. In addition, input maps can be filtered spatialy using
 the <b>region_relation</b> option.
+
+<p>
+If the <b>i-flag</b> is set, only granules that are fully within the
+temporal extent of the (selected) temporal extent of the <b>input</b>
+STRDS are processed. Granules that start before the temporal extent of
+the input maps or end after the temporal extent of the input maps are
+being skipped. If <b>temporal_buffer</b> or <b>temporal_offset</b> or a larger
+<b>granularity</b> are given, the user should make sure that the temporal
+extent of the STRDS or the raster maps selected by the <b>where</b>-clause
+or spatial filter cover at least one granule.
 
 <p>
 The resulting raster maps can also be registered into an existing
@@ -69,9 +79,7 @@ are set.
 
 
 <h2>EXAMPLE</h2>
-The example uses the North Carolina extra time series of MODIS Land Surface Temperature
-maps (<a href="https://grass.osgeo.org/download/data/">download</a>).
-(The mapset has to be unzip in one of the North Carolina locations.)
+
 <h3>Daily mosaic for Sentinel-3 Fractiona Snow Cover</h3>
 Patching the Sentinel-3 Fractional Snow Cover (FSC) to daily mosaics, filling missing
 pixels from other maps within the same granule (day), and selecting pixels with the lowest
@@ -103,7 +111,7 @@ time step (day) where the <em>>granule start time = start of current day -
 temporal_buffer + temporal_offset</em>.
 <div class="code"><pre>
 t.rast.aggregate.condition input=Sentinel_3_SLSTR_FSC output=Sentinel_3_SLSTR_FSC_5days_running \
-  --overwrite --verbose -e mask_label=S3_SLSTR_cloud_mask mask_value=0 \
+  --overwrite --verbose -e -i mask_label=S3_SLSTR_cloud_mask mask_value=0 \
   condition_label=S3_solar_zenith aggregate_condition=nmin \
   aggregation_labels=S3_SLSTR_fractional_snow_cover \
   granularity="1 day" temporal_buffer="2 days" temporal_offset="-2 days" \
