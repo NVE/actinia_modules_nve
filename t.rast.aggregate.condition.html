@@ -21,7 +21,12 @@ const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' +
 '<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
 '</li>' + 
 '<li><a class="toc-item" href="#example">EXAMPLE</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#daily-mosaic-for-sentinel-3-fractiona-snow-cover">Daily mosaic for Sentinel-3 Fractiona Snow Cover</a>' + 
 '</li>' + 
+'<li><a class="toc-item" href="#5-day-moving-window-mosaic-for-sentinel-3-fractiona-snow-cover">5-day moving window mosaic for Sentinel-3 Fractiona Snow Cover</a>' + 
+'</li>' + 
+'</ul></li>' + 
 '<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
 '</li>' + 
 '<li><a class="toc-item" href="#author">AUTHOR</a>' + 
@@ -46,7 +51,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>t.rast.aggregate.condition</b><br></div>
 <b>t.rast.aggregate.condition --help</b><br>
-<div id="synopsis"><b>t.rast.aggregate.condition</b> [-<b>en</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]   [<b>mask_label</b>=<em>string</em>]  <b>mask_value</b>=<em>string</em> <b>condition_label</b>=<em>string</em> <b>aggregation_labels</b>=<em>string</em>[,<i>string</i>,...] <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>basename</b>=<em>string</em>  [<b>offset</b>=<em>integer</em>]   [<b>suffix</b>=<em>string</em>]  <b>granularity</b>=<em>string</em>  [<b>sampling</b>=<em>name</em>[,<i>name</i>,...]]  <b>aggregate_condition</b>=<em>string</em>  [<b>nprocs</b>=<em>integer</em>]   [<b>region_relation</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>t.rast.aggregate.condition</b> [-<b>ein</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]   [<b>mask_label</b>=<em>string</em>]  <b>mask_value</b>=<em>string</em> <b>condition_label</b>=<em>string</em> <b>aggregation_labels</b>=<em>string</em>[,<i>string</i>,...] <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>basename</b>=<em>string</em>  [<b>offset</b>=<em>integer</em>]   [<b>suffix</b>=<em>string</em>]  <b>granularity</b>=<em>string</em>  [<b>temporal_buffer</b>=<em>string</em>]   [<b>temporal_offset</b>=<em>string</em>]   [<b>sampling</b>=<em>name</em>[,<i>name</i>,...]]  <b>aggregate_condition</b>=<em>string</em>  [<b>nprocs</b>=<em>integer</em>]   [<b>region_relation</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -54,6 +59,9 @@ grassLogoLink.after(temp.content);
 <dl>
 <dt><b>-e</b></dt>
 <dd>Extend existing STRDS (requires overwrite flag)</dd>
+
+<dt><b>-i</b></dt>
+<dd>Do not process granules that are incomplete (not completely within the temporal extend of the (selected) maps of the input STRDS)</dd>
 
 <dt><b>-n</b></dt>
 <dd>Register Null maps</dd>
@@ -116,6 +124,12 @@ grassLogoLink.after(temp.content);
 <dt><b>granularity</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
 <dd>Aggregation granularity, format absolute time "x years, x months, x weeks, x days, x hours, x minutes, x seconds" or an integer value for relative time</dd>
 
+<dt><b>temporal_buffer</b>=<em>string</em></dt>
+<dd>Temporal buffer around the granule of the aggregation, format absolute time "x years, x months, x weeks, x days, x hours, x minutes, x seconds" or an integer value for relative time</dd>
+
+<dt><b>temporal_offset</b>=<em>string</em></dt>
+<dd>Temporal offset applied to the aggregation granularity, format absolute time "x years, x months, x weeks, x days, x hours, x minutes, x seconds" or an integer value for relative time</dd>
+
 <dt><b>sampling</b>=<em>name[,<i>name</i>,...]</em></dt>
 <dd>The method to be used for sampling the input dataset</dd>
 <dd>Options: <em>equal, overlaps, overlapped, starts, started, finishes, finished, during, contains</em></dd>
@@ -139,7 +153,11 @@ grassLogoLink.after(temp.content);
 <h4 class="toc">Table of contents</h4>
 <ul class="toc">
     <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
-    <li class="toc"><a href="#example" class="toc">EXAMPLE</a></li>
+    <li class="toc"><a href="#example" class="toc">EXAMPLE</a>
+    <ul class="toc">
+        <li class="toc"><a href="#daily-mosaic-for-sentinel-3-fractiona-snow-cover" class="toc">Daily mosaic for Sentinel-3 Fractiona Snow Cover</a></li>
+        <li class="toc"><a href="#5-day-moving-window-mosaic-for-sentinel-3-fractiona-snow-cover" class="toc">5-day moving window mosaic for Sentinel-3 Fractiona Snow Cover</a></li>
+    </ul></li>
     <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
     <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
 </ul>
@@ -155,7 +173,22 @@ naming of the output raster maps, like:
 
 <p>
 Which and how many maps are aggregated can be controled using the
-<b>granularity</b> and <b>sampling</b> options.
+<b>granularity</b>, <b>temporal_buffer</b>, <b>temporal_offset</b>,
+and <b>sampling</b> options.<p> The temporal extent of the resulting
+raster maps is calculated as follows:
+<em>new_start_time</em> = adjust_datetime_to_granularity(start_time) +
+<em>temporal_offset</em> - <em>temporal_buffer</em><br>
+<em>new_end_time</em> = adjust_datetime_to_granularity(start_time) + 
+<em>granularity</em> + <em>temporal_offset</em> + <em>temporal_buffer</em>
+
+<p>
+For example, if <b>granularity</b> is set to "1 day" and the
+<b>temporal_buffer</b> is set to "1 day", and the <b>temoral_offset</b> is
+not given or 0, the granule for a raster map with the start_time 
+"2024-12-12 13:45" will have a start_time of "2024-12-11 00:00"
+and an end_time of "2024-12-14 00:00". If the <b>temporal_offset</b> is
+set to "-1 day", the start_time will be "2024-12-10 00:00" and the end_time
+will be "2024-12-13 00:00".
 
 <p>
 <em>t.rast.aggregate.condition</em> applies a mask (given in <b>mask_label</b>) while
@@ -168,8 +201,8 @@ pixels in the temporally corresponding (=equal) raster maps with the
 <p>
 The module assumes and requires that the input STRDS is equipped with
 <em>semantic_labels</em>. <em>semantic_labels</em> are used to compile
-mapcalculator expressions for each ganule and temporal extent selected
-for the given granule.
+mapcalculator expressions for each ganule (temporal extent) selected
+for the given granularity.
 
 <p>
 Per granule, one raster map is produced for the <b>condition_label</b>,
@@ -190,8 +223,18 @@ cloud mask is applied at the same time.
 <p>
 Both input and output of this module is a single space time raster dataset.
 A subset of the input space time raster dataset can be selected using the
-<b>where</b> option. In addition, input maps can be filtered spatially using
+<b>where</b> option. In addition, input maps can be filtered spatialy using
 the <b>region_relation</b> option.
+
+<p>
+If the <b>i-flag</b> is set, only granules that are fully within the
+temporal extent of the (selected) temporal extent of the <b>input</b>
+STRDS are processed. Granules that start before the temporal extent of
+the input maps or end after the temporal extent of the input maps are
+being skipped. If <b>temporal_buffer</b> or <b>temporal_offset</b> or a larger
+<b>granularity</b> are given, the user should make sure that the temporal
+extent of the STRDS or the raster maps selected by the <b>where</b>-clause
+or spatial filter cover at least one granule.
 
 <p>
 The resulting raster maps can also be registered into an existing
@@ -200,11 +243,11 @@ are set.
 
 
 <h2><a name="example">EXAMPLE</a></h2>
-The example uses the North Carolina extra time series of MODIS Land Surface Temperature
-maps (<a href="https://grass.osgeo.org/download/data/">download</a>).
-(The mapset has to be unzip in one of the North Carolina locations.)
-<p>
-Patching the MODIS Land Surface Temperature for 2016 (filling missing pixels by subsequent maps in the time series):
+
+<h3><a name="daily-mosaic-for-sentinel-3-fractiona-snow-cover">Daily mosaic for Sentinel-3 Fractiona Snow Cover</a></h3>
+Patching the Sentinel-3 Fractional Snow Cover (FSC) to daily mosaics, filling missing
+pixels from other maps within the same granule (day), and selecting pixels with the lowest
+solar zenith angle if more FSC maps contain valid values for the same pixel:
 <div class="code"><pre>
 t.rast.aggregate.condition input=Sentinel_3_SLSTR_FSC output=Sentinel_3_SLSTR_FSC_daily \
   --overwrite --verbose -e mask_label=S3_SLSTR_cloud_mask mask_value=0 \
@@ -212,6 +255,31 @@ t.rast.aggregate.condition input=Sentinel_3_SLSTR_FSC output=Sentinel_3_SLSTR_FS
   aggregation_labels=S3_SLSTR_fractional_snow_cover \
   granularity="1 day" basename=S3_SLSTR_FSC \
   title="Sentinel-3 SLSTR FSC daily" \
+  description="Daily Fractional Snow Cover measurements from Seninel-3 SLSTR instrument" \
+  region_relation=contains \
+  where="start_time >= '2023-01' and start_time <= '2023-12'" \
+  nprocs=8
+t.info Sentinel_3_SLSTR_FSC
+</pre></div>
+
+<h3><a name="5-day-moving-window-mosaic-for-sentinel-3-fractiona-snow-cover">5-day moving window mosaic for Sentinel-3 Fractiona Snow Cover</a></h3>
+Patching the Sentinel-3 Fractional Snow Cover (FSC) to 5-day mosaics, filling missing
+pixels from other maps within the same granule, and selecting pixels with the lowest
+solar zenith angle if more FSC maps contain valid values for the same pixel. The 
+granule is a 5-day period (granularity + 2 * temporal_buffer), placed as a moving
+window in relation to each time step (granularity) in the SpaceTimeRasterDataset. 
+End time in the example is at the end of each time step (day) where the 
+<em>>granule end time = start of current day + granularity + temporal_buffer +
+temporal_offset</em>. Start time in the example is 4 days before the start of each
+time step (day) where the <em>>granule start time = start of current day -
+temporal_buffer + temporal_offset</em>.
+<div class="code"><pre>
+t.rast.aggregate.condition input=Sentinel_3_SLSTR_FSC output=Sentinel_3_SLSTR_FSC_5days_running \
+  --overwrite --verbose -e -i mask_label=S3_SLSTR_cloud_mask mask_value=0 \
+  condition_label=S3_solar_zenith aggregate_condition=nmin \
+  aggregation_labels=S3_SLSTR_fractional_snow_cover \
+  granularity="1 day" temporal_buffer="2 days" temporal_offset="-2 days" \
+  basename=S3_SLSTR_FSC title="Sentinel-3 SLSTR FSC daily" \
   description="Daily Fractional Snow Cover measurements from Seninel-3 SLSTR instrument" \
   region_relation=contains \
   where="start_time >= '2023-01' and start_time <= '2023-12'" \
@@ -245,7 +313,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Tuesday Feb 04 13:53:23 2025
+  Accessed: Wednesday Mar 12 12:37:05 2025
 </p>
 <hr class="header">
 <p>
@@ -257,9 +325,9 @@ Stefan Blumentrath, NVE
 <a href="file:///usr/lib/grass84/docs/html/full_index.html">Full index</a>
 </p>
 <p>
-&copy; 2003-2024
+&copy; 2003-2025
 <a href="https://grass.osgeo.org">GRASS Development Team</a>,
-GRASS GIS 8.4.0 Reference Manual
+GRASS GIS 8.4.1 Reference Manual
 </p>
 
 </div>
