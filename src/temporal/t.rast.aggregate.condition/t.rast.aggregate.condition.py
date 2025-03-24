@@ -202,7 +202,6 @@ from grass.temporal.core import (
 from grass.temporal.datetime_math import (
     create_numeric_suffix,
     create_suffix_from_datetime,
-    create_time_suffix,
 )
 from grass.temporal.open_stds import open_old_stds
 from grass.temporal.space_time_datasets import RasterDataset
@@ -407,7 +406,8 @@ def aggregate_with_condition(
     :param aggregate_condition: string of the r.mapcalc method used for
                                 aggregating the condition maps (default is nmax)
     :param aggregation_labels: Semantic labels that represent maps to be aggregated
-    :param nprocs: The number of processes used for parallel computation (only used with )
+    :param nprocs: The number of processes used for parallel computation
+                   (only used with CPU)
     :param dbif: The database interface to be used
     :return: A list of RasterDataset objects that contain the new map names
              and the temporal extent as well as semantic_labels for map registration.
@@ -459,12 +459,13 @@ def aggregate_with_condition(
     res_dict_template = {
         "condition_labels": [],  # Condition label
         "mask_labels": [],  # Mask label
+        "mask_map_labels": [],  # Mask map labels
     }
+    for aggregation_label in aggregation_labels:
+        res_dict_template[aggregation_label] = []
+
     for count, granule in enumerate(granularity_list):
         granule_temporal_extent = granule.get_temporal_extent()
-
-        for aggregation_label in aggregation_labels:
-            res_dict_template[aggregation_label] = []
 
         res_dict = deepcopy(res_dict_template)
 
@@ -494,7 +495,7 @@ def aggregate_with_condition(
                                     [
                                         dt.isoformat()
                                         for dt in matching_object.get_absolute_time()
-                                    ]
+                                    ],
                                 ),
                                 labels=(
                                     ",".join(semantic_labels)
@@ -508,14 +509,17 @@ def aggregate_with_condition(
                     # Create mask expression for condition map
                     mask_map = map_ids[semantic_labels.index(mask_label)]
                     condition_map = map_ids[semantic_labels.index(condition_label)]
-                    mask_list = f"if({mask_map}=={mask_value},{condition_map},null())"
+                    mask_check = f"{mask_map}=={mask_value}"
+                    mask_list = f"if({mask_check},{condition_map},null())"
 
                     # Create mask expression for aggregation map
                     for aggregation_label in aggregation_labels:
                         res_dict[aggregation_label].append(
-                            f"if({mask_map}=={mask_value},if({{output_condition_map}}=={condition_map},{map_ids[semantic_labels.index(aggregation_label)]},null()),null())",
+                            f"if({mask_check},if({{output_condition_map}}=={condition_map},{map_ids[semantic_labels.index(aggregation_label)]},null()),null())",
                         )
                     res_dict["mask_labels"].append(mask_list)
+                    # For creating an ggregated mask invert the check
+                    res_dict["mask_map_labels"].append(mask_check.replace("==", "!="))
 
         # Check if any maps are temporally related to the granule
         if res_dict != res_dict_template:
@@ -523,10 +527,21 @@ def aggregate_with_condition(
                 suffix = create_suffix_from_datetime(
                     granule.temporal_extent.get_start_time(),
                     granularity,
-                )
-            elif granule.is_time_absolute() is True and time_suffix == "time":
-                suffix = create_time_suffix(granule)
+                ).replace("_", "")
+                suffix += "_"
+                suffix += create_suffix_from_datetime(
+                    granule.temporal_extent.get_end_time(),
+                    granularity,
+                ).replace("_", "")
 
+            elif granule.is_time_absolute() is True and time_suffix == "time":
+                suffix = granule.temporal_extent.get_start_time().strftime(
+                    "%Y%m%d%H%M%S",
+                )
+                suffix += "_"
+                suffix += granule.temporal_extent.get_end_time().strftime(
+                    "%Y%m%d%H%M%S",
+                )
             else:
                 suffix = create_numeric_suffix(
                     "",
@@ -536,7 +551,8 @@ def aggregate_with_condition(
             output_name = f"{basename}_{suffix}"
 
             # Compile expressions
-            expression = f"{output_name}_{condition_label}_{aggregate_condition}={aggregate_condition}({','.join(res_dict['mask_labels'])})\n"
+            maps = ",".join(res_dict["mask_labels"])
+            expression = f"{output_name}_{condition_label}_{aggregate_condition}={aggregate_condition}({maps})\n"
             map_layer = initialize_raster_layer(
                 f"{output_name}_{condition_label}_{aggregate_condition}@{current_mapset}",
                 granule_temporal_extent,
@@ -547,16 +563,25 @@ def aggregate_with_condition(
             condition_module.inputs.expression = expression
             expression = ""
             for aggregation_label in aggregation_labels:
-                expression += f"{output_name}_{aggregation_label}=nmedian({','.join(list(res_dict[aggregation_label]))})"
+                maps = ",".join(list(res_dict[aggregation_label]))
+                expression += f"{output_name}_{aggregation_label}=nmedian({maps})\n"
                 map_layer = initialize_raster_layer(
                     f"{output_name}_{aggregation_label}@{current_mapset}",
                     granule_temporal_extent,
                     aggregation_label,
                 )
                 output_list.append(map_layer)
+            maps = ",".join(res_dict["mask_map_labels"])
+            expression += f"{output_name}_{mask_label}=nmin({maps})"
             expression = expression.format(
                 output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}",
             )
+            map_layer = initialize_raster_layer(
+                f"{output_name}_{mask_label}@{current_mapset}",
+                granule_temporal_extent,
+                mask_label,
+            )
+            output_list.append(map_layer)
 
             mc_module = deepcopy(agg_module)
             mc_module.inputs.expression = expression.format(
@@ -644,7 +669,7 @@ def get_registered_maps_grouped(
             group_columns
             + ", "
             + ", ".join(
-                [f"group_concat({column},',') AS {column}s" for column in columns]
+                [f"group_concat({column},',') AS {column}s" for column in columns],
             )
         )
 
@@ -729,7 +754,7 @@ def main() -> None:
             ),
         )
     semantic_labels = ",".join(
-        [f"'{semantic_label}'" for semantic_label in semantic_labels]
+        [f"'{semantic_label}'" for semantic_label in semantic_labels],
     )
 
     if where:
@@ -798,7 +823,8 @@ def main() -> None:
             f"{options['output']}@{get_current_mapset()}",
         )
 
-        # Check if target STRDS exists and create it if not or abort if overwriting is not allowed
+        # Check if target STRDS exists and create it if not
+        # or abort if overwriting is not allowed
         if output_strds.is_in_db() and not gs.overwrite():
             gs.fatal(
                 _(
