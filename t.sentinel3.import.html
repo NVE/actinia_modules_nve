@@ -49,7 +49,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>t.sentinel3.import</b><br></div>
 <b>t.sentinel3.import --help</b><br>
-<div id="synopsis"><b>t.sentinel3.import</b> [-<b>ecdjkonr</b>] <b>input</b>=<em>string</em>[,<i>string</i>,...] <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>product_type</b>=<em>string</em> <b>bands</b>=<em>string</em>[,<i>string</i>,...]  [<b>anxillary_bands</b>=<em>string</em>[,<i>string</i>,...]]   [<b>flag_bands</b>=<em>string</em>[,<i>string</i>,...]]   [<b>maximum_solar_angle</b>=<em>float</em>]   [<b>basename</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>t.sentinel3.import</b> [-<b>ecdjkonr</b>] <b>input</b>=<em>string</em>[,<i>string</i>,...] <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>product_type</b>=<em>string</em> <b>bands</b>=<em>string</em>[,<i>string</i>,...]  [<b>anxillary_bands</b>=<em>string</em>[,<i>string</i>,...]]   [<b>flag_bands</b>=<em>string</em>[,<i>string</i>,...]]   [<b>maximum_solar_angle</b>=<em>float</em>]   [<b>swath_mask_band</b>=<em>string</em>]   [<b>swath_mask_buffer</b>=<em>integer</em>]   [<b>basename</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -125,6 +125,12 @@ grassLogoLink.after(temp.content);
 
 <dt><b>maximum_solar_angle</b>=<em>float</em></dt>
 <dd>Import only pixels where solar angle is lower or equal to the given maximum</dd>
+
+<dt><b>swath_mask_band</b>=<em>string</em></dt>
+<dd>Band to use for creating a swath mask</dd>
+
+<dt><b>swath_mask_buffer</b>=<em>integer</em></dt>
+<dd>Create a swath mask for removing border noise by buffering the swath_mask_band inwards (in number of pixels)</dd>
 
 <dt><b>basename</b>=<em>string</em></dt>
 <dd>Basename used as prefix for map names (default is derived from the input file(s))</dd>
@@ -243,7 +249,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Wednesday Mar 12 12:37:03 2025
+  Accessed: Monday Mar 24 07:47:08 2025
 </p>
 <hr class="header">
 <p>
