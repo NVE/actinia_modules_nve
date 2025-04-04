@@ -18,6 +18,7 @@
 - [t.rast.aggregate.condition](./t.rast.aggregate.condition.html)
 - [t.rast.aggregate.patch](./t.rast.aggregate.patch.html)
 - [t.rast.copytree](./t.rast.copytree.html)
+- [t.rast.exporttree](./t.rast.exporttree.html)
 - [t.rast.patch.group](./t.rast.patch.group.html)
 - [t.rast.reclass](./t.rast.reclass.html)
 - [t.rast.stats](./t.rast.stats.html)

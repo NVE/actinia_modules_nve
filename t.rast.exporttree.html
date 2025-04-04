@@ -5,9 +5,9 @@
  <meta name="Author" content="GRASS Development Team">
  <meta http-equiv="content-language" content="en-us">
  <meta name="viewport" content="width=device-width, initial-scale=1">
- <title>t.rast.copytree - GRASS GIS manual</title>
- <meta name="description" content="t.rast.copytree: Transfer raster map files from STRDS in external GDAL format to target directory">
- <meta name="keywords" content="temporal, move, copy, GDAL, directory">
+ <title>t.rast.exporttree - GRASS GIS manual</title>
+ <meta name="description" content="t.rast.exporttree: Export raster maps from a STRDS to GeoTiff format in a temporal directory structure.">
+ <meta name="keywords" content="temporal, move, export, GDAL, directory">
  <link rel="stylesheet" href="grassdocs.css" type="text/css">
 </head>
 <body bgcolor="white">
@@ -38,25 +38,21 @@ grassLogoLink.after(temp.content);
 <hr class="header">
 
 <h2>NAME</h2>
-<em><b>t.rast.copytree</b></em>  - Transfer raster map files from STRDS in external GDAL format to target directory
+<em><b>t.rast.exporttree</b></em>  - Export raster maps from a STRDS to GeoTiff format in a temporal directory structure.
 <h2>KEYWORDS</h2>
-<a href="file:///usr/lib/grass84/docs/html/temporal.html">temporal</a>, <a href="file:///usr/lib/grass84/docs/html/topic_move.html">move</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#copy">copy</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#GDAL">GDAL</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#directory">directory</a>
+<a href="file:///usr/lib/grass84/docs/html/temporal.html">temporal</a>, <a href="file:///usr/lib/grass84/docs/html/topic_move.html">move</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#export">export</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#GDAL">GDAL</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#directory">directory</a>
 <h2>SYNOPSIS</h2>
-<div id="name"><b>t.rast.copytree</b><br></div>
-<b>t.rast.copytree --help</b><br>
-<div id="synopsis"><b>t.rast.copytree</b> [-<b>mos</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]  <b>output_directory</b>=<em>name</em>  [<b>source_directory</b>=<em>name</em>]   [<b>suffix</b>=<em>string</em>]   [<b>temporal_tree</b>=<em>string</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="name"><b>t.rast.exporttree</b><br></div>
+<b>t.rast.exporttree --help</b><br>
+<div id="synopsis"><b>t.rast.exporttree</b> [-<b>fs</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]  <b>output_directory</b>=<em>name</em>  [<b>format</b>=<em>string</em>]   [<b>resampling</b>=<em>string</em>]   [<b>level</b>=<em>integer</em>]   [<b>over</b>=<em>integer</em>]   [<b>temporal_tree</b>=<em>string</em>]   [<b>separator</b>=<em>character</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
 <h3>Flags:</h3>
 <dl>
-<dt><b>-m</b></dt>
-<dd>Move files into destination (default is copy)</dd>
-<dd>Move files into destination (default is copy)</dd>
-
-<dt><b>-o</b></dt>
-<dd>Overwrite existing files</dd>
-<dd>Overwrite existing files</dd>
+<dt><b>-f</b></dt>
+<dd>Force export of floating point maps as Float32</dd>
+<dd>Force export of floating point maps as Float32</dd>
 
 <dt><b>-s</b></dt>
 <dd>Use semantic label in directory structure</dd>
@@ -86,14 +82,28 @@ grassLogoLink.after(temp.content);
 <dt><b>output_directory</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
 <dd>Path to the output / destination directory</dd>
 
-<dt><b>source_directory</b>=<em>name</em></dt>
-<dd>Path to the source directory</dd>
+<dt><b>format</b>=<em>string</em></dt>
+<dd>Geotiff format flavor to export</dd>
+<dd>Options: <em>COG, GTiff</em></dd>
+<dd>Default: <em>COG</em></dd>
 
-<dt><b>suffix</b>=<em>string</em></dt>
-<dd>Suffix of files to transfer</dd>
+<dt><b>resampling</b>=<em>string</em></dt>
+<dd>Resampling to be used for overviews</dd>
+<dd>Options: <em>NEAREST, ​AVERAGE, ​BILINEAR​, ​CUBIC​, ​CUBICSPLINE​, ​LANCZOS​, ​MODE, ​RMS</em></dd>
+
+<dt><b>level</b>=<em>integer</em></dt>
+<dd>Compression level for the output files (0-22), GDAL default for ZSTD is 9, for DEFLATE is 6</dd>
+
+<dt><b>over</b>=<em>integer</em></dt>
+<dd>Number of overviews to create (4 is often a good choice)</dd>
 
 <dt><b>temporal_tree</b>=<em>string</em></dt>
 <dd>Strftime format to create temporal directory name or tree (e.g. "%Y/%m/%d")</dd>
+
+<dt><b>separator</b>=<em>character</em></dt>
+<dd>Field separator</dd>
+<dd>Special characters: pipe, comma, space, tab, newline</dd>
+<dd>Default: <em>pipe</em></dd>
 
 <dt><b>nprocs</b>=<em>integer</em></dt>
 <dd>Number of threads for parallel computing</dd>
@@ -111,13 +121,13 @@ grassLogoLink.after(temp.content);
 </div>
 <h2><a name="description">DESCRIPTION</a></h2>
 
-<em>t.rast.copytree</em> is a simple helper module to copy extrenal registered raster
-maps from a STRDS into a temporal directory tree. The tree structure can be defined
-with the <b>temporal_tree</b> option and the <b>s</b>-flag (to include the
-<em>semantic_label</em> in the directory structure). The output directory needs to
-exist, but the directory structure below will be created if necessary. Parallel
-transfer of files is supported with the <b>nprocs</b> option. Using the <b>m</b>-flag
-files can be moved instead of copied.
+<em>t.rast.exporttree</em> is a wrapper module around <em>r.out.gdal</em>to
+export raster maps from a STRDS to GeoTiffs in a temporal directory tree. The
+tree structure can be defined with the <b>temporal_tree</b> option and the
+<b>s</b>-flag (to include the <em>semantic_label</em> in the directory
+structure). The output directory needs to exist, but the directory structure
+below will be created if necessary. Parallel export of maps is supported
+with the <b>nprocs</b> option.
 
 <h2><a name="examples">EXAMPLES</a></h2>
 
@@ -146,7 +156,7 @@ t.create type="strds" temporaltype="absolute" output="B" \
 t.register -i type="raster" input="B" maps="b_1,b_2,b_3" \
     start="2001-01-01" increment="1 day" --overwrite
 
-t.rast.copytree -m input="A" temporal_tree="%Y/%m" nprocs=2 \
+t.rast.exporttree -f input="A" temporal_tree="%Y/%m" nprocs=2 \
     output_directory=$target_dir
 
 t.rast.copytree -s input="B" temporal_tree="%Y/%m/%d" nprocs=2 \
@@ -160,11 +170,11 @@ Stefan Blumentrath
 <h2>SOURCE CODE</h2>
 <p>
   Available at:
-  <a href="">t.rast.copytree source code</a>
+  <a href="">t.rast.exporttree source code</a>
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Friday Apr 04 13:31:36 2025
+  Accessed: Friday Apr 04 13:31:28 2025
 </p>
 <hr class="header">
 <p>
