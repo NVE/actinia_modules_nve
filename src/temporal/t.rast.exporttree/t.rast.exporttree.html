@@ -1,0 +1,48 @@
+<h2>DESCRIPTION</h2>
+
+<em>t.rast.exporttree</em> is a wrapper module around <em>r.out.gdal</em>to
+export raster maps from a STRDS to GeoTiffs in a temporal directory tree. The
+tree structure can be defined with the <b>temporal_tree</b> option and the
+<b>s</b>-flag (to include the <em>semantic_label</em> in the directory
+structure). The output directory needs to exist, but the directory structure
+below will be created if necessary. Parallel export of maps is supported
+with the <b>nprocs</b> option.
+
+<h2>EXAMPLES</h2>
+
+<div class="code"><pre>
+temp_dir=$(g.tempfile -d pid=1)
+mkdir $temp_dir
+target_dir=$(g.tempfile -d pid=1)
+mkdir $target_dir
+
+g.region -ag s=0 n=80 w=0 e=120 res=1
+r.external.out format="GTiff" directory=$temp_dir extension="tif" options="COMPRESS=LZW"
+for rmap_idx in 1 2 3
+do
+  for prefix in a b
+  do
+    r.mapcalc expression="${prefix}_${rmap_idx} = ${rmap_idx}00 --overwrite
+    r.support map="${prefix}_${rmap_idx} semantic_label=$prefix
+  done
+done
+t.create type="strds" temporaltype="absolute" output="A" \
+    title="A test" description="A test" --overwrite
+t.register -i type="raster" input="A" maps="a_1,a_2,a_3" \
+    start="2001-01-01" increment="3 months" --overwrite
+t.create type="strds" temporaltype="absolute" output="B" \
+    title="B test" description="B test" --overwrite
+t.register -i type="raster" input="B" maps="b_1,b_2,b_3" \
+    start="2001-01-01" increment="1 day" --overwrite
+
+t.rast.exporttree -f input="A" temporal_tree="%Y/%m" nprocs=2 \
+    output_directory=$target_dir
+
+t.rast.copytree -s input="B" temporal_tree="%Y/%m/%d" nprocs=2 \
+output_directory=$target_dir
+</pre></div>
+
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath
