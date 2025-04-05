@@ -40,10 +40,11 @@ comes with GRASS for details.
 # %end
 
 # %option
-# % key: resampling
+# % key: compression
 # % type: string
-# % description: Resampling to be used for overviews
-# % options: NEAREST,​AVERAGE,​BILINEAR​,​CUBIC​,​CUBICSPLINE​,​LANCZOS​,​MODE,​RMS
+# % description: Compression method to be used for the output GeoTiffs
+# % options: LZW,ZSTD,DEFLATE,LERC
+# % answer: ZSTD
 # % required: no
 # %end
 
@@ -55,7 +56,15 @@ comes with GRASS for details.
 # %end
 
 # %option
-# % key: over
+# % key: resampling
+# % type: string
+# % description: Resampling to be used for overviews
+# % options: NEAREST,​AVERAGE,​BILINEAR​,​CUBIC​,​CUBICSPLINE​,​LANCZOS​,​MODE,​RMS
+# % required: no
+# %end
+
+# %option
+# % key: overviews
 # % type: integer
 # % description: Number of overviews to create (4 is often a good choice)
 # % required: no
@@ -299,7 +308,7 @@ def main() -> None:
         level=int(options["level"]) if options["level"] else None,
         overviews=int(options["overviews"]) if options["overviews"] else None,
         truncate_float=flags["f"],
-        separator=options["separator"],
+        separator=gs.separator(options["separator"]),
         temporal_tree=options["temporal_tree"] or "%Y/%m/%d",
         use_semantic_label=flags["s"],
     )
