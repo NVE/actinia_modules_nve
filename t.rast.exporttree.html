@@ -44,7 +44,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>t.rast.exporttree</b><br></div>
 <b>t.rast.exporttree --help</b><br>
-<div id="synopsis"><b>t.rast.exporttree</b> [-<b>fs</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]  <b>output_directory</b>=<em>name</em>  [<b>format</b>=<em>string</em>]   [<b>resampling</b>=<em>string</em>]   [<b>level</b>=<em>integer</em>]   [<b>over</b>=<em>integer</em>]   [<b>temporal_tree</b>=<em>string</em>]   [<b>separator</b>=<em>character</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>t.rast.exporttree</b> [-<b>fs</b>] <b>input</b>=<em>name</em>  [<b>where</b>=<em>sql_query</em>]  <b>output_directory</b>=<em>name</em>  [<b>format</b>=<em>string</em>]   [<b>compression</b>=<em>string</em>]   [<b>level</b>=<em>integer</em>]   [<b>resampling</b>=<em>string</em>]   [<b>overviews</b>=<em>integer</em>]   [<b>temporal_tree</b>=<em>string</em>]   [<b>separator</b>=<em>character</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -87,14 +87,19 @@ grassLogoLink.after(temp.content);
 <dd>Options: <em>COG, GTiff</em></dd>
 <dd>Default: <em>COG</em></dd>
 
-<dt><b>resampling</b>=<em>string</em></dt>
-<dd>Resampling to be used for overviews</dd>
-<dd>Options: <em>NEAREST, ​AVERAGE, ​BILINEAR​, ​CUBIC​, ​CUBICSPLINE​, ​LANCZOS​, ​MODE, ​RMS</em></dd>
+<dt><b>compression</b>=<em>string</em></dt>
+<dd>Compression method to be used for the output GeoTiffs</dd>
+<dd>Options: <em>LZW, ZSTD, DEFLATE, LERC</em></dd>
+<dd>Default: <em>ZSTD</em></dd>
 
 <dt><b>level</b>=<em>integer</em></dt>
 <dd>Compression level for the output files (0-22), GDAL default for ZSTD is 9, for DEFLATE is 6</dd>
 
-<dt><b>over</b>=<em>integer</em></dt>
+<dt><b>resampling</b>=<em>string</em></dt>
+<dd>Resampling to be used for overviews</dd>
+<dd>Options: <em>NEAREST, ​AVERAGE, ​BILINEAR​, ​CUBIC​, ​CUBICSPLINE​, ​LANCZOS​, ​MODE, ​RMS</em></dd>
+
+<dt><b>overviews</b>=<em>integer</em></dt>
 <dd>Number of overviews to create (4 is often a good choice)</dd>
 
 <dt><b>temporal_tree</b>=<em>string</em></dt>
@@ -174,7 +179,7 @@ Stefan Blumentrath
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Friday Apr 04 13:31:28 2025
+  Accessed: Saturday Apr 05 22:14:56 2025
 </p>
 <hr class="header">
 <p>
