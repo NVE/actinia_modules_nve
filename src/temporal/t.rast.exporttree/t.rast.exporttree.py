@@ -64,9 +64,10 @@ comes with GRASS for details.
 # %end
 
 # %option
-# % key: overviews
+# % key: minimal_overview_size
 # % type: integer
-# % description: Number of overviews to create (4 is often a good choice)
+# % description: Minimal size of overview tiles (default=256)
+# % answer: 256
 # % required: no
 # %end
 
@@ -93,6 +94,12 @@ comes with GRASS for details.
 # % key: s
 # % label: Use semantic label in directory structure
 # % description: Use semantic label in directory structure
+# %end
+
+# %flag
+# % key: n
+# % label: Export NoData maps as Byte
+# % description: Export NoData maps as Byte, default is to skip export of maps with only NoData
 # %end
 
 import sys
@@ -123,6 +130,7 @@ def get_target_directory(
 def check_datatype(
     map_info: dict,
     force_float32: bool = False,
+    export_empty_as_byte: bool = False,
 ) -> tuple[str, int | None]:
     """Check the datatype of the map and return the smallest appropriate GDAL type.
 
@@ -136,6 +144,8 @@ def check_datatype(
         "UInt32": (0, 4294967295),
         "Int32": (-2147483648, 2147483647),
     }
+    if not map_info["min"] or not map_info["max"]:
+        return "Byte" if export_empty_as_byte else None, 255
     # Check for integer types
     if map_info["datatype"] == "CELL":
         # Check for integer types
@@ -161,11 +171,12 @@ def export_map_row(
     blocksize: int = 256,  # must be multiple of 16
     resampling: str | None = None,
     level: int | None = None,
-    overviews: int | None = None,
     separator: str = "|",
     temporal_tree: str = "%Y/%m/%d",
+    overview_min_size: int = 256,
     truncate_float: bool = False,
     use_semantic_label: bool = False,
+    export_empty_as_byte: bool = False,
 ) -> str:
     """Export raster map using r.out.gdal.
 
@@ -177,13 +188,30 @@ def export_map_row(
     """
     # Check the Raster map type and range
     raster_info = gs.raster_info(map_row["name"])
-    data_type, no_data = check_datatype(raster_info, force_float32=truncate_float)
+    data_type, no_data = check_datatype(
+        raster_info,
+        force_float32=truncate_float,
+        export_empty_as_byte=export_empty_as_byte,
+    )
+    if not data_type:
+        gs.warning(_("Map {} is empty. Skipping export...").format(map_row["name"]))
+        return None
     target_directory = get_target_directory(
         map_row,
         Path(output_directory),
         temporal_tree=temporal_tree,
         use_semantic_label=use_semantic_label,
     )
+
+    # Get number of overviews
+    overview_list = []
+    overview = 2
+    while (
+        float(raster_info["rows"]) / overview > overview_min_size
+        and float(raster_info["rows"]) / overview > overview_min_size
+    ):
+        overview_list.append(overview)
+        overview *= 2
 
     # Allways create BIGTIFFs
     createopt = "BIGTIFF=YES"
@@ -241,7 +269,7 @@ def export_map_row(
             type=data_type,
             overwrite=OVERWRITE,
             createopt=createopt,
-            overviews=overviews,
+            overviews=len(overview_list),
             quiet=True,
             stderr_=PIPE,
         )
@@ -306,11 +334,12 @@ def main() -> None:
         raster_format=options["format"],
         compression=options["compression"],
         level=int(options["level"]) if options["level"] else None,
-        overviews=int(options["overviews"]) if options["overviews"] else None,
         truncate_float=flags["f"],
         separator=gs.separator(options["separator"]),
         temporal_tree=options["temporal_tree"] or "%Y/%m/%d",
+        overview_min_size=int(options["minimal_overview_size"]),
         use_semantic_label=flags["s"],
+        export_empty_as_byte=flags["n"],
     )
 
     # Export maps to GeoTIFF / COG
@@ -324,7 +353,11 @@ def main() -> None:
         register_strings = [export_map_row_tif(map_row) for map_row in input_strds_maps]
 
     # Print register information
-    print("\n".join(register_strings))
+    print(
+        "\n".join(
+            [register_string for register_string in register_strings if register_string]
+        ),
+    )
 
 
 if __name__ == "__main__":
