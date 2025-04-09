@@ -59,7 +59,7 @@ comes with GRASS for details.
 # % key: resampling
 # % type: string
 # % description: Resampling to be used for overviews
-# % options: NEAREST,​AVERAGE,​BILINEAR​,​CUBIC​,​CUBICSPLINE​,​LANCZOS​,​MODE,​RMS
+# % options: NEAREST,AVERAGE,BILINEAR,CUBIC,CUBICSPLINE,LANCZOS,MODE,RMS
 # % required: no
 # %end
 
