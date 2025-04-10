@@ -144,7 +144,7 @@ def check_datatype(
         "UInt32": (0, 4294967295),
         "Int32": (-2147483648, 2147483647),
     }
-    if not map_info["min"] or not map_info["max"]:
+    if map_info["min"] is None and map_info["max"] is None:
         return "Byte" if export_empty_as_byte else None, 255
     # Check for integer types
     if map_info["datatype"] == "CELL":
