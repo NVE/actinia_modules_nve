@@ -63,6 +63,7 @@ COPYRIGHT: (C) 2024 by NVE, Stefan Blumentrath
 
 import atexit
 import sys
+import os
 from pathlib import Path
 from subprocess import PIPE
 from zipfile import ZipFile
@@ -101,7 +102,7 @@ def zip_shape(shape_file):
     # Write to zip-file
     with ZipFile(str(directory / f"{base_name}.zip"), "w") as zf:
         for shape_file_part in shape_file_parts:
-            zf.write(shape_file_part)
+            zf.write(shape_file_part, os.path.basename(shape_file_part))
             shape_file_part.unlink()
 
 
