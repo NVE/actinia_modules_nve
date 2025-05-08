@@ -8,7 +8,7 @@ The module options largely represent search parameters for collections and
 archives (granules). 
 
 <p>
-The temporal search parameters (<b>temporal</b>, <b>created_at</b>,
+The optional temporal search parameters (<b>temporal</b>, <b>created_at</b>,
 <b>production_date</b>, <b>revision_date</b>) are given as a comma separated
 pair of ISO-formated datetime strings.
 
@@ -16,7 +16,7 @@ pair of ISO-formated datetime strings.
 In order to be able to download data the user has to create an EarthData
 account and provide credentials to the module add earthaccess library
 respectively. Credentials can be provided in form of a <em>~/.netrc</em>
-file, environment variables named <em>EARTHDATA_USERNAME</em> and
+file or using environment variables named <em>EARTHDATA_USERNAME</em> and
 <em>EARTHDATA_PASSWORD</em>.
 
 
@@ -68,7 +68,7 @@ i.earthaccess.download short_name=SWOT_L2_HR_Raster_100m_2.0 \
 
 <h2>REFERENCES</h2>
 
-<a href="https://docs.asf.alaska.edu/asf_search/basics/">asf_search Basics</a>
+<a href="https://earthaccess.readthedocs.io/en/latest/">earthaccess documentation</a>
 
 <h2>AUTHOR</h2>
 

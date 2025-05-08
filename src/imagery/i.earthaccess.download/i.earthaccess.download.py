@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-"""
-MODULE:    i.earthaccess.download
+"""MODULE:    i.earthaccess.download
 AUTHOR(S): Stefan Blumentrath
-PURPOSE:   Searches and Downloads SAR data from the Alaska Satellite Facility
+PURPOSE:   Searches and Downloads earth observation data using the
+           EarthAccess library for NASA Earthdata APIs.
 COPYRIGHT: (C) 2024 by NVE, Stefan Blumentrath
 
  This program is free software; you can redistribute it and/or modify
@@ -15,22 +15,6 @@ COPYRIGHT: (C) 2024 by NVE, Stefan Blumentrath
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
-
-    def day_night_flag(self, day_night_flag: str) -> Self: ...
-    def (
-        min_cover: Optional[FloatLike] = ...,
-        max_cover: Optional[FloatLike] = ...,
-    def (self, instrument: str) -> Self: ...
-    def (self, platform: str) -> Self: ...
-    def sort_key(self, sort_key: str) -> Self: ...
-    def (self, granule_ur: str) -> Self: ...
-
-class CollectionQuery(GranuleCollectionBaseQuery):
-    def archive_center(self, center: str) -> Self: ...
-    def keyword(self, text: str) -> Self: ...
-    def native_id(self, native_ids: Sequence[str]) -> Self: ...
-    def tool_concept_id(self, ids: Sequence[str]) -> Self: ...
-    def service_concept_id(self, ids: Sequence[str]) -> Self: ...
 
 """
 
@@ -145,6 +129,7 @@ class CollectionQuery(GranuleCollectionBaseQuery):
 
 # %option G_OPT_F_OUTPUT
 # % key: file
+# % required: no
 # % description: Write search result to file
 # %end
 
@@ -168,7 +153,7 @@ class CollectionQuery(GranuleCollectionBaseQuery):
 # % required: no
 # % multiple: no
 # % description: Comma separated list of scenes or file with scenes (one per row)
-# % label: Selected scenes to download from ASF
+# % label: Selected scenes to download using earthaccess
 # %end
 
 # %option
@@ -203,7 +188,7 @@ import grass.script as gs
 from grass.pygrass.vector import VectorTopo
 
 
-def get_spatial_query_parameter(aoi):
+def get_spatial_query_parameter(aoi: str) -> dict:
     """Generate the spatial query parameter from user input
 
     The input aoi (=area of interest) can be:
@@ -232,6 +217,7 @@ def get_spatial_query_parameter(aoi):
     reg = gs.parse_command("g.region", flags="gl", quiet=True)
 
     if not aoi:
+        gs.debug(_("Using the bounding box from computational region as AOI"))
         # Use bounding box from computational region
         if reg:
             return {
@@ -240,7 +226,7 @@ def get_spatial_query_parameter(aoi):
                     (min(float(reg["sw_lat"]), float(reg["se_lat"]))),
                     max(float(reg["se_long"]), float(reg["ne_long"])),
                     (max(float(reg["nw_lat"]), float(reg["ne_lat"]))),
-                )
+                ),
             }
         reg = gs.parse_command("g.region", flags="g", quiet=True)
         return {"bounding_box": (reg["w"], reg["s"], reg["e"], reg["n"])}
@@ -250,22 +236,49 @@ def get_spatial_query_parameter(aoi):
     wgs_84.ImportFromEPSG(4326)
     wgs_84.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
 
+    # Try GeoJSON / AOI file with OGR
+    if Path(aoi).exists():
+        gs.debug(_("Reading AOI from file {}").format(aoi))
+        try:
+            ogr_dataset = ogr.Open(aoi)
+        except OSError:
+            gs.fatal(_("Failed to open AOI file {}").format(aoi))
+        if not ogr_dataset:
+            gs.fatal(_("Could not read AOI file {}").format(aoi))
+        if ogr_dataset.GetLayerCount() > 1:
+            gs.warning(_("Input file contains more than one layer"))
+        ogr_layer = ogr_dataset.GetLayerByIndex(0)
+        if ogr_layer.GetGeomType() != 3:
+            gs.warning(_("GeoJSON does not contain polygons"))
+        if ogr_layer.GetFeatureCount() > 1:
+            gs.warning(
+                _("GeoJSON contains more than one geometry. Using only the first one."),
+            )
+        layer_crs = ogr_layer.GetSpatialRef()
+        ogr_feature = ogr_layer.GetFeature(0)
+        geom = ogr_feature.GetGeometryRef()
+        if not layer_crs.IsSame(wgs_84):
+            geom.TransformTo(wgs_84)
+        ring = geom.GetGeometryRef(0)
+
+        return {"polygon": ring.GetPoints()}
+
     # Try GRASS GIS vector map
-    try:
+    if gs.legal_name(aoi):
         aoi_map = VectorTopo(aoi)
         if aoi_map.exist():
             aoi_map.open("r")
             if aoi_map.number_of("areas") > 1:
                 gs.warning(
                     _(
-                        "GeoJSON contains more than one geometry. Using only the first one."
-                    )
+                        "GeoJSON contains more than one geometry. Using only the first one.",
+                    ),
                 )
             if aoi_map.number_of("areas") > 1:
                 gs.warning(
                     _(
-                        "GeoJSON contains more than one geometry. Using only the first one."
-                    )
+                        "GeoJSON contains more than one geometry. Using only the first one.",
+                    ),
                 )
             area = aoi_map.viter("areas")
             coordinate_pairs = area.points().to_list()
@@ -281,64 +294,40 @@ def get_spatial_query_parameter(aoi):
             else:
                 coordinate_pairs = tuple(coordinate_pairs)
             return {"polygon": coordinate_pairs}
-    except Exception:
-        gs.fatal(_("Cannot get AOI from vector map <{}>"))
-    # Try GeoJSON / AOI file with OGR
-    try:
-        ogr_dataset = ogr.Open(aoi)
-    except OSError:
-        gs.fatal(_("Failed to open AOI file {}").format(aoi))
-    if not ogr_dataset:
-        gs.fatal(_("Could not read AOI file {}").format(aoi))
-    if ogr_dataset.GetLayerCount() > 1:
-        gs.warning(_("Input file contains more than one layer"))
-    ogr_layer = ogr_dataset.GetLayerByIndex(0)
-    if ogr_layer.GetGeomType() != 3:
-        gs.warning(_("GeoJSON does not contain polygons"))
-    if ogr_layer.GetFeatureCount() > 1:
-        gs.warning(
-            _("GeoJSON contains more than one geometry. Using only the first one.")
-        )
-    layer_crs = ogr_layer.GetSpatialRef()
-    ogr_feature = ogr_layer.GetFeature(0)
-    geom = ogr_feature.GetGeometryRef()
-    if not layer_crs.IsSame(wgs_84):
-        geom.TransformTo(wgs_84)
-    ring = geom.GetGeometryRef(0)
-
-    return {"polygon": ring.GetPoints()}
+        gs.debug(_("AOI vector map <{}> not found.").format(aoi))
+    gs.fatal(_("Invalid input for AOI option"))
 
 
-def get_temporal_query_parameters(user_options):
-    """"""
+def get_temporal_query_parameters(user_options: dict) -> dict:
+    """Extract temporal query parameters from user given module options."""
     temporal_filters = {}
     # Set keyword arguments with temporal range for search
     for search_option in ("temporal", "production_date", "created_at", "revision_date"):
         if not user_options[search_option]:
             continue
         filter_values = user_options[search_option].split(",")
+        if not filter_values:
+            continue
         if len(filter_values) > 2:
             gs.fatal(_("Too many input values for <{}>. It cannot be more than two."))
         try:
-            filter_values = (
-                datetime.fromisoformat(time_stamp)
-                for time_stamp in filter_values
-                if filter_values
+            filter_values = tuple(
+                datetime.fromisoformat(time_stamp) for time_stamp in filter_values
             )
         except:
             gs.fatal(
                 _(
-                    "Invalid input for <{}>. It must be a sing or pair of ISO-formated datetime(s)"
-                )
+                    "Invalid input for <{}>. It must be a sing or pair of ISO-formated datetime(s)",
+                ),
             )
-        if len(filter_values) < 2:
+        if len(list(filter_values)) < 2:
             filter_values = (filter_values[0], None)
         temporal_filters[search_option] = filter_values
 
     return temporal_filters
 
 
-def extract_core_umm_metadata(dataset_dict):
+def extract_core_umm_metadata(dataset_dict: dict) -> dict:
     umm_keys = {
         "Abstract",
         "AccessConstraints",
@@ -385,8 +374,8 @@ def extract_core_umm_metadata(dataset_dict):
         "VersionDescription",
     }
 
-    def _get_spatial_extent(dataset_dict):
-        """gsr = set()
+    def _get_spatial_extent(dataset_dict: dict) -> str:
+        """Gsr = set()
         ...: for d in datasets:
         ...:     # keys.update(list(d["umm"].keys()))
         ...:     # gsr.update(d["umm"].get('SpatialExtent').keys())
@@ -399,14 +388,15 @@ def extract_core_umm_metadata(dataset_dict):
         ...:                 gsr.update(d["umm"].get('SpatialExtent').get('HorizontalSpatialDomain').get('Geometry').keys())
         ...:             print(d["umm"].get('SpatialExtent').get('HorizontalSpatialDomain').get('ResolutionAndCoordinateSystem'))
         ...:             print(d["umm"].get('SpatialExtent').get('HorizontalSpatialDomain').get('ZoneIdentifier'))
-        ...:"""
+        ...:
+        """
         spatial_dict = {}
         spatial_representation = (
             dataset_dict["umm"].get("SpatialExtent").get("GranuleSpatialRepresentation")
         )
         if spatial_representation == "CARTESIAN":
             print(
-                dataset_dict["umm"].get("SpatialExtent").get("HorizontalSpatialDomain")
+                dataset_dict["umm"].get("SpatialExtent").get("HorizontalSpatialDomain"),
             )
         elif spatial_representation in {"GEODETIC", "NO_SPATIAL", "ORBIT"}:
             pass
@@ -417,7 +407,8 @@ def extract_core_umm_metadata(dataset_dict):
             .get("Geometry")
         )
 
-    def _get_temporal_extent(dataset_dict):
+    def _get_temporal_extent(dataset_dict: dict) -> tuple:
+        """Return the temporal extent of a granule / dataset."""
         datetime_range = (
             dataset_dict["umm"].get("TemporalExtents")[0].get("RangeDateTimes", "")
         )
@@ -427,7 +418,8 @@ def extract_core_umm_metadata(dataset_dict):
             ].get("BeginningDateTime", "")
         return "", ""
 
-    def _get_temporal_extent(dataset_dict):
+    def _get_temporal_extent(dataset_dict: dict) -> tuple:
+        """Return the temporal extent of a granule / dataset."""
         datetime_range = (
             dataset_dict["umm"].get("TemporalExtents")[0].get("RangeDateTimes", "")
         )
@@ -437,14 +429,15 @@ def extract_core_umm_metadata(dataset_dict):
             ].get("BeginningDateTime", "")
         return "", ""
 
-    def _get_doi(dataset_dict):
+    def _get_doi(dataset_dict: dict) -> str:
+        """Return DOI of the dataset if available, otherwise return empty string."""
         return (
             dataset_dict["umm"].get("DOI").get("Authority", "")
             + "/"
             + dataset_dict["umm"].get("DOI").get("DOI", "")
         )
 
-    def _get_iso_categories(dataset_dict):
+    def _get_iso_categories(dataset_dict: dict) -> str:
         iso_cats = dataset_dict["umm"].get("ISOTopicCategories")
         return "|".join(iso_cats) if iso_cats else ""
 
@@ -463,8 +456,7 @@ def extract_core_umm_metadata(dataset_dict):
 
 
 def main():
-    """Search and download data products from ASF"""
-
+    """Search and download data products using earthaccess API."""
     check_scenes = options["check_scenes"]
     skip = flags["s"] or check_scenes in ["all", "existing"]
 
@@ -480,7 +472,7 @@ def main():
             search_option: options[search_option]
             for search_option in ("provider", "keyword", "short_name", "granule_name")
             if options[search_option]
-        }
+        },
     )
 
     if options["limit"]:
@@ -502,8 +494,8 @@ def main():
     except Exception:
         gs.warning(
             _(
-                "Login to EarthData failed. Download may fail or search may return incomplete results."
-            )
+                "Login to EarthData failed. Download may fail or search may return incomplete results.",
+            ),
         )
 
     # https://github.com/nsidc/earthaccess/blob/0385d126695807f5c865076350b7def04109e088/earthaccess/api.py#L35
@@ -516,8 +508,8 @@ def main():
         except:
             gs.fatal(
                 _(
-                    "Collection search failed. Please check the search parameters and login information."
-                )
+                    "Collection search failed. Please check the search parameters and login information.",
+                ),
             )
         if options["print"] == "collections":
             if options["format"] == "json":
@@ -540,11 +532,11 @@ def main():
                                         if d["umm"].get("DOI").get("Authority")
                                         else ""
                                     ),
-                                ]
+                                ],
                             )
                             for d in datasets
-                        ]
-                    )
+                        ],
+                    ),
                 )
             sys.exit(0)
         else:  # if options["print"] == "collection_names":
@@ -558,7 +550,7 @@ def main():
     if "keyword" in search_options:
         search_options.pop("keyword")
         gs.warning(
-            _("'keyword' is not a supported parameter for granule search. Ignoring...")
+            _("'keyword' is not a supported parameter for granule search. Ignoring..."),
         )
 
     # https://github.com/podaac/tutorials/blob/master/notebooks/SearchDownload_SWOTviaCMR.ipynb
@@ -582,8 +574,9 @@ def main():
     nprocs = int(options["nprocs"])
     gs.verbose(
         _("Start downloading {n} granules using {p} threads.").format(
-            n=len(data_granules), p=nprocs
-        )
+            n=len(data_granules),
+            p=nprocs,
+        ),
     )
 
     try:
@@ -591,8 +584,8 @@ def main():
     except:
         gs.fatal(
             _(
-                "Downloading data failed. Please check search parameters and login information."
-            )
+                "Downloading data failed. Please check search parameters and login information.",
+            ),
         )
 
 
@@ -605,18 +598,21 @@ if __name__ == "__main__":
         gs.fatal(
             _(
                 "Can not import the earthaccess library. "
-                "Please install it with 'pip install earthaccess'"
-            )
+                "Please install it with 'pip install earthaccess'",
+            ),
         )
 
     try:
         from osgeo import ogr, osr
+
+        ogr.UseExceptions()
+        osr.UseExceptions()
     except ImportError:
         gs.fatal(
             _(
                 "Can not import the GDAL python library. "
-                "Please install it with 'pip install GDAL==$(gdal-config --version)'"
-            )
+                "Please install it with 'pip install GDAL==$(gdal-config --version)'",
+            ),
         )
 
     main()
