@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-"""
-MODULE:    i.earthaccess.download
+"""MODULE:    i.earthaccess.download
 AUTHOR(S): Stefan Blumentrath
 PURPOSE:   Searches and Downloads earth observation data using the
            EarthAccess library for NASA Earthdata APIs.
@@ -227,7 +226,7 @@ def get_spatial_query_parameter(aoi: str) -> dict:
                     (min(float(reg["sw_lat"]), float(reg["se_lat"]))),
                     max(float(reg["se_long"]), float(reg["ne_long"])),
                     (max(float(reg["nw_lat"]), float(reg["ne_lat"]))),
-                )
+                ),
             }
         reg = gs.parse_command("g.region", flags="g", quiet=True)
         return {"bounding_box": (reg["w"], reg["s"], reg["e"], reg["n"])}
@@ -253,7 +252,7 @@ def get_spatial_query_parameter(aoi: str) -> dict:
             gs.warning(_("GeoJSON does not contain polygons"))
         if ogr_layer.GetFeatureCount() > 1:
             gs.warning(
-                _("GeoJSON contains more than one geometry. Using only the first one.")
+                _("GeoJSON contains more than one geometry. Using only the first one."),
             )
         layer_crs = ogr_layer.GetSpatialRef()
         ogr_feature = ogr_layer.GetFeature(0)
@@ -272,14 +271,14 @@ def get_spatial_query_parameter(aoi: str) -> dict:
             if aoi_map.number_of("areas") > 1:
                 gs.warning(
                     _(
-                        "GeoJSON contains more than one geometry. Using only the first one."
-                    )
+                        "GeoJSON contains more than one geometry. Using only the first one.",
+                    ),
                 )
             if aoi_map.number_of("areas") > 1:
                 gs.warning(
                     _(
-                        "GeoJSON contains more than one geometry. Using only the first one."
-                    )
+                        "GeoJSON contains more than one geometry. Using only the first one.",
+                    ),
                 )
             area = aoi_map.viter("areas")
             coordinate_pairs = area.points().to_list()
@@ -318,8 +317,8 @@ def get_temporal_query_parameters(user_options: dict) -> dict:
         except:
             gs.fatal(
                 _(
-                    "Invalid input for <{}>. It must be a sing or pair of ISO-formated datetime(s)"
-                )
+                    "Invalid input for <{}>. It must be a sing or pair of ISO-formated datetime(s)",
+                ),
             )
         if len(list(filter_values)) < 2:
             filter_values = (filter_values[0], None)
@@ -376,7 +375,7 @@ def extract_core_umm_metadata(dataset_dict: dict) -> dict:
     }
 
     def _get_spatial_extent(dataset_dict: dict) -> str:
-        """gsr = set()
+        """Gsr = set()
         ...: for d in datasets:
         ...:     # keys.update(list(d["umm"].keys()))
         ...:     # gsr.update(d["umm"].get('SpatialExtent').keys())
@@ -389,14 +388,15 @@ def extract_core_umm_metadata(dataset_dict: dict) -> dict:
         ...:                 gsr.update(d["umm"].get('SpatialExtent').get('HorizontalSpatialDomain').get('Geometry').keys())
         ...:             print(d["umm"].get('SpatialExtent').get('HorizontalSpatialDomain').get('ResolutionAndCoordinateSystem'))
         ...:             print(d["umm"].get('SpatialExtent').get('HorizontalSpatialDomain').get('ZoneIdentifier'))
-        ...:"""
+        ...:
+        """
         spatial_dict = {}
         spatial_representation = (
             dataset_dict["umm"].get("SpatialExtent").get("GranuleSpatialRepresentation")
         )
         if spatial_representation == "CARTESIAN":
             print(
-                dataset_dict["umm"].get("SpatialExtent").get("HorizontalSpatialDomain")
+                dataset_dict["umm"].get("SpatialExtent").get("HorizontalSpatialDomain"),
             )
         elif spatial_representation in {"GEODETIC", "NO_SPATIAL", "ORBIT"}:
             pass
@@ -457,7 +457,6 @@ def extract_core_umm_metadata(dataset_dict: dict) -> dict:
 
 def main():
     """Search and download data products using earthaccess API."""
-
     check_scenes = options["check_scenes"]
     skip = flags["s"] or check_scenes in ["all", "existing"]
 
@@ -473,7 +472,7 @@ def main():
             search_option: options[search_option]
             for search_option in ("provider", "keyword", "short_name", "granule_name")
             if options[search_option]
-        }
+        },
     )
 
     if options["limit"]:
@@ -495,8 +494,8 @@ def main():
     except Exception:
         gs.warning(
             _(
-                "Login to EarthData failed. Download may fail or search may return incomplete results."
-            )
+                "Login to EarthData failed. Download may fail or search may return incomplete results.",
+            ),
         )
 
     # https://github.com/nsidc/earthaccess/blob/0385d126695807f5c865076350b7def04109e088/earthaccess/api.py#L35
@@ -509,8 +508,8 @@ def main():
         except:
             gs.fatal(
                 _(
-                    "Collection search failed. Please check the search parameters and login information."
-                )
+                    "Collection search failed. Please check the search parameters and login information.",
+                ),
             )
         if options["print"] == "collections":
             if options["format"] == "json":
@@ -533,11 +532,11 @@ def main():
                                         if d["umm"].get("DOI").get("Authority")
                                         else ""
                                     ),
-                                ]
+                                ],
                             )
                             for d in datasets
-                        ]
-                    )
+                        ],
+                    ),
                 )
             sys.exit(0)
         else:  # if options["print"] == "collection_names":
@@ -551,7 +550,7 @@ def main():
     if "keyword" in search_options:
         search_options.pop("keyword")
         gs.warning(
-            _("'keyword' is not a supported parameter for granule search. Ignoring...")
+            _("'keyword' is not a supported parameter for granule search. Ignoring..."),
         )
 
     # https://github.com/podaac/tutorials/blob/master/notebooks/SearchDownload_SWOTviaCMR.ipynb
@@ -575,8 +574,9 @@ def main():
     nprocs = int(options["nprocs"])
     gs.verbose(
         _("Start downloading {n} granules using {p} threads.").format(
-            n=len(data_granules), p=nprocs
-        )
+            n=len(data_granules),
+            p=nprocs,
+        ),
     )
 
     try:
@@ -584,8 +584,8 @@ def main():
     except:
         gs.fatal(
             _(
-                "Downloading data failed. Please check search parameters and login information."
-            )
+                "Downloading data failed. Please check search parameters and login information.",
+            ),
         )
 
 
@@ -598,8 +598,8 @@ if __name__ == "__main__":
         gs.fatal(
             _(
                 "Can not import the earthaccess library. "
-                "Please install it with 'pip install earthaccess'"
-            )
+                "Please install it with 'pip install earthaccess'",
+            ),
         )
 
     try:
@@ -611,8 +611,8 @@ if __name__ == "__main__":
         gs.fatal(
             _(
                 "Can not import the GDAL python library. "
-                "Please install it with 'pip install GDAL==$(gdal-config --version)'"
-            )
+                "Please install it with 'pip install GDAL==$(gdal-config --version)'",
+            ),
         )
 
     main()
