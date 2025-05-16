@@ -55,7 +55,7 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>i.earthaccess.download</b><br></div>
 <b>i.earthaccess.download --help</b><br>
-<div id="synopsis"><b>i.earthaccess.download</b> [-<b>sw</b>]  [<b>output_directory</b>=<em>string</em>]   [<b>aoi</b>=<em>string</em>]   [<b>temporal</b>=<em>string</em>[,<i>string</i>,...]]   [<b>created_at</b>=<em>string</em>[,<i>string</i>,...]]   [<b>production_date</b>=<em>string</em>[,<i>string</i>,...]]   [<b>revision_date</b>=<em>string</em>[,<i>string</i>,...]]   [<b>keyword</b>=<em>string</em>]   [<b>short_name</b>=<em>string</em>]   [<b>granule_name</b>=<em>string</em>]   [<b>provider</b>=<em>string</em>]   [<b>limit</b>=<em>integer</em>]   [<b>print</b>=<em>string</em>]   [<b>format</b>=<em>string</em>]  <b>file</b>=<em>name</em>  [<b>nprocs</b>=<em>integer</em>]   [<b>check_scenes</b>=<em>string</em>]   [<b>scenes</b>=<em>string</em>]   [<b>order_by</b>=<em>string</em>[,<i>string</i>,...]]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>i.earthaccess.download</b> [-<b>sw</b>]  [<b>output_directory</b>=<em>string</em>]   [<b>aoi</b>=<em>string</em>]   [<b>temporal</b>=<em>string</em>[,<i>string</i>,...]]   [<b>created_at</b>=<em>string</em>[,<i>string</i>,...]]   [<b>production_date</b>=<em>string</em>[,<i>string</i>,...]]   [<b>revision_date</b>=<em>string</em>[,<i>string</i>,...]]   [<b>keyword</b>=<em>string</em>]   [<b>short_name</b>=<em>string</em>]   [<b>granule_name</b>=<em>string</em>]   [<b>provider</b>=<em>string</em>]   [<b>limit</b>=<em>integer</em>]   [<b>print</b>=<em>string</em>]   [<b>format</b>=<em>string</em>]   [<b>file</b>=<em>name</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>check_scenes</b>=<em>string</em>]   [<b>scenes</b>=<em>string</em>]   [<b>order_by</b>=<em>string</em>[,<i>string</i>,...]]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
@@ -124,7 +124,7 @@ grassLogoLink.after(temp.content);
 <dt><b>format</b>=<em>string</em></dt>
 <dd>Print search result (do not download)</dd>
 
-<dt><b>file</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dt><b>file</b>=<em>name</em></dt>
 <dd>Write search result to file</dd>
 
 <dt><b>nprocs</b>=<em>integer</em></dt>
@@ -137,7 +137,7 @@ grassLogoLink.after(temp.content);
 <dd>Options: <em>existing, downloaded, all</em></dd>
 
 <dt><b>scenes</b>=<em>string</em></dt>
-<dd>Selected scenes to download from ASF</dd>
+<dd>Selected scenes to download using earthaccess</dd>
 <dd>Comma separated list of scenes or file with scenes (one per row)</dd>
 
 <dt><b>order_by</b>=<em>string[,<i>string</i>,...]</em></dt>
@@ -171,7 +171,7 @@ The module options largely represent search parameters for collections and
 archives (granules). 
 
 <p>
-The temporal search parameters (<b>temporal</b>, <b>created_at</b>,
+The optional temporal search parameters (<b>temporal</b>, <b>created_at</b>,
 <b>production_date</b>, <b>revision_date</b>) are given as a comma separated
 pair of ISO-formated datetime strings.
 
@@ -179,7 +179,7 @@ pair of ISO-formated datetime strings.
 In order to be able to download data the user has to create an EarthData
 account and provide credentials to the module add earthaccess library
 respectively. Credentials can be provided in form of a <em>~/.netrc</em>
-file, environment variables named <em>EARTHDATA_USERNAME</em> and
+file or using environment variables named <em>EARTHDATA_USERNAME</em> and
 <em>EARTHDATA_PASSWORD</em>.
 
 
@@ -231,7 +231,7 @@ i.earthaccess.download short_name=SWOT_L2_HR_Raster_100m_2.0 \
 
 <h2><a name="references">REFERENCES</a></h2>
 
-<a href="https://docs.asf.alaska.edu/asf_search/basics/">asf_search Basics</a>
+<a href="https://earthaccess.readthedocs.io/en/latest/">earthaccess documentation</a>
 
 <h2><a name="author">AUTHOR</a></h2>
 
@@ -243,7 +243,7 @@ Stefan Blumentrath
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Friday Apr 25 12:50:24 2025
+  Accessed: Friday May 16 09:19:42 2025
 </p>
 <hr class="header">
 <p>
