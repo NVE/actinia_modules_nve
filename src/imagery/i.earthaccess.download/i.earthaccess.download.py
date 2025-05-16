@@ -375,37 +375,50 @@ def extract_core_umm_metadata(dataset_dict: dict) -> dict:
     }
 
     def _get_spatial_extent(dataset_dict: dict) -> str:
-        """Gsr = set()
-        ...: for d in datasets:
-        ...:     # keys.update(list(d["umm"].keys()))
-        ...:     # gsr.update(d["umm"].get('SpatialExtent').keys())
-        ...:     spatial_representation = d["umm"].get('SpatialExtent').get('GranuleSpatialRepresentation')
-        ...:     if spatial_representation == 'CARTESIAN':
-        ...:         spatial_domain = d["umm"].get('SpatialExtent').get('HorizontalSpatialDomain')
-        ...:         if spatial_domain:
-        ...:             {'Geometry', 'ResolutionAndCoordinateSystem', 'ZoneIdentifier'}
-        ...:             if d["umm"].get('SpatialExtent').get('HorizontalSpatialDomain').get('Geometry'):
-        ...:                 gsr.update(d["umm"].get('SpatialExtent').get('HorizontalSpatialDomain').get('Geometry').keys())
-        ...:             print(d["umm"].get('SpatialExtent').get('HorizontalSpatialDomain').get('ResolutionAndCoordinateSystem'))
-        ...:             print(d["umm"].get('SpatialExtent').get('HorizontalSpatialDomain').get('ZoneIdentifier'))
-        ...:
-        """
-        spatial_dict = {}
-        spatial_representation = (
-            dataset_dict["umm"].get("SpatialExtent").get("GranuleSpatialRepresentation")
-        )
-        if spatial_representation == "CARTESIAN":
-            print(
-                dataset_dict["umm"].get("SpatialExtent").get("HorizontalSpatialDomain"),
+        """Extract spatial extent from UMM metadata."""
+        spatial_representation = dataset_dict["umm"].get("SpatialExtent")
+        if not spatial_representation:
+            return None
+        # if spatial_representation == "CARTESIAN":
+        #    return dataset_dict["umm"].get("SpatialExtent").get("HorizontalSpatialDomain", None)
+        # elif spatial_representation in {"GEODETIC", "NO_SPATIAL", "ORBIT"}:
+        #    return None
+        spatial_representation = spatial_representation.get("HorizontalSpatialDomain")
+        if not spatial_representation:
+            return None
+        spatial_representation = spatial_representation.get("Geometry")
+        if not spatial_representation:
+            return None
+        spatial_representation = spatial_representation.get("BoundingRectangles")
+        if not spatial_representation:
+            return None
+        return tuple(spatial_representation[0].values())
+
+    def _get_cycle(dataset_dict: dict) -> str:
+        """Extract spatial extent from UMM metadata."""
+        try:
+            return (
+                dataset_dict["umm"]
+                .get("SpatialExtent")
+                .get("HorizontalSpatialDomain")
+                .get("Track")
+                .get("Cycle")
             )
-        elif spatial_representation in {"GEODETIC", "NO_SPATIAL", "ORBIT"}:
-            pass
-        return (
-            dataset_dict["umm"]
-            .get("SpatialExtent")
-            .get("HorizontalSpatialDomain")
-            .get("Geometry")
-        )
+        except KeyError:
+            return None
+
+    def _get_pass(dataset_dict: dict) -> str:
+        """Extract spatial extent from UMM metadata."""
+        try:
+            return (
+                dataset_dict["umm"]
+                .get("SpatialExtent")
+                .get("HorizontalSpatialDomain")
+                .get("Track")
+                .get("Passes")[0]["Pass"]
+            )
+        except KeyError:
+            return None
 
     def _get_temporal_extent(dataset_dict: dict) -> tuple:
         """Return the temporal extent of a granule / dataset."""
@@ -416,21 +429,24 @@ def extract_core_umm_metadata(dataset_dict: dict) -> dict:
             return datetime_range[0].get("BeginningDateTime", ""), datetime_range[
                 0
             ].get("BeginningDateTime", "")
-        return "", ""
+        return None
 
     def _get_temporal_extent(dataset_dict: dict) -> tuple:
         """Return the temporal extent of a granule / dataset."""
-        datetime_range = (
-            dataset_dict["umm"].get("TemporalExtents")[0].get("RangeDateTimes", "")
-        )
+        datetime_range = dataset_dict["umm"].get("TemporalExtent")
         if datetime_range:
-            return datetime_range[0].get("BeginningDateTime", ""), datetime_range[
-                0
-            ].get("BeginningDateTime", "")
-        return "", ""
+            datetime_range = datetime_range.get("RangeDateTime", "")
+        if datetime_range:
+            return datetime_range.get("BeginningDateTime", ""), datetime_range.get(
+                "EndingDateTime", ""
+            )
+        return None
 
     def _get_doi(dataset_dict: dict) -> str:
         """Return DOI of the dataset if available, otherwise return empty string."""
+        doi = dataset_dict["umm"].get("DOI")
+        if not doi:
+            return None
         return (
             dataset_dict["umm"].get("DOI").get("Authority", "")
             + "/"
@@ -439,26 +455,67 @@ def extract_core_umm_metadata(dataset_dict: dict) -> dict:
 
     def _get_iso_categories(dataset_dict: dict) -> str:
         iso_cats = dataset_dict["umm"].get("ISOTopicCategories")
-        return "|".join(iso_cats) if iso_cats else ""
+        return "|".join(iso_cats) if iso_cats else None
 
-    return {
-        "ShortName": dataset_dict["umm"].get("ShortName", ""),
-        "Version": dataset_dict["umm"].get("Version", ""),
-        "EntryTitle": dataset_dict["umm"].get("EntryTitle", ""),
-        "Abstract": dataset_dict["umm"].get("Abstract", ""),
-        "Purpose": dataset_dict["umm"].get("Purpose", ""),
-        "ProcessingLevel": dataset_dict["umm"].get("ProcessingLevel").get("Id", ""),
-        "TemporalExtent": _get_temporal_extent(dataset_dict),
-        "TemporalExtent_1": _get_doi(dataset_dict),
-        "TemporalExtent_2": _get_iso_categories(dataset_dict),
-        "TemporalExtent_3": _get_spatial_extent(dataset_dict),
+    def _get_processing_level(dataset_dict: dict) -> str:
+        """Return processing level of the dataset."""
+        processing_level = dataset_dict["umm"].get("ProcessingLevel")
+        if processing_level:
+            return processing_level.get("Id", "")
+        return None
+
+    def _get_data_link(dataset_dict: dict) -> list:
+        """Return processing level of the dataset."""
+        return dataset_dict.data_links()
+
+    def _get_size(dataset_dict: dict) -> list:
+        """Return processing level of the dataset."""
+        return dataset_dict.size()
+
+    def _get_short_name(dataset_dict: dict) -> str:
+        """Return short name of the dataset."""
+        if "CollectionReference" in dataset_dict["umm"]:
+            return dataset_dict["umm"]["CollectionReference"].get("ShortName", None)
+        return dataset_dict["umm"].get("ShortName", None)
+
+    def _get_version(dataset_dict: dict) -> str:
+        """Return version of the dataset."""
+        if "CollectionReference" in dataset_dict["umm"]:
+            return dataset_dict["umm"]["CollectionReference"].get("Version", None)
+        return dataset_dict["umm"].get("Version", None)
+
+    def _get_platform(dataset_dict: dict) -> list:
+        """Return platforms of the dataset."""
+        platform_info = dataset_dict["umm"].get("Platforms")[0]
+        return platform_info["ShortName"]
+
+    def _get_instruments(dataset_dict: dict) -> list:
+        """Return platforms of the dataset."""
+        platform_info = dataset_dict["umm"].get("Platforms")[0]
+        return [instr.get("ShortName") for instr in platform_info["Instruments"]]
+
+    metadata_conversion = {
+        "ShortName": _get_short_name,
+        "Platform": _get_platform,
+        "Instruments": _get_instruments,
+        "Version": _get_version,
+        "TemporalExtent": _get_temporal_extent,
+        "SpatialExtent": _get_spatial_extent,
+        "Cycle": _get_cycle,
+        "Pass": _get_pass,
+        "DOI": _get_doi,
+        "ISOTopicCategories": _get_iso_categories,
+        "data_link": _get_data_link,
+        "size": _get_size,
     }
+
+    return {k: metadata_conversion[k](dataset_dict) for k in metadata_conversion}
 
 
 def main():
     """Search and download data products using earthaccess API."""
     check_scenes = options["check_scenes"]
-    skip = flags["s"] or check_scenes in ["all", "existing"]
+    skip = flags["s"] or check_scenes in {"all", "existing"}
 
     # Extract AOI for geo_search
     search_options = get_spatial_query_parameter(options["aoi"])
@@ -558,9 +615,28 @@ def main():
 
     if options["print"] == "granule_metadata":
         if format == "json":
-            print(json.dumps(data_granules, indent=2))
+            print(
+                json.dumps(
+                    [extract_core_umm_metadata(dg) for dg in data_granules], indent=2
+                )
+            )
         else:
-            print(data_granules)
+            metadata = [extract_core_umm_metadata(dg) for dg in data_granules]
+            print(",".join(list(metadata[0].keys())))
+            for dg in metadata:
+                print(
+                    ",".join(
+                        [
+                            (
+                                "|".join(map(str, k))
+                                if isinstance(k, (list, tuple))  # noqa: UP038
+                                else str(k)
+                            )
+                            for k in dg.values()
+                        ]
+                    )
+                )
+
         sys.exit(0)
 
     if flags["s"]:
