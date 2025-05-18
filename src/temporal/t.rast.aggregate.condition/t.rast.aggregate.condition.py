@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """MODULE:    t.rast.aggregate.condition
 AUTHOR(S): Stefan Blumentrath
@@ -433,6 +433,7 @@ def aggregate_with_condition(
 
     # The module queue for parallel execution
     process_queue = pymod.ParallelModuleQueue(nprocs)
+    aggregate_granules = 0
     map_dict = {}
     for raster_maps in map_list:
         raster_map = tgis.RasterDataset(None)
@@ -588,19 +589,19 @@ def aggregate_with_condition(
                 output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}",
             )
             process_queue.put(pymod.MultiModule([condition_module, mc_module]))
+            aggregate_granules += 1
 
-    if not process_queue.get_num_run_procs() > 0:
-        gs.info(_("No enough maps found for aggregation"))
+    if not aggregate_granules > 0:
+        gs.info(_("Not enough maps found for aggregation."))
         return []
     gs.verbose(
         _("Aggregating a total of %s time steps within %s granules")
         % (
             len(map_dict),
-            process_queue.get_num_run_procs(),
+            aggregate_granules,
         ),
     )
     # Add modules to process queue
-
     process_queue.wait()
 
     if connection_state_changed:
