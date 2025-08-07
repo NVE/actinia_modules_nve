@@ -103,6 +103,12 @@ for details.
 # %end
 
 # %flag
+# % key: i
+# % description: Create also an imagery group with the imported raster maps (group names correspond to scene/tile names, e.g. S2A_MSIL2A_20250101T000000_N0511_R008_T32TQM_20250101T000000)
+# % guisection: Settings
+# %end
+
+# %flag
 # % key: l
 # % description: Link the raster files using r.external
 # % guisection: Settings
@@ -156,6 +162,7 @@ from itertools import chain
 from math import ceil, floor, inf
 from multiprocessing import Pool
 from pathlib import Path
+from subprocess import PIPE
 from typing import TYPE_CHECKING
 from xml import sax  # NOQA: S406
 from zipfile import ZipFile
@@ -216,7 +223,10 @@ def get_band_info() -> dict:
 
     Needs to be a function because of lazy import of `osgeo.gdal`.
 
-
+    Returns
+    -------
+    bands: dict
+        Dictionary containing band information.
 
     """
     return {
@@ -441,11 +451,12 @@ class TreeBuilder(saxhandler.ContentHandler):
     def startElement(self, name: str, attrs: list | str) -> None:
         """Identify the start of an element.
 
-        :param name: The name of the element
-        :type name: str
-        :param attrs: The attributes of the element
-        :type attrs: list | str
-
+        Parameters
+        ----------
+        name: str
+            The name of the element
+        attrs: list | str
+            The attributes of the element
 
         """
         self.name = name
@@ -455,8 +466,10 @@ class TreeBuilder(saxhandler.ContentHandler):
     def endElement(self, name: str) -> None:
         """Identify the end of an element.
 
-        :param name: The name of the element
-        :type name: str
+        Parameters
+        ----------
+        name: str
+            The name of the element
 
         """
         self.keys.remove(name)
@@ -464,11 +477,15 @@ class TreeBuilder(saxhandler.ContentHandler):
     def characters(self, content: str) -> list:
         """Get the content of the element.
 
-        :param content: The content of the element
-        :type content: str
+        Parameters
+        ----------
+        content: str
+            The content of the element
 
-        :return: A list with the requested key-value pairs
-        :rtype: list
+        Returns
+        -------
+        list
+            A list with the requested key-value pairs
 
         """
         content = content.strip()
@@ -487,13 +504,17 @@ class TreeBuilder(saxhandler.ContentHandler):
 def get_key_value_pairs(builder: TreeBuilder, parent_key: str) -> dict:
     """Get key-value pairs from the XML tree.
 
-    :param builder: The tree builder object
-    :type builder: TreeBuilder
-    :param parent_key: The parent key to get the values from
-    :type parent_key: str
+    Parameters
+    ----------
+    builder: TreeBuilder
+        The tree builder object
+    parent_key: str
+        The parent key to get the values from
 
-    :return: A dictionary with the key-value pairs
-    :rtype: dict
+    Returns
+    -------
+    dict
+        The key-value pairs
 
     """
     values_list = [list(p.values())[0] for p in builder._dict.get(parent_key)]
@@ -508,13 +529,17 @@ def get_key_value_pairs(builder: TreeBuilder, parent_key: str) -> dict:
 def get_scene_metadata(scene_path: Path, product_type: str = "S2_MSI_L2A") -> dict:
     """Get scene metadata from XML file(s).
 
-    :param scene_path: Path to the scene directory
-    :type scene_path: Path
-    :param product_type: The product type of the scene (Default value = "S2_MSI_L2A")
-    :type product_type: str
+    Parameters
+    ----------
+    scene_path: Path
+        Path to the scene directory
+    product_type: str
+        The product type of the scene
 
-    :return: A dictionary with the scene metadata
-    :rtype: dict
+    Returns
+    -------
+    scene_metadata: dict
+        A dict with the scene metadata (JSON)
 
     """
     builder = TreeBuilder()
@@ -595,15 +620,19 @@ def transform_bounding_box(
     Adapted from:
     https://gis.stackexchange.com/questions/165020/how-to-calculate-the-bounding-box-in-projected-coordinates
 
-    :param bbox: The bounding box to transform
-    :type bbox: tuple
-    :param transform: The transformation object to be used for the coordinate transformation
-    :type transform: osr.CoordinateTransformation
-    :param edge_densification: The number of points to densify the edges with (Default value = 15)
-    :type edge_densification: int
+    Parameters
+    ----------
+    bbox: tuple
+        The bounding box to transform
+    transform: osr.CoordinateTransformation
+        The transformation object to be used for the coordinate transformation
+    edge_densification: int
+        The number of points to densify the edges with (Default value = 15)
 
-    :return: The transformed bounding box
-    :rtype: tuple
+    Returns
+    -------
+    bbox: tuple
+        The transformed bounding box
 
     """
     u_l = np.array((bbox[0], bbox[3]))
@@ -614,11 +643,15 @@ def transform_bounding_box(
     def _transform_vertex(vertex: tuple[float, float]) -> tuple[float, float]:
         """Transform the coordinates of a vertex to the new coordinate system.
 
-        :param vertex: Coordinates of the vertex to transform
-        :type vertex: tuple[float, float]
+        Parameters
+        ----------
+        vertex: tuple
+            Coordinates of the vertex to transform
 
-        :return: The transformed coordinates of the vertex
-        :rtype: tuple[float, float]
+        Returns
+        -------
+        transformed_vertex: tuple
+            Coordinates of the transformed vertex
 
         """
         try:
@@ -655,13 +688,16 @@ def check_projection_match(reference_crs: str, s2_tile_epsg: int) -> bool:
 
     Using gdal/osr
 
-    :param reference_crs: WKT string of the reference CRS
-    :type reference_crs: str
-    :param s2_tile_epsg: EPSG code of the S2 tile
-    :type s2_tile_epsg: int
+    Parameters
+    ----------
+    reference_crs: str
+        WKT string of the reference CRS
+    s2_tile_epsg: int
+        EPSG code of the S2 tile
 
-    :return: True if the projections match, False otherwise
-    :rtype: bool
+    Returns
+    -------
+    bool
 
     """
     tile_crs = osr.SpatialReference()
@@ -689,15 +725,19 @@ def align_windows(window: dict, region: Region | None = None) -> dict:
     above 90 degrees (for lat/lon) or that the east does "wrap" past
     the west, etc.
 
-    :param window: A dict with the window to align, with keys north, south, east,
+    Parameters
+    ----------
+    window: dict
+        A dict with the window to align, with keys north, south, east,
         west, nsres, ewres, is_latlong
-    :type window: dict
-    :param region: A GRASS GIS Region object to align to, with keys north, south,
+    region: Region
+        A GRASS GIS Region object to align to, with keys north, south,
         east, west, nsres, ewres, is_latlong
-    :type region: Region
-    :param window: dict:
-    :param region: Optional[Region]:  (Default value = None)
 
+    Returns
+    -------
+    aligned_window: dict
+        A modified version of ``window`` that is aligend to ``reegion``
 
     """
     aligned_window = {
@@ -748,10 +788,15 @@ def align_windows(window: dict, region: Region | None = None) -> dict:
 def legalize_name_string(string: str) -> str:
     """Replace conflicting characters with _.
 
-    :param string: String to be transformed to a legal map name
-    :type string: str
-    :param string: str:
+    Parameters
+    ----------
+    string : str
+        String to be transformed to a legal map name
 
+    Returns
+    -------
+    legal_map_name: str
+        Legal map name
 
     """
     return re.sub(r"[^\w\d-]+|[^\x00-\x7F]+|[ -/\\]+", "_", string)
@@ -771,6 +816,7 @@ class Sentinel2Importer:
         print_only: bool = False,
         reproject: bool = False,
         link: bool = False,
+        group: bool = False,
         override: bool = False,
         nprocs: int = 1,
     ) -> None:
@@ -787,6 +833,7 @@ class Sentinel2Importer:
         self.reference_crs = projection_wkt
         self.band_filter = band_filter
         self.reproject = reproject
+        self.group = group
         self.link = link
         self.override = override
         self.nprocs = nprocs
@@ -931,23 +978,9 @@ class Sentinel2Importer:
         We need two VRTs, one for the offset and one for warping
         (if needed)
 
-        :param product_path: Path:
-        :param product_name: str:
-        :param gisenv: dict:
-        :param *:
-        :param resample: str:  (Default value = "nearest")
-        :param nodata: list | tuple | None:  (Default value = (0)
-        :param 65355):
-        :param rescale: bool:  (Default value = False)
-        :param scale: float:  (Default value = 1.0)
-        :param offset: float:  (Default value = 0.0)
-        :param data_type: int | None:  (Default value = None)
-        :param equal_proj: bool:  (Default value = True)
-        :param transform: bool:  (Default value = True)
-        :param region_cropping: bool:  (Default value = False)
-        :param recreate: bool:  (Default value = False)
-        :returns: str
-        :rtype: vrt_path
+        Returns:
+        vrt_path: str
+            The path to the created VRT file.
 
         """
         # Apply Offset (and Scale if needed)
@@ -1053,8 +1086,10 @@ class Sentinel2Importer:
     def _unzip(self, file_path: str) -> None:
         """Unzip a single zip file.
 
-        :param file_path: str:
-
+        Parameters
+        ----------
+        file_path : str
+            The path to the file to unzip.
 
         """
         # extract all zip files from input directory
@@ -1070,10 +1105,12 @@ class Sentinel2Importer:
     ) -> None:
         """Unzip zip files in input directory with pattern matching.
 
-        :param *:
-        :param file_pattern: Optional[str]:  (Default value = None)
-        :param force: Optional[bool]:  (Default value = False)
-
+        Parameters
+        ----------
+        file_pattern : str, optional
+            The pattern to match the zip files.
+        force : bool, optional
+            If True, force the extraction of all zip files.
 
         """
         # Filter zip files from input directory
@@ -1100,9 +1137,10 @@ class Sentinel2Importer:
     def filter_safe_files(self, *, file_pattern: str | None = None) -> None:
         """Filter SAFE files from unzipped directory with pattern matching.
 
-        :param *:
-        :param file_pattern: Optional[str]:  (Default value = None)
-
+        Parameters
+        ----------
+        file_pattern : str, optional
+            The pattern to match the SAFE files.
 
         """
         pattern = None
@@ -1123,15 +1161,23 @@ class Sentinel2Importer:
 
     @staticmethod
     def _check_project_projection_meters() -> bool:
-        """Check if project projection uses meters."""
+        """Check if project projection uses meters.
+
+        Returns
+        -------
+        bool
+
+        """
         units = gs.parse_command("g.proj", flags="g")["units"]
         return units.lower() == "meters"
 
     def filter_bands(self, pattern: str | None = None) -> None:
         """Filter bands from SAFE files.
 
-        :param pattern: Optional[str]:  (Default value = None)
-
+        Parameters
+        ----------
+        pattern : str, optional
+            Pattern to filter bands.
 
         """
         # Need to investigate if product level dependent
@@ -1148,7 +1194,10 @@ class Sentinel2Importer:
     def _prepare_product_import(self, safe: Path) -> tuple:
         """Prepare import of Sentinel-2 products.
 
-        :param safe: Path:
+        Parameters
+        ----------
+        safe : Path
+            Path to SAFE directory to prepare to import.
 
 
         """
@@ -1168,11 +1217,11 @@ class Sentinel2Importer:
         )
         import_dict = {}
         print_output = []
+        result_maps = []
 
         # Filter bands
         bands = list(safe.glob(f"**/*{BAND_SUFFIX}"))
         for band, band_config in self.selected_bands.items():
-            result_maps = []
             matched_bands = [
                 b for b in bands if str(b).endswith(band_config["file_path"])
             ]
@@ -1285,7 +1334,6 @@ class Sentinel2Importer:
                 f"{product_name}@{self.mapset}|{start_time}|{semantic_label}",
             )
             result_maps.append(f"{product_name}@{self.mapset}")
-
         import_dict[scene] = {
             "metadata": scene_metadata,
             "result_maps": result_maps,
@@ -1329,8 +1377,10 @@ class Sentinel2Importer:
     def _run_product_import(multi_module: list) -> None:
         """Run import of Sentinel-2 product.
 
-        :param multi_module: list:
-
+        Parameters
+        ----------
+        multi_module: list
+            List of GRASS GIS Module objects to run in sequence
 
         """
         multi_module = MultiModule(multi_module)
@@ -1370,17 +1420,63 @@ class Sentinel2Importer:
             metadatajson.mkdir(parents=True, exist_ok=True)
             (metadatajson / "description.json").write_text(json.dumps(meta_dict))
 
-    def create_register_file(self, filename: str) -> None:
+    def create_scene_groups(self, scene_id: str, scene_metadata: list) -> None:
+        """Create imagery groups for imported products."""
+        # group_maps = sorted(scene_metadata["result_maps"])
+        if gs.find_file(name=scene_id, element="group")["file"] and gs.overwrite():
+            print("removing ", scene_id)
+            Module(
+                "g.remove",
+                flags="f",
+                type="group",
+                name=scene_id,
+                quiet=True,
+                stderr_=PIPE,
+            )
+        print(scene_metadata["result_maps"])
+        print(sorted(scene_metadata["result_maps"]))
+        scene_maps = sorted(scene_metadata["result_maps"])
+        print(scene_maps)
+        Module(
+            "i.group",
+            group=scene_id,
+            input=",".join(scene_maps),
+            quiet=True,
+            # overwrite=True,
+        )
+
+    def create_register_file(self, filename: str, scene_metadata: bool = False) -> None:
         """Create a file for use with t.register.
 
-        :param filename: str:
-
+        Parameters
+        ----------
+        filename: str
+            Path to the file to create
+        scene_metadata: bool
+            If True, include scene metadata in the register file
 
         """
-        gs.verbose(_("Creating register file <{}>...").format(filename))
-        Path(filename).write_text(
-            "\n".join(self.register_strings) + "\n", encoding="utf-8"
+        if not scene_metadata:
+            gs.verbose(_("Creating register file <{}>...").format(filename))
+            Path(filename).write_text(
+                "\n".join(self.register_strings) + "\n",
+                encoding="utf-8",
+            )
+            return
+        gs.verbose(
+            _("Creating register file <{}> including scene metadata...").format(
+                filename,
+            ),
         )
+        Path(filename).write_text(
+            json.dumps(
+                self.metadata_dicts
+                | {"register_strings": "\n".join(self.register_strings) + "\n"},
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        return
 
 
 def main() -> None:
@@ -1425,6 +1521,7 @@ def main() -> None:
         print_only=flags["p"],
         reproject=True,
         link=flags["l"] or flags["f"],
+        group=flags["i"],
         override=flags["o"],
         nprocs=int(options["nprocs"]),
     )
@@ -1432,11 +1529,23 @@ def main() -> None:
     importer.filter_safe_files(file_pattern=file_filter_pattern)
     importer.prepare_product_import()
     importer.run_product_import()
+
+    if flags["i"]:
+        print("adding group module")
+        if importer.nprocs > 1:
+            with Pool(importer.nprocs) as pool:
+                pool.starmap(
+                    importer.create_scene_groups, *[importer.metadata_dicts.items()]
+                )
+        else:
+            for scene_id, scene_dict in importer.metadata_dicts.items():
+                importer.create_scene_groups(scene_id, scene_dict)
+
     importer.write_metadata()
 
     if options["register_output"]:
         # create t.register file if requested
-        importer.create_register_file(options["register_output"])
+        importer.create_register_file(options["register_output"], flags["i"])
 
 
 if __name__ == "__main__":
