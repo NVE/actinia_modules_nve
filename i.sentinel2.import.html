@@ -50,12 +50,15 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>i.sentinel2.import</b><br></div>
 <b>i.sentinel2.import --help</b><br>
-<div id="synopsis"><b>i.sentinel2.import</b> [-<b>lfnopr</b>] <b>input</b>=<em>name</em> <b>product</b>=<em>string</em>  [<b>unzip_dir</b>=<em>name</em>]   [<b>bands</b>=<em>string</em>]   [<b>file_pattern</b>=<em>string</em>]   [<b>extent</b>=<em>string</em>]   [<b>memory</b>=<em>integer</em>]   [<b>register_output</b>=<em>name</em>]   [<b>metadata</b>=<em>name</em>]   [<b>color</b>=<em>style</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>i.sentinel2.import</b> [-<b>ilfnopr</b>] <b>input</b>=<em>name</em> <b>product</b>=<em>string</em>  [<b>unzip_dir</b>=<em>name</em>]   [<b>bands</b>=<em>string</em>]   [<b>file_pattern</b>=<em>string</em>]   [<b>extent</b>=<em>string</em>]   [<b>memory</b>=<em>integer</em>]   [<b>register_output</b>=<em>name</em>]   [<b>metadata</b>=<em>name</em>]   [<b>color</b>=<em>style</em>]   [<b>nprocs</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
 <h3>Flags:</h3>
 <dl>
+<dt><b>-i</b></dt>
+<dd>Create also an imagery group with the imported raster maps (group names correspond to scene/tile names, e.g. S2A_MSIL2A_20250101T000000_N0511_R008_T32TQM_20250101T000000)</dd>
+
 <dt><b>-l</b></dt>
 <dd>Link the raster files using r.external</dd>
 
@@ -234,7 +237,7 @@ Stefan Blumentrath
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Sunday May 18 20:35:50 2025
+  Accessed: Thursday Aug 07 12:57:34 2025
 </p>
 <hr class="header">
 <p>
