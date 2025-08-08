@@ -61,6 +61,7 @@ def main():
             if user_path.is_symlink() or user_path.is_file():
                 try:
                     user_path.unlink()
+                    gs.info(_(user_path))
                 except Exception:
                     gs.warning(
                         _("Could not remove file or symlink <{}>").format(user_path)
@@ -69,6 +70,7 @@ def main():
                 if flags["r"]:
                     try:
                         shutil.rmtree(str(user_path))
+                        gs.info(_(user_path))
                     except Exception:
                         gs.warning(
                             _("Could not remove directory <{}>").format(user_path)
@@ -81,8 +83,8 @@ def main():
                     )
     else:
         gs.info(_("Set to remove the following files and directories:"))
-        gs.info(_("Use the f-flag to actually remove them."))
         gs.info(_("\n".join(paths_to_remove)))
+        gs.info(_("Use the f-flag to actually remove them."))
 
 
 if __name__ == "__main__":
