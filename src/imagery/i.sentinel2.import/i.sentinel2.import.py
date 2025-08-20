@@ -28,7 +28,7 @@ for details.
 # %option
 # % key: product
 # % description: ID of the product type to import (default is S2_MSI_L2A)
-# % options: S2_MSI_L2A
+# % options: S2_MSI_L1C,S2_MSI_L2A
 # % answer: S2_MSI_L2A
 # % multiple: no
 # % required: yes
@@ -176,6 +176,10 @@ if TYPE_CHECKING:
     from osgeo import gdal, osr
 
 BAND_SUFFIX = ".jp2"
+BAND_PATTERN = {
+    "S2_MSI_L2A": r".*(MSK_|_B[0-9]|_WVP|_AOT|_SCL).*0m.jp2$",
+    "S2_MSI_L1C": r".*(_B[0-9]..jp2$",
+}
 RESAMPLE_DICT = {
     "nearest": "near",
     "bilinear": "bilinear",
@@ -193,6 +197,24 @@ RESAMPLE_DICT = {
 ALIGN_REGION = None
 BANDS = None
 PRODUCT_DEFAULTS = {
+    "S2_MSI_L1C": {
+        "filter": ".*S2.*MSIL1C.*",
+        "bands": {
+            "B1",
+            "B2",
+            "B3",
+            "B4",
+            "B5",
+            "B6",
+            "B7",
+            "B8",
+            "B8A",
+            "B9",
+            "B10",
+            "B11",
+            "B12",
+        },
+    },
     "S2_MSI_L2A": {
         "filter": ".*S2.*MSIL2A.*",
         "bands": {
@@ -218,7 +240,7 @@ PRODUCT_DEFAULTS = {
 }
 
 
-def get_band_info() -> dict:
+def get_band_info(product_type: str) -> dict:
     """Populate the global BANDS dictionary with band information.
 
     Needs to be a function because of lazy import of `osgeo.gdal`.
@@ -229,185 +251,205 @@ def get_band_info() -> dict:
         Dictionary containing band information.
 
     """
-    return {
-        # AUX and QI bands
-        "MSK_CLDPRB_20m": {
-            "file_path": f"MSK_CLDPRB_20m{BAND_SUFFIX}",
-            "resample": "nearest",
-            "data_type": gdal.GDT_Byte,
-            "id": None,
-            "semantic_label": "S2_cloud_probability",
-        },
-        "MSK_SNWPRB_20m": {
-            "file_path": f"MSK_CLDPRB_20m{BAND_SUFFIX}",
-            "resample": "nearest",
-            "data_type": gdal.GDT_Byte,
-            "id": None,
-            "semantic_label": "S2_snow_probability",
-        },
-        "MSK_CLDPRB_60m": {
-            "file_path": f"MSK_CLDPRB_60m{BAND_SUFFIX}",
-            "resample": "nearest",
-            "data_type": gdal.GDT_Byte,
-            "id": None,
-            "semantic_label": "S2_cloud_probability_60m",
-        },
-        "MSK_SNWPRB_60m": {
-            "file_path": f"MSK_SNWPRB_60m{BAND_SUFFIX}",
-            "resample": "nearest",
-            "data_type": gdal.GDT_Byte,
-            "id": None,
-            "semantic_label": "S2_snow_probability_60m",
-        },
-        "AOT": {
-            "file_path": f"AOT_10m{BAND_SUFFIX}",
-            "resample": "bilinear",
-            "data_type": gdal.GDT_Byte,
-            "id": None,
-            "semantic_label": "S2_AOT",
-        },
-        "WVP": {
-            "file_path": f"WVP_10m{BAND_SUFFIX}",
-            "resample": "bilinear",
-            "data_type": gdal.GDT_Byte,
-            "id": None,
-            "semantic_label": "S2_WVP",
-        },
-        "AOT_20m": {
-            "file_path": f"AOT_20m{BAND_SUFFIX}",
-            "resample": "bilinear",
-            "data_type": gdal.GDT_Byte,
-            "id": None,
-            "semantic_label": "S2_AOT_20m",
-        },
-        "WVP_20m": {
-            "file_path": f"WVP_20m{BAND_SUFFIX}",
-            "resample": "bilinear",
-            "data_type": gdal.GDT_Byte,
-            "id": None,
-            "semantic_label": "S2_WVP_20m",
-        },
-        "SCL_20m": {
-            "file_path": f"SCL_20m{BAND_SUFFIX}",
-            "resample": "nearest",
-            "data_type": gdal.GDT_Byte,
-            "id": None,
-            "semantic_label": "S2_SCL",
-        },
-        "AOT_60m": {
-            "file_path": f"AOT_60m{BAND_SUFFIX}",
-            "resample": "bilinear",
-            "data_type": gdal.GDT_Byte,
-            "id": None,
-            "semantic_label": "S2_AOT_60m",
-        },
-        "WVP_60m": {
-            "file_path": f"WVP_60m{BAND_SUFFIX}",
-            "resample": "bilinear",
-            "data_type": gdal.GDT_Byte,
-            "id": None,
-            "semantic_label": "S2_WVP_60m",
-        },
-        "SCL_60m": {
-            "file_path": f"SCL_60m{BAND_SUFFIX}",
-            "resample": "nearest",
-            "data_type": gdal.GDT_Byte,
-            "id": None,
-            "semantic_label": "S2_SCL_60m",
-        },
+    if product_type not in PRODUCT_DEFAULTS:
+        gs.fatal(f"Product {product_type} is not supported.")
+
+    def inject_resolution(resolution: int = 10) -> str:
+        """Inject resolution suffix based on product type."""
+        if product_type == "S2_MSI_L2A":
+            return f"_{resolution}m"
+        return ""
+
+    product_bands = {
         # Spectral bands
         "B1": {
-            "file_path": f"B01_20m{BAND_SUFFIX}",
+            "file_path": f"B01{inject_resolution(20)}{BAND_SUFFIX}",
             "resample": "bilinear",
             "data_type": gdal.GDT_UInt16,
             "id": "0",
             "semantic_label": "S2_1",
         },
         "B2": {
-            "file_path": f"B02_10m{BAND_SUFFIX}",
+            "file_path": f"B02{inject_resolution(10)}{BAND_SUFFIX}",
             "resample": "bilinear",
             "data_type": gdal.GDT_UInt16,
             "id": "1",
             "semantic_label": "S2_2",
         },
         "B3": {
-            "file_path": f"B03_10m{BAND_SUFFIX}",
+            "file_path": f"B03{inject_resolution(10)}{BAND_SUFFIX}",
             "resample": "bilinear",
             "data_type": gdal.GDT_UInt16,
             "id": "2",
             "semantic_label": "S2_3",
         },
         "B4": {
-            "file_path": f"B04_10m{BAND_SUFFIX}",
+            "file_path": f"B04{inject_resolution(10)}{BAND_SUFFIX}",
             "resample": "bilinear",
             "data_type": gdal.GDT_UInt16,
             "id": "3",
             "semantic_label": "S2_4",
         },
         "B5": {
-            "file_path": f"B05_20m{BAND_SUFFIX}",
+            "file_path": f"B05{inject_resolution(20)}{BAND_SUFFIX}",
             "resample": "bilinear",
             "data_type": gdal.GDT_UInt16,
             "id": "4",
             "semantic_label": "S2_5",
         },
         "B6": {
-            "file_path": f"B06_20m{BAND_SUFFIX}",
+            "file_path": f"B06{inject_resolution(20)}{BAND_SUFFIX}",
             "resample": "bilinear",
             "data_type": gdal.GDT_UInt16,
             "id": "5",
             "semantic_label": "S2_6",
         },
         "B7": {
-            "file_path": f"B07_20m{BAND_SUFFIX}",
+            "file_path": f"B07{inject_resolution(20)}{BAND_SUFFIX}",
             "resample": "bilinear",
             "data_type": gdal.GDT_UInt16,
             "id": "6",
             "semantic_label": "S2_7",
         },
         "B8": {
-            "file_path": f"B08_10m{BAND_SUFFIX}",
+            "file_path": f"B08{inject_resolution(10)}{BAND_SUFFIX}",
             "resample": "bilinear",
             "data_type": gdal.GDT_UInt16,
             "id": "7",
             "semantic_label": "S2_8",
         },
         "B8A": {
-            "file_path": f"B8A_20m{BAND_SUFFIX}",
+            "file_path": f"B8A{inject_resolution(20)}{BAND_SUFFIX}",
             "resample": "bilinear",
             "data_type": gdal.GDT_UInt16,
             "id": "8",
             "semantic_label": "S2_8A",
         },
         "B9": {
-            "file_path": f"B09_60m{BAND_SUFFIX}",
+            "file_path": f"B09{inject_resolution(60)}{BAND_SUFFIX}",
             "resample": "bilinear",
             "data_type": gdal.GDT_UInt16,
             "id": "9",
             "semantic_label": "S2_9",
         },
-        "B10": {
-            "file_path": f"B10_60m{BAND_SUFFIX}",
-            "resample": "bilinear",
-            "data_type": gdal.GDT_UInt16,
-            "id": "10",
-            "semantic_label": "S2_10",
-        },
         "B11": {
-            "file_path": f"B11_20m{BAND_SUFFIX}",
+            "file_path": f"B11{inject_resolution(20)}{BAND_SUFFIX}",
             "resample": "bilinear",
             "data_type": gdal.GDT_UInt16,
             "id": "11",
             "semantic_label": "S2_11",
         },
         "B12": {
-            "file_path": f"B12_20m{BAND_SUFFIX}",
+            "file_path": f"B12{inject_resolution(20)}{BAND_SUFFIX}",
             "resample": "bilinear",
             "data_type": gdal.GDT_UInt16,
             "id": "12",
             "semantic_label": "S2_12",
         },
     }
+    if product_type == "S2_MSI_L1C":
+        product_bands.update(
+            {
+                "B10": {
+                    "file_path": f"B10{BAND_SUFFIX}",
+                    "resample": "bilinear",
+                    "data_type": gdal.GDT_UInt16,
+                    "id": "10",
+                    "semantic_label": "S2_10",
+                },
+            },
+        )
+    else:
+        product_bands.update(
+            {
+                # AUX and QI bands
+                "MSK_CLDPRB_20m": {
+                    "file_path": f"MSK_CLDPRB_20m{BAND_SUFFIX}",
+                    "resample": "nearest",
+                    "data_type": gdal.GDT_Byte,
+                    "id": None,
+                    "semantic_label": "S2_cloud_probability",
+                },
+                "MSK_SNWPRB_20m": {
+                    "file_path": f"MSK_CLDPRB_20m{BAND_SUFFIX}",
+                    "resample": "nearest",
+                    "data_type": gdal.GDT_Byte,
+                    "id": None,
+                    "semantic_label": "S2_snow_probability",
+                },
+                "MSK_CLDPRB_60m": {
+                    "file_path": f"MSK_CLDPRB_60m{BAND_SUFFIX}",
+                    "resample": "nearest",
+                    "data_type": gdal.GDT_Byte,
+                    "id": None,
+                    "semantic_label": "S2_cloud_probability_60m",
+                },
+                "MSK_SNWPRB_60m": {
+                    "file_path": f"MSK_SNWPRB_60m{BAND_SUFFIX}",
+                    "resample": "nearest",
+                    "data_type": gdal.GDT_Byte,
+                    "id": None,
+                    "semantic_label": "S2_snow_probability_60m",
+                },
+                "AOT": {
+                    "file_path": f"AOT_10m{BAND_SUFFIX}",
+                    "resample": "bilinear",
+                    "data_type": gdal.GDT_Byte,
+                    "id": None,
+                    "semantic_label": "S2_AOT",
+                },
+                "WVP": {
+                    "file_path": f"WVP_10m{BAND_SUFFIX}",
+                    "resample": "bilinear",
+                    "data_type": gdal.GDT_Byte,
+                    "id": None,
+                    "semantic_label": "S2_WVP",
+                },
+                "AOT_20m": {
+                    "file_path": f"AOT_20m{BAND_SUFFIX}",
+                    "resample": "bilinear",
+                    "data_type": gdal.GDT_Byte,
+                    "id": None,
+                    "semantic_label": "S2_AOT_20m",
+                },
+                "WVP_20m": {
+                    "file_path": f"WVP_20m{BAND_SUFFIX}",
+                    "resample": "bilinear",
+                    "data_type": gdal.GDT_Byte,
+                    "id": None,
+                    "semantic_label": "S2_WVP_20m",
+                },
+                "SCL_20m": {
+                    "file_path": f"SCL_20m{BAND_SUFFIX}",
+                    "resample": "nearest",
+                    "data_type": gdal.GDT_Byte,
+                    "id": None,
+                    "semantic_label": "S2_SCL",
+                },
+                "AOT_60m": {
+                    "file_path": f"AOT_60m{BAND_SUFFIX}",
+                    "resample": "bilinear",
+                    "data_type": gdal.GDT_Byte,
+                    "id": None,
+                    "semantic_label": "S2_AOT_60m",
+                },
+                "WVP_60m": {
+                    "file_path": f"WVP_60m{BAND_SUFFIX}",
+                    "resample": "bilinear",
+                    "data_type": gdal.GDT_Byte,
+                    "id": None,
+                    "semantic_label": "S2_WVP_60m",
+                },
+                "SCL_60m": {
+                    "file_path": f"SCL_60m{BAND_SUFFIX}",
+                    "resample": "nearest",
+                    "data_type": gdal.GDT_Byte,
+                    "id": None,
+                    "semantic_label": "S2_SCL_60m",
+                },
+            },
+        )
+    return product_bands
 
 
 class TreeBuilder(saxhandler.ContentHandler):
@@ -415,15 +457,23 @@ class TreeBuilder(saxhandler.ContentHandler):
 
     def __init__(
         self,
-        requested_keys: tuple = (
+        product_type: str,
+    ) -> None:
+        """Initialize the tree builder.
+
+        Parameters
+        ----------
+        product_type: str
+            Product type whose XML-schema the metadata file follows
+
+        """
+        requested_keys = {
             # from MTD_MSIL2A
             "Product_Info",
-            # "n1:General_Info",
+            # from XML root "n1:General_Info",
             "Scene_Classification_List",
             "Image_Content_QI",
             "Quality_Inspections",
-            "BOA_ADD_OFFSET_VALUES_LIST",
-            "QUANTIFICATION_VALUES_LIST",
             "Special_Values",
             "Granule_List",
             # from MTD_TL
@@ -431,16 +481,21 @@ class TreeBuilder(saxhandler.ContentHandler):
             "Mean_Viewing_Incidence_Angle_List",
             "Sun_Angles_Grid",  # Might be needed for L1C data
             "Mean_Sun_Angle",
-        ),
-    ) -> None:
-        """Initialize the tree builder.
-
-        Parameters
-        ----------
-        requested_keys: tuple
-            The keys to be extracted from the XML file
-
-        """
+        }
+        if product_type == "S2_MSI_L1C":
+            requested_keys.update(
+                {
+                    "Radiometric_Offset_List",
+                    "QUANTIFICATION_VALUE",
+                },
+            )
+        else:
+            requested_keys.update(
+                {
+                    "BOA_ADD_OFFSET_VALUES_LIST",
+                    "QUANTIFICATION_VALUES_LIST",
+                },
+            )
         self.name = None
         self.attrs = None
         self.keys = []
@@ -517,7 +572,7 @@ def get_key_value_pairs(builder: TreeBuilder, parent_key: str) -> dict:
         The key-value pairs
 
     """
-    values_list = [list(p.values())[0] for p in builder._dict.get(parent_key)]
+    values_list = [next(iter(p.values())) for p in builder._dict.get(parent_key)]
     values_dict = {}
     while values_list:
         key = values_list.pop(0)
@@ -542,70 +597,84 @@ def get_scene_metadata(scene_path: Path, product_type: str = "S2_MSI_L2A") -> di
         A dict with the scene metadata (JSON)
 
     """
-    builder = TreeBuilder()
+    builder = TreeBuilder(product_type)
     for mtd_file in scene_path.glob("**/MTD_*.xml"):
         sax.parseString(mtd_file.read_text(), builder)  # NOQA: S317
 
     scene_metadata = {}
-    if product_type == "S2_MSI_L2A":
-        # Get the product info
-        scene_metadata["product_metadata"] = {
-            k: v for d in builder._dict.get("Product_Info") for k, v in d.items()
-        }
-        # get the image files
-        scene_metadata["granule_list"] = [
-            v["IMAGE_FILE"] for v in builder._dict["Granule_List"]
-        ]
-        # Get the special values (NODATA, SATURATED, etc.)
-        scene_metadata["special_values"] = get_key_value_pairs(
-            builder,
-            "Special_Values",
+    # Get the product info
+    scene_metadata["product_metadata"] = {
+        k: v for d in builder._dict.get("Product_Info") for k, v in d.items()
+    }
+    # Get the list of image files
+    scene_metadata["granule_list"] = [
+        v["IMAGE_FILE"] for v in builder._dict.get("Product_Info") if "IMAGE_FILE" in v
+    ]
+    # Get the special values (NODATA, SATURATED, etc.)
+    scene_metadata["special_values"] = get_key_value_pairs(
+        builder,
+        "Special_Values",
+    )
+    # Get the quantification values per band
+    scene_metadata["quantification_values"] = {
+        k: float(v[1])
+        for d in builder._dict.get(
+            (
+                "QUANTIFICATION_VALUES_LIST"
+                if product_type == "S2_MSI_L2A"
+                else "QUANTIFICATION_VALUE"
+            ),
         )
-        # Get the quantification values
-        scene_metadata["quantification_values"] = {
-            k: float(v[1])
-            for d in builder._dict.get("QUANTIFICATION_VALUES_LIST")
-            for k, v in d.items()
-        }
-        # Get the add offset values
-        scene_metadata["boa_offset_values"] = {
-            v[0][0][1]: float(v[1])
-            for d in builder._dict.get("BOA_ADD_OFFSET_VALUES_LIST")
-            for k, v in d.items()
-        }
-        # Get the scene classification list
-        scene_metadata["scene_classification"] = get_key_value_pairs(
-            builder,
-            "Scene_Classification_List",
+        for k, v in d.items()
+    }
+    # Get the add offset values per band
+    scene_metadata["offset_values"] = {
+        v[0][0][1]: float(v[1])
+        for d in builder._dict.get(
+            (
+                "BOA_ADD_OFFSET_VALUES_LIST"
+                if product_type == "S2_MSI_L2A"
+                else "Radiometric_Offset_List"
+            ),
         )
-        # Get the CRS
-        scene_metadata["CRS_EPSG"] = int(
-            [
+        for k, v in d.items()
+    }
+
+    # Get the scene classification list
+    scene_metadata["scene_classification"] = get_key_value_pairs(
+        builder,
+        "Scene_Classification_List",
+    )
+    # Get the CRS
+    scene_metadata["CRS_EPSG"] = int(
+        next(
+            iter(
                 d.get("HORIZONTAL_CS_CODE").split(":")[1]
                 for d in builder._dict.get("Tile_Geocoding")
                 if d.get("HORIZONTAL_CS_CODE")
-            ][0],
-        )
-        # Get the image content quality inspection
-        scene_metadata["product_metadata"].update(
-            {k: v for d in builder._dict.get("Image_Content_QI") for k, v in d.items()},
-        )
-        # Get the mean sun angles
-        scene_metadata["product_metadata"].update(
-            {
-                f"MEAN_SUN_{k}": float(v[1])
-                for d in builder._dict.get("Mean_Sun_Angle")
-                for k, v in d.items()
-            },
-        )
-        # Get quality inspections
-        scene_metadata["product_metadata"].update(
-            {
-                v[0][0][1]: v[1]
-                for d in builder._dict.get("Quality_Inspections")
-                for k, v in d.items()
-            },
-        )
+            )
+        ),
+    )
+    # Get the image content quality inspection
+    scene_metadata["product_metadata"].update(
+        {k: v for d in builder._dict.get("Image_Content_QI") for k, v in d.items()},
+    )
+    # Get the mean sun angles
+    scene_metadata["product_metadata"].update(
+        {
+            f"MEAN_SUN_{k}": float(v[1])
+            for d in builder._dict.get("Mean_Sun_Angle")
+            for k, v in d.items()
+        },
+    )
+    # Get quality inspections
+    scene_metadata["product_metadata"].update(
+        {
+            v[0][0][1]: v[1]
+            for d in builder._dict.get("Quality_Inspections")
+            for k, v in d.items()
+        },
+    )
     return scene_metadata
 
 
@@ -810,6 +879,7 @@ class Sentinel2Importer:
         input_dir: Path,
         unzip_dir: Path,
         *,
+        product_type: str = "S2_MSI_L2A",
         selected_bands: list | None = None,
         projection_wkt: str | None = None,
         band_filter: str | None = None,
@@ -822,6 +892,7 @@ class Sentinel2Importer:
     ) -> None:
         """Initialize the Sentinel2Importer class."""
         # list of directories & maps to cleanup
+        self.product_type = product_type
         self.input_dir = None
         self.metadata_dicts = {}
         self.register_strings = []
@@ -940,7 +1011,7 @@ class Sentinel2Importer:
         gisenv: dict,
         *,
         resample: str = "nearest",
-        nodata: list | tuple | None = (0, 65355),
+        nodata: list[int, int] | tuple[int, int] | int | None = (0, 65355),
         rescale: bool = False,
         scale: float = 1.0,
         offset: float = 0.0,
@@ -995,8 +1066,11 @@ class Sentinel2Importer:
         with gdal.Open(str(product_path)) as ds:
             band = ds.GetRasterBand(1)
             if nodata:
-                band.SetNoDataValue(nodata)
-                kwargs["noData"] = nodata
+                translate_nodata = None
+                if isinstance(nodata, list | tuple):
+                    translate_nodata = int(nodata[-1])
+                band.SetNoDataValue(translate_nodata)
+                kwargs["noData"] = translate_nodata
             if rescale and scale and offset:
                 band.SetScale(1.0 / scale)
                 band.SetOffset(offset / scale)
@@ -1023,8 +1097,6 @@ class Sentinel2Importer:
                 ds,  # Use already opened dataset here
                 options=gdal.TranslateOptions(
                     **kwargs,
-                    # stats=True,
-                    # outputBounds=
                 ),
             )
             vrt_offset = None
@@ -1180,12 +1252,8 @@ class Sentinel2Importer:
             Pattern to filter bands.
 
         """
-        # Need to investigate if product level dependent
-        # filter_p = r".*{}.*.jp2".format(pattern) if pattern else r".*_B.*.jp2$|.*_SCL*.jp2$"
         filter_p = (
-            rf".*{pattern}.*.jp2"
-            if pattern
-            else r".*(MSK_|_B[0-9]|_WVP|_AOT|_SCL).*0m.jp2$"
+            rf".*{pattern}.*.jp2" if pattern else BAND_PATTERN.get(self.product_type)
         )
 
         gs.debug(_("Filter: {}").format(filter_p), 1)
@@ -1207,7 +1275,7 @@ class Sentinel2Importer:
         gs.verbose(_("Preparing import of scene <{}>...").format(scene))
 
         # Get Metadata
-        scene_metadata = get_scene_metadata(safe, product_type="S2_MSI_L2A")
+        scene_metadata = get_scene_metadata(safe, product_type=self.product_type)
         start_time = scene_metadata["product_metadata"][
             "DATATAKE_SENSING_START"
         ].rstrip("Z")
@@ -1261,13 +1329,20 @@ class Sentinel2Importer:
             nodata = None
             offset = None
             scale = None
-            boa_offset_values = scene_metadata.get("boa_offset_values", {})
+            offset_values = scene_metadata.get("offset_values", {})
             quantification_values = scene_metadata.get("quantification_values", {})
             if band.startswith("B"):
-                nodata = float(list(scene_metadata["special_values"].values())[-1])
-                offset = float(boa_offset_values.get(BANDS[band]["id"], 0.0))
+                nodata = list(map(int, scene_metadata["special_values"].values()))
+                offset = float(offset_values.get(BANDS[band]["id"], 0.0))
                 scale = float(
-                    quantification_values.get("BOA_QUANTIFICATION_VALUE", 1.0),
+                    quantification_values.get(
+                        (
+                            "BOA_QUANTIFICATION_VALUE"
+                            if self.product_type == "S2_MSI_L2A"
+                            else "QUANTIFICATION_VALUE"
+                        ),
+                        1.0,
+                    ),
                 )
             elif band.startswith("AOT"):
                 scale = float(
@@ -1278,6 +1353,7 @@ class Sentinel2Importer:
                     quantification_values.get("WVP_QUANTIFICATION_VALUE", 1.0),
                 )
             resampling = BANDS[band]["resample"]
+
             # Create VRT
             vrt = self.create_vrt(
                 jp2,
@@ -1420,11 +1496,10 @@ class Sentinel2Importer:
             metadatajson.mkdir(parents=True, exist_ok=True)
             (metadatajson / "description.json").write_text(json.dumps(meta_dict))
 
-    def create_scene_groups(self, scene_id: str, scene_metadata: list) -> None:
+    @staticmethod
+    def create_scene_groups(scene_id: str, scene_metadata: list) -> None:
         """Create imagery groups for imported products."""
-        # group_maps = sorted(scene_metadata["result_maps"])
         if gs.find_file(name=scene_id, element="group")["file"] and gs.overwrite():
-            print("removing ", scene_id)
             Module(
                 "g.remove",
                 flags="f",
@@ -1433,10 +1508,7 @@ class Sentinel2Importer:
                 quiet=True,
                 stderr_=PIPE,
             )
-        print(scene_metadata["result_maps"])
-        print(sorted(scene_metadata["result_maps"]))
         scene_maps = sorted(scene_metadata["result_maps"])
-        print(scene_maps)
         Module(
             "i.group",
             group=scene_id,
@@ -1445,7 +1517,9 @@ class Sentinel2Importer:
             # overwrite=True,
         )
 
-    def create_register_file(self, filename: str, scene_metadata: bool = False) -> None:
+    def create_register_file(
+        self, filename: str, *, scene_metadata: bool = False
+    ) -> None:
         """Create a file for use with t.register.
 
         Parameters
@@ -1486,7 +1560,7 @@ def main() -> None:
 
     # Get BANDS info
     global BANDS
-    BANDS = get_band_info()
+    BANDS = get_band_info(options["product"])
 
     # initialize file filter pattern
     file_filter_pattern = PRODUCT_DEFAULTS[options["product"]]["filter"]
@@ -1512,6 +1586,7 @@ def main() -> None:
     importer = Sentinel2Importer(
         Path(options["input"]),
         Path(options["unzip_dir"]),
+        product_type=options["product"],
         projection_wkt=gs.read_command("g.proj", flags="wf").strip(),
         selected_bands=(
             options["bands"].split(",")
@@ -1531,11 +1606,11 @@ def main() -> None:
     importer.run_product_import()
 
     if flags["i"]:
-        print("adding group module")
+        gs.verbose(_("Creating imagery group(s)."))
         if importer.nprocs > 1:
             with Pool(importer.nprocs) as pool:
                 pool.starmap(
-                    importer.create_scene_groups, *[importer.metadata_dicts.items()]
+                    importer.create_scene_groups, list(importer.metadata_dicts.items())
                 )
         else:
             for scene_id, scene_dict in importer.metadata_dicts.items():
@@ -1545,7 +1620,9 @@ def main() -> None:
 
     if options["register_output"]:
         # create t.register file if requested
-        importer.create_register_file(options["register_output"], flags["i"])
+        importer.create_register_file(
+            options["register_output"], scene_metadata=flags["i"]
+        )
 
 
 if __name__ == "__main__":
