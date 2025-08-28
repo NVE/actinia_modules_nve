@@ -1,0 +1,27 @@
+<h2>DESCRIPTION</h2>
+<em>t.rast.import.gdalvrt</em> imports multiple external raster files
+as virtual mosaic (VRT) and registeres the resulting map in a Space Time
+Raster Dataset (STRDS).
+
+<h2>EXAMPLE</h2>
+
+<h3>Daily mosaic for Sentinel-3 Fractiona Snow Cover</h3>
+Patching multiband Sentinel-2 (MSI) L1C data into a daily mosaic:
+<div class="code"><pre>
+t.rast.import.gdalvrt input=./ output=S2_L1C_daily \
+  bands=./L1C_bands.json file_pattern="S2*L1C*20250707*.tif" -e --o
+t.info S2_L1C_daily
+</pre></div>
+
+<h2>SEE ALSO</h2>
+
+<em>
+  <a href="https://grass.osgeo.org/grass-stable/manuals/addons/r.buildvrt.html">t.rast.patch</a>,
+  <a href="https://grass.osgeo.org/grass-stable/manuals/addons/t.rast.patch.html">t.rast.patch</a>,
+</em>
+<p>
+<a href="http://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath, NVE
