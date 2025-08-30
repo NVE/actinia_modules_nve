@@ -56,7 +56,7 @@ from pathlib import Path
 import grass.script as gs
 
 
-def aggregate_metadata(json_files: Path, product_type: str = "S2_MSI_L1C") -> dict:
+def aggregate_metadata(json_files: Path, product_type: str = "S2MSIL1C") -> dict:
     """Aggregate metadata JSON files."""
     metadata_keys = {
         "PRODUCT_START_TIME": datetime(1, 1, 1, 0, 0, 0),  # '2025-08-11T10:37:01.024Z',
@@ -94,7 +94,7 @@ def aggregate_metadata(json_files: Path, product_type: str = "S2_MSI_L1C") -> di
         "RADIOMETRIC_QUALITY": set(),  # 'PASSED',
         "SENSOR_QUALITY": set(),  # 'PASSED'
     }
-    if product_type == "S2_MSI_L2A":
+    if product_type == "S2MSIL2A":
         metadata_keys.update(
             {
                 "NODATA_PIXEL_PERCENTAGE": 0.0,  # '0.000000',
@@ -124,19 +124,17 @@ def aggregate_metadata(json_files: Path, product_type: str = "S2_MSI_L1C") -> di
     for json_file in json_files:
         try:
             meta_data = json.loads(json_file.read_text(encoding="utf-8"))
-            meta_data = meta_data.get("metadata")
-            meta_data = meta_data.get("product_metadata")
-            print(product_type)
+            if "metadata" in meta_data:
+                meta_data = meta_data.get("metadata")
+            if "product_metadata":
+                meta_data = meta_data.get("product_metadata")
             valid_data_percent = (
                 1
-                if product_type == "S2_MSI_L1C"
+                if product_type == "S2MSIL1C"
                 else 100.0 - float(meta_data.get("NODATA_PIXEL_PERCENTAGE"))
             )
             for key, val in metadata_keys.items():
-                print(meta_data)
-                print(key in meta_data)
                 if key in meta_data:
-                    print(key, val, type(val))
                     if isinstance(val, float):
                         metadata_keys[key] += (
                             float(meta_data.get(key)) * valid_data_percent
@@ -144,10 +142,6 @@ def aggregate_metadata(json_files: Path, product_type: str = "S2_MSI_L1C") -> di
                     elif isinstance(val, set):
                         metadata_keys[key].add(meta_data.get(key))
                     elif isinstance(val, datetime):
-                        print(
-                            metadata_keys[key],
-                            datetime.fromisoformat(meta_data.get(key).replace("Z", "")),
-                        )
                         if "START" in key:
                             metadata_keys[key] = max(
                                 metadata_keys[key],
@@ -156,12 +150,6 @@ def aggregate_metadata(json_files: Path, product_type: str = "S2_MSI_L1C") -> di
                                 ),
                             )
                         else:
-                            print(
-                                metadata_keys[key],
-                                datetime.fromisoformat(
-                                    meta_data.get(key).replace("Z", ""),
-                                ),
-                            )
                             metadata_keys[key] = min(
                                 metadata_keys[key],
                                 datetime.fromisoformat(
@@ -178,7 +166,7 @@ def aggregate_metadata(json_files: Path, product_type: str = "S2_MSI_L1C") -> di
                             datetime.fromisoformat(meta_data.get(key).replace("Z", "")),
                         )
                 else:
-                    print(key, val)
+                    gs.warning(_("Expected key '{}' not in metadata {}.").format(key, str(json_file)))
 
             valid_data_total += valid_data_percent
         except json.JSONDecodeError as e:
@@ -208,7 +196,7 @@ def main() -> None:
     """Aggregate Sentinel scene metadata."""
     # Get bands configuration info
     input_dir = Path(options["input"])
-    file_pattern = options["pattern"]
+    file_pattern = options["file_pattern"]
     jsons = list(
         input_dir.glob("*.json") if not file_pattern else input_dir.glob(file_pattern)
     )
@@ -228,8 +216,7 @@ def main() -> None:
     else:
         output_file = Path(options["output"])
         try:
-            with output_file.open("w", encoding="utf-8") as f:
-                json.dump(metadata, f, indent=4)
+            output_file.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
         except OSError as e:
             gs.fatal(
                 _("Unable to write to output file <{}>: {}").format(output_file, e)

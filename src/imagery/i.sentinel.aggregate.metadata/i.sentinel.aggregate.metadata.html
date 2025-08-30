@@ -1,26 +1,22 @@
 <h2>DESCRIPTION</h2>
-<em>t.rast.import.gdalvrt</em> imports multiple external raster files
-as virtual mosaic (VRT) and registeres the resulting map in a Space Time
-Raster Dataset (STRDS).
+<em>i.sentinel.aggregate.metadata</em> aggregates metadata of multiple Sentinel
+scenes into a single JSON file with collected metadata. It assumes input
+metadata produced with <em>i.sentinel2.import</em>. Other Sentinel-products
+are currently not yet supported.
 
 <h2>EXAMPLE</h2>
 
-<h3>Daily mosaic for Sentinel-3 Fractiona Snow Cover</h3>
-Patching multiband Sentinel-2 (MSI) L1C data into a daily mosaic:
+Aggregating Sentinel-2 (MSI) L1C metadata for daily mosaic:
 <div class="code"><pre>
-t.rast.import.gdalvrt input=./ output=S2_L1C_daily \
-  bands=./L1C_bands.json file_pattern="S2*L1C*20250707*.tif" -e --o
-t.info S2_L1C_daily
+i.sentinel.aggregate.metadata input=./S2_MSI_l1C/scenes product_type=S2MSIL1C \
+  output=./S2_MSI_l1C/S2_metadata.json file_pattern="**/description.json"
 </pre></div>
 
 <h2>SEE ALSO</h2>
 
 <em>
-  <a href="https://grass.osgeo.org/grass-stable/manuals/addons/r.buildvrt.html">t.rast.patch</a>,
-  <a href="https://grass.osgeo.org/grass-stable/manuals/addons/t.rast.patch.html">t.rast.patch</a>,
+  <a href="https://grass.osgeo.org/grass-stable/manuals/addons/i.sentinel2.import.html">i.sentinel2.import</a>
 </em>
-<p>
-<a href="http://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
 
 <h2>AUTHOR</h2>
 
