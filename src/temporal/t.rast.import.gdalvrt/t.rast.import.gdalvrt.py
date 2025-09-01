@@ -210,6 +210,7 @@ def open_strds(
 
 def get_gdal_band_color_interpretation() -> dict:
     """Get GDAL band color interpretation as a dictionary."""
+    minimal_gdal_version = 3100000
     get_gdal_band_colors = {
         "Undefined": gdal.GCI_Undefined,
         "Greyscale": gdal.GCI_GrayIndex,
@@ -229,7 +230,7 @@ def get_gdal_band_color_interpretation() -> dict:
         "Cb": gdal.GCI_YCbCr_CbBand,  # Chroma
         "Cr": gdal.GCI_YCbCr_CrBand,  # Chroma
     }
-    if int(gdal.VersionInfo()) >= 3100000:
+    if int(gdal.VersionInfo()) >= minimal_gdal_version:
         get_gdal_band_colors.update(
             {
                 "Panchromatic": gdal.GCI_PanBand,  # [0.40 - 1.00 um]
@@ -273,13 +274,14 @@ def build_vrt(
     """Build a VRT file for GDAL readable raster data in a directory.
 
     :param raster_directory: Path to the directory containing GTIFF files.
-    :param vrt_directory: Path to the directory where the VRT file will be saved.
+    :param vrt_directory: Path to the directory where the VRT file
+                          will be saved.
     :param band_template: Dictionary with expected band names.
     :param vrt_name: Name of the VRT dataset to produce.
-    :param product_type: Index in the file name components where the semantic label starts.
+    :multiband: Contain the input rasters multiple bands
 
     Assumes a specific naming convention and that:
-    1) the suffix of the GTIFF files is .tif,
+    1) the suffix of the GTIFF files is .tif if no pattern is provided,
     2) that the the end of the file name contains
        the name / id of the semantic label / band, and
     3) that the input GTIFFs are single band files.
@@ -303,13 +305,12 @@ def build_vrt(
         vrt_path.unlink()
     for bid, band_tuple in enumerate(band_template.items()):
         # GDAL bands are 1-indexed
-        bid += 1
-        band = ds.GetRasterBand(bid)
+        band = ds.GetRasterBand(bid + 1)
         # Set band name
         band.SetDescription(band_tuple[0])
         # Set band color interpretation
         color_interpretation = GDAL_BAND_COLOR_INTERPRETATION.get(
-            band_tuple[0],
+            band_tuple[1],
             gdal.GCI_Undefined,
         )
         band.SetColorInterpretation(color_interpretation)
@@ -326,24 +327,23 @@ def build_vrt(
 def import_vrt(
     vrt: Path,
     band_template: dict[str, str],
-    metadata: dict,
     *,
     mapset: str = Mapset().name,
     start_time: datetime | str | None = None,
     end_time: datetime | str | None = None,
     link: bool = True,
     fast: bool = False,
-):
+) -> list[str]:
     """Import a VRT file into GRASS GIS as an external raster map."""
     register_strings = []
     for idx, band_id in enumerate(band_template):
         output_name = f"{vrt.stem}.{band_id}"
         Module(
-            "r.external" if link else "r.in.gdal",
+            "r.external" if link or fast else "r.in.gdal",
             input=str(vrt),
             output=output_name,
             band=idx + 1,
-            flags="re" if link else "e",
+            flags="re" if fast else "e",
             overwrite=gs.overwrite(),
         )
         semantic_label = band_id
@@ -373,9 +373,9 @@ def main() -> None:
     for band_id in band_config:
         if libraster.Rast_legal_semantic_label(band_id) is False:
             gs.fatal(
-                _('Band ID "{band_id}" is not a valid semantic label.').format(
-                    band_id=band_id
-                ),
+                _(
+                    'Band ID "{band_id}" is not a valid semantic label.',
+                ).format(band_id=band_id),
             )
 
     # Create output directory if needed
@@ -385,17 +385,36 @@ def main() -> None:
     output_dir = Path(options["vrt_directory"])
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    vrt, metadata = build_vrt(
+    try:
+        for dt in ("end_time", "start_time"):
+            if dt == "end_time" and not options[dt]:
+                options[dt] = None
+                continue
+            options[dt] = datetime.fromisoformat(options[dt].replace("Z", ""))
+    except ValueError:
+        gs.fatal(
+            _("Input for '{}' is not a valid ISO format. Got {}").format(
+                dt, options[dt],
+            ),
+        )
+
+    vrt = build_vrt(
         input_dir,
         output_dir,
         band_config,
         vrt_name=options["basename"] or None,
-        product_type="S2_MSI_L1C",
         raster_file_pattern=options["file_pattern"],
     )
 
-    register_strings = import_vrt(vrt, band_config, metadata)
-    print(register_strings)
+    register_strings = import_vrt(
+        vrt,
+        band_config,
+        start_time=options["start_time"],
+        end_time=options["end_time"],
+        link=flags["l"] or flags["f"],
+        fast=flags["f"],
+    )
+
     # Initialize TGIS
     tgis.init()
     strds = open_strds(
@@ -413,8 +432,6 @@ def main() -> None:
         "\n".join({r_s for r_s in register_strings if r_s is not None}),
         encoding="UTF8",
     )
-
-    print(metadata)
 
     register_maps_in_space_time_dataset(
         "raster",
