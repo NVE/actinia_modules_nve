@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """MODULE:      t.rast.import.gdalvrt
 AUTHOR(S):      Stefan Blumentrath
-PURPOSE:        Create a VRT (Virtual Raster Tile) from multiple raster files and import it to a STRDS
+PURPOSE:        Aggregate Sentinel product metadata from several tiles or scenes.
 COPYRIGHT:      (C) 2025 by Stefan Blumentrath, NVE
                 and the GRASS development team
 
@@ -13,11 +13,11 @@ for details.
 # %Module
 # % description: Aggregate Sentinel product metadata from several tiles or scenes.
 # % keyword: imagery
+# % keyword: metadata
 # % keyword: sentinel
 # % keyword: sentinel-1
 # % keyword: sentinel-2
 # % keyword: sentinel-3
-# % keyword: metadata
 # %end
 
 # %option G_OPT_M_DIR
