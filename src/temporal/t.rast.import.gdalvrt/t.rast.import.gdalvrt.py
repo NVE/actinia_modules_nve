@@ -12,11 +12,11 @@ for details.
 
 # %Module
 # % description: Create a VRT (Virtual Raster Tile) from multiple raster files and import it to a STRDS.
+# % keyword: temporal
+# % keyword: raster
+# % keyword: strds
 # % keyword: gdal
 # % keyword: vrt
-# % keyword: COG
-# % keyword: temporal
-# % keyword: strds
 # %end
 
 # %option G_OPT_M_DIR
@@ -144,7 +144,6 @@ import grass.temporal as tgis
 from grass.pygrass.gis import Mapset
 from grass.pygrass.modules import Module
 from grass.temporal.register import register_maps_in_space_time_dataset
-from osgeo import gdal
 
 if TYPE_CHECKING:
     from osgeo import gdal
