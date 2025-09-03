@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>i.sentinel.aggregate.metadata - GRASS GIS manual</title>
+ <meta name="description" content="i.sentinel.aggregate.metadata: Aggregate Sentinel product metadata from several tiles or scenes.">
+ <meta name="keywords" content="imagery, metadata, sentinel, sentinel-1, sentinel-2, sentinel-3">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass84/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#example">EXAMPLE</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>i.sentinel.aggregate.metadata</b></em>  - Aggregate Sentinel product metadata from several tiles or scenes.
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass84/docs/html/imagery.html">imagery</a>, <a href="file:///usr/lib/grass84/docs/html/topic_metadata.html">metadata</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#sentinel">sentinel</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#sentinel-1">sentinel-1</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#sentinel-2">sentinel-2</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#sentinel-3">sentinel-3</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>i.sentinel.aggregate.metadata</b><br></div>
+<b>i.sentinel.aggregate.metadata --help</b><br>
+<div id="synopsis"><b>i.sentinel.aggregate.metadata</b> <b>input</b>=<em>name</em> <b>product_type</b>=<em>string</em>  [<b>output</b>=<em>name</em>]   [<b>file_pattern</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of input directory with json files to aggregate</dd>
+
+<dt><b>product_type</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the type of Sentinel-products the metadata belongs to</dd>
+<dd>Options: <em>S1GRDH, S2MSIL1C, S2MSIL2A, S3OLCIL1B, S3SLSTRL1B</em></dd>
+
+<dt><b>output</b>=<em>name</em></dt>
+<dd>Name for output file</dd>
+
+<dt><b>file_pattern</b>=<em>string</em></dt>
+<dd>File name pattern of json files to aggregate (regular expression)</dd>
+<dd>Default: <em>**/*.json</em></dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#example" class="toc">EXAMPLE</a></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+<em>i.sentinel.aggregate.metadata</em> aggregates metadata of multiple Sentinel
+scenes into a single JSON file with collected metadata. It assumes input
+metadata produced with <em>i.sentinel2.import</em>. Other Sentinel-products
+are currently not yet supported.
+
+<h2><a name="example">EXAMPLE</a></h2>
+
+Aggregating Sentinel-2 (MSI) L1C metadata for daily mosaic:
+<div class="code"><pre>
+i.sentinel.aggregate.metadata input=./S2_MSI_l1C/scenes product_type=S2MSIL1C \
+  output=./S2_MSI_l1C/S2_metadata.json file_pattern="**/description.json"
+</pre></div>
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+  <a href="https://grass.osgeo.org/grass-stable/manuals/addons/i.sentinel2.import.html">i.sentinel2.import</a>
+</em>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath, NVE
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">i.sentinel.aggregate.metadata source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Wednesday Sep 03 08:08:27 2025
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass84/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass84/docs/html/imagery.html">Imagery index</a> |
+<a href="file:///usr/lib/grass84/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass84/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass84/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass84/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2025
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>

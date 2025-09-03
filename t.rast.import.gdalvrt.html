@@ -1,0 +1,83 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <title>t.rast.import.gdalvrt - GRASS GIS Manual</title>
+ <meta name="Author" content="GRASS Development Team">
+ <meta name="description" content="t.rast.import.gdalvrt: GRASS GIS Reference Manual">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass84/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<h2>NAME</h2>
+<em><b>t.rast.import.gdalvrt</b></em> - GRASS GIS Reference Manual
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#example" class="toc">EXAMPLE</a>
+    <ul class="toc">
+        <li class="toc"><a href="#daily-mosaic-for-sentinel-3-fractiona-snow-cover" class="toc">Daily mosaic for Sentinel-3 Fractiona Snow Cover</a></li>
+    </ul></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+<em>t.rast.import.gdalvrt</em> imports multiple external raster files
+as virtual mosaic (VRT) and registeres the resulting map in a Space Time
+Raster Dataset (STRDS).
+
+<h2><a name="example">EXAMPLE</a></h2>
+
+<h3><a name="daily-mosaic-for-sentinel-3-fractiona-snow-cover">Daily mosaic for Sentinel-3 Fractiona Snow Cover</a></h3>
+Patching multiband Sentinel-2 (MSI) L1C data into a daily mosaic:
+<div class="code"><pre>
+t.rast.import.gdalvrt input=./ output=S2_L1C_daily \
+  bands=./L1C_bands.json file_pattern="S2*L1C*20250707*.tif" -e --o
+t.info S2_L1C_daily
+</pre></div>
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+
+<em>
+  <a href="https://grass.osgeo.org/grass-stable/manuals/addons/r.buildvrt.html">t.rast.patch</a>,
+  <a href="https://grass.osgeo.org/grass-stable/manuals/addons/t.rast.patch.html">t.rast.patch</a>,
+</em>
+<p>
+<a href="http://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2><a name="author">AUTHOR</a></h2>
+
+Stefan Blumentrath, NVE
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">t.rast.import.gdalvrt source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Wednesday Sep 03 08:08:05 2025
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass84/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass84/docs/html/temporal.html">Temporal index</a> |
+<a href="file:///usr/lib/grass84/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass84/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass84/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass84/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2025
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>
