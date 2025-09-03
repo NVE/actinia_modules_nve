@@ -2,19 +2,125 @@
 <html>
 <head>
  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
- <title>t.rast.import.gdalvrt - GRASS GIS Manual</title>
  <meta name="Author" content="GRASS Development Team">
- <meta name="description" content="t.rast.import.gdalvrt: GRASS GIS Reference Manual">
- <link rel="stylesheet" href="grassdocs.css" type="text/css">
  <meta http-equiv="content-language" content="en-us">
  <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>t.rast.import.gdalvrt - GRASS GIS manual</title>
+ <meta name="description" content="t.rast.import.gdalvrt: Create a VRT (Virtual Raster Tile) from multiple raster files and import it to a STRDS.">
+ <meta name="keywords" content="temporal, raster, strds, gdal, vrt">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
 </head>
 <body bgcolor="white">
 <div id="container">
 
 <a href="file:///usr/lib/grass84/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#example">EXAMPLE</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#daily-mosaic-for-sentinel-3-fractiona-snow-cover">Daily mosaic for Sentinel-3 Fractiona Snow Cover</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
 <h2>NAME</h2>
-<em><b>t.rast.import.gdalvrt</b></em> - GRASS GIS Reference Manual
+<em><b>t.rast.import.gdalvrt</b></em>  - Create a VRT (Virtual Raster Tile) from multiple raster files and import it to a STRDS.
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass84/docs/html/temporal.html">temporal</a>, <a href="file:///usr/lib/grass84/docs/html/topic_raster.html">raster</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#strds">strds</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#gdal">gdal</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#vrt">vrt</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>t.rast.import.gdalvrt</b><br></div>
+<b>t.rast.import.gdalvrt --help</b><br>
+<div id="synopsis"><b>t.rast.import.gdalvrt</b> [-<b>lfe</b>] <b>input</b>=<em>name</em> <b>suffix</b>=<em>string</em>  [<b>vrt_directory</b>=<em>name</em>]  <b>output</b>=<em>name</em>  [<b>title</b>=<em>string</em>]   [<b>description</b>=<em>string</em>]  <b>bands</b>=<em>name</em>  [<b>basename</b>=<em>string</em>]  <b>start_time</b>=<em>string</em>  [<b>end_time</b>=<em>string</em>]   [<b>file_pattern</b>=<em>string</em>]   [<b>memory</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-l</b></dt>
+<dd>Link the raster files using r.external</dd>
+
+<dt><b>-f</b></dt>
+<dd>Link the raster files in a fast way, without reading metadata using r.external</dd>
+
+<dt><b>-e</b></dt>
+<dd>Extend existing STRDS</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of input directory with raster files to create VRT from</dd>
+
+<dt><b>suffix</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Suffix of files to include in VRT (default: .tif)</dd>
+<dd>Default: <em>tif</em></dd>
+
+<dt><b>vrt_directory</b>=<em>name</em></dt>
+<dd>Name of directory into which VRT-files are written (default=input)</dd>
+
+<dt><b>output</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of the output space time raster dataset</dd>
+
+<dt><b>title</b>=<em>string</em></dt>
+<dd>Title for the output STRDS (only used for new STRDS)</dd>
+
+<dt><b>description</b>=<em>string</em></dt>
+<dd>Description of the output STRDS (only used for new STRDS)</dd>
+
+<dt><b>bands</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>JSON file with band configuration</dd>
+
+<dt><b>basename</b>=<em>string</em></dt>
+<dd>Basename for VRT and GRASS raster maps to create</dd>
+
+<dt><b>start_time</b>=<em>string</em>&nbsp;<b>[required]</b></dt>
+<dd>Start time (ISO format) to register the VRT / GRASS raster maps with</dd>
+
+<dt><b>end_time</b>=<em>string</em></dt>
+<dd>End time (ISO format) to register the VRT / GRASS raster maps with</dd>
+
+<dt><b>file_pattern</b>=<em>string</em></dt>
+<dd>File name pattern to import</dd>
+
+<dt><b>memory</b>=<em>integer</em></dt>
+<dd>Maximum memory to be used (in MB)</dd>
+<dd>Cache size for raster rows</dd>
+<dd>Default: <em>300</em></dd>
+
+</dl>
+</div>
 <div class="toc">
 <h4 class="toc">Table of contents</h4>
 <ul class="toc">
@@ -61,7 +167,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Wednesday Sep 03 08:08:05 2025
+  Accessed: Wednesday Sep 03 08:32:32 2025
 </p>
 <hr class="header">
 <p>
