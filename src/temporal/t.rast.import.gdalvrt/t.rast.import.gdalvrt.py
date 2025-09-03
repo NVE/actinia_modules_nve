@@ -136,7 +136,6 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import grass.lib.raster as libraster
 import grass.script as gs
@@ -144,9 +143,6 @@ import grass.temporal as tgis
 from grass.pygrass.gis import Mapset
 from grass.pygrass.modules import Module
 from grass.temporal.register import register_maps_in_space_time_dataset
-
-if TYPE_CHECKING:
-    from osgeo import gdal
 
 
 def open_strds(
@@ -286,6 +282,7 @@ def build_vrt(
     3) that the input GTIFFs are single band files.
 
     """
+    gdal_band_color_interpretation = get_gdal_band_color_interpretation()
     tiffs = list(raster_directory.glob(raster_file_pattern))
 
     if not vrt_name:
@@ -308,7 +305,7 @@ def build_vrt(
         # Set band name
         band.SetDescription(band_tuple[0])
         # Set band color interpretation
-        color_interpretation = GDAL_BAND_COLOR_INTERPRETATION.get(
+        color_interpretation = gdal_band_color_interpretation.get(
             band_tuple[1],
             gdal.GCI_Undefined,
         )
@@ -355,9 +352,6 @@ def import_vrt(
             register_string += f"|{semantic_label}"
         register_strings.append(register_string)
     return register_strings
-
-
-GDAL_BAND_COLOR_INTERPRETATION = get_gdal_band_color_interpretation()
 
 
 def main() -> None:
