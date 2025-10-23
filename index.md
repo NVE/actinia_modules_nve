@@ -4,6 +4,7 @@
 - [g.transfer](./g.transfer.html)
 - [g.unzip](./g.unzip.html)
 - [i.asf.download](./i.asf.download.html)
+- [i.buildvrt.gdal](./i.buildvrt.gdal.html)
 - [i.earthaccess.download](./i.earthaccess.download.html)
 - [i.pytorch](./i.pytorch.html)
 - [i.satskred](./i.satskred.html)
