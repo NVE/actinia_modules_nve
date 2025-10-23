@@ -1,0 +1,143 @@
+<h2>DESCRIPTION</h2>
+
+<em>i.buildvrt.gdal</em> creates a Virtual Raster Tile (VRT) from multiple, GDAL-readable
+input raster files. The module is basically a wrapper around <i>gdalbuildvrt</i>.
+
+<p>
+Users have to provide an <b>input</b> directory with raster files to create VRT from,
+a JSON file describing the input <b>bands</b> to be included in the VRT file, and
+specify an <b>output</b> path for the VRT.
+
+<p>
+The <b>bands</b> JSON file should contain the band ID (semantic_label) and
+the name of a GDAL color representation ("Undefined" is used as a default and
+fallback).  See examples below for how the JSON file should be structured.
+
+<p>
+The following GDAL color names are allowed (with GDAL < 3.10):
+<div class="code"><pre>
+    "Undefined": gdal.GCI_Undefined,
+    "Greyscale": gdal.GCI_GrayIndex,
+    "Paletted": gdal.GCI_PaletteIndex,  # (see associated color table)
+    "Red": gdal.GCI_RedBand,  # RGBA image, or red spectral band [0.62 - 0.69 um]
+    "Green": gdal.GCI_GreenBand,  # RGBA image, or green spectral band [0.51 - 0.60 um]
+    "Blue": gdal.GCI_BlueBand,  # RGBA image, or blue spectral band [0.45 - 0.53 um]
+    "Alpha": gdal.GCI_AlphaBand,  # (0=transparent, 255=opaque)
+    "Hue": gdal.GCI_HueBand,  # HLS image
+    "Saturation": gdal.GCI_SaturationBand,  # HLS image
+    "Lightness": gdal.GCI_LightnessBand,  # HLS image
+    "Cyan": gdal.GCI_CyanBand,  # CMYK image
+    "Magenta": gdal.GCI_MagentaBand,  # CMYK image
+    "Yellow": gdal.GCI_YellowBand,  # CMYK image, or yellow spectral band [0.58 - 0.62 um]
+    "Black": gdal.GCI_BlackBand,  # CMYK image
+    "Y": gdal.GCI_YCbCr_YBand,  # Luminance
+    "Cb": gdal.GCI_YCbCr_CbBand,  # Chroma
+    "Cr": gdal.GCI_YCbCr_CrBand,  # Chroma
+</pre></div>
+
+And starting with GDAL 3.10, the following additional color names are supported:
+The following GDAL color names are allowed:
+<div class="code"><pre>
+    "Panchromatic": gdal.GCI_PanBand,  # [0.40 - 1.00 um]
+    "Coastal": gdal.GCI_CoastalBand,  # [0.40 - 0.45 um]
+    "Red-edge": gdal.GCI_RedEdgeBand,  # [0.69 - 0.79 um]
+    "Near-InfraRed (NIR)": gdal.GCI_NIRBand,  # [0.75 - 1.40 um]
+    "Short-Wavelength InfraRed (SWIR)": gdal.GCI_SWIRBand,  # [1.40 - 3.00 um]
+    "Mid-Wavelength InfraRed (MWIR)": gdal.GCI_MWIRBand,  # [3.00 - 8.00 um]
+    "Long-Wavelength InfraRed (LWIR)": gdal.GCI_LWIRBand,  # [8.00 - 15 um]
+    "Thermal InfraRed (TIR)": gdal.GCI_TIRBand,  # (MWIR or LWIR) [3 - 15 um]
+    "Other infrared": gdal.GCI_OtherIRBand,  # [0.75 - 1000 um]
+    # "Reserved value": gdal.GCI_IR_Reserved_1,  # Do not set it !
+    # "Reserved value": gdal.GCI_IR_Reserved_2,  # Do not set it !
+    # "Reserved value": gdal.GCI_IR_Reserved_3,  # Do not set it !
+    # "Reserved value": gdal.GCI_IR_Reserved_4,  # Do not set it !
+    "Synthetic Aperture Radar (SAR) Ka": gdal.GCI_SAR_Ka_Band,  # [0.8 - 1.1 cm / 27 - 40 GHz]
+    "Synthetic Aperture Radar (SAR) K": gdal.GCI_SAR_K_Band,  # [1.1 - 1.7 cm / 18 - 27 GHz]
+    "Synthetic Aperture Radar (SAR) Ku": gdal.GCI_SAR_Ku_Band,  # [1.7 - 2.4 cm / 12 - 18 GHz]
+    "Synthetic Aperture Radar (SAR) X": gdal.GCI_SAR_X_Band,  # [2.4 - 3.8 cm / 8 - 12 GHz]
+    "Synthetic Aperture Radar (SAR) C": gdal.GCI_SAR_C_Band,  # [3.8 - 7.5 cm / 4 - 8 GHz]
+    "Synthetic Aperture Radar (SAR) S": gdal.GCI_SAR_S_Band,  # [7.5 - 15 cm / 2 - 4 GHz]
+    "Synthetic Aperture Radar (SAR) L": gdal.GCI_SAR_L_Band,  # [15 - 30 cm / 1 - 2 GHz]
+    "Synthetic Aperture Radar (SAR) P": gdal.GCI_SAR_P_Band,  # [30 - 100 cm / 0.3 - 1 GHz]
+    "SAR Reserved value": gdal.GCI_SAR_Reserved_1,  # Do not set it !
+    # "SAR Reserved value": gdal.GCI_SAR_Reserved_2,  # Do not set it !
+    "Max current value": gdal.GCI_Max,  # (equals to GCI_SAR_Reserved_2 currently)
+</pre></div>
+
+<p>
+Optionally, input files can be filtered with the <b>file_pattern</b> option. The
+default pattern is '*.tif', meaning all tif files files are considered. The
+<b>memory</b> option allows to optimize GDAL-caching (maximum is 2048 MB).
+
+<p>
+If the <b>-f</b> flag is set input files are stacked as bands in the
+VRT file and input raster should be single-band files with common
+extent.
+
+<h2>NOTE</h2>
+Multidimensional raster files, raster files with sub-datasets are
+not supported. 
+
+<h2>EXAMPLES</h2>
+
+<h3>Create a virtual Sentinel-2 Image mosaic from multiband COGs</h3>
+<div class="code"><pre>
+tee ./bands_s2.json &lt;&lt;EOF
+{
+    "S2_10": "Greyscale",
+    "S2_11": "Short-Wavelength InfraRed (SWIR)",
+    "S2_12": "Short-Wavelength InfraRed (SWIR)",
+    "S2_1": "Greyscale",
+    "S2_2": "Blue",
+    "S2_3": "Green",
+    "S2_4": "Red",
+    "S2_5": "Red-edge",
+    "S2_6": "Greyscale",
+    "S2_7": "Greyscale",
+    "S2_8": "Near-InfraRed (NIR)",
+    "S2_8A": "Greyscale",
+    "S2_9": "Greyscale"
+}
+EOF
+i.buildvrt.gdal --v input=./ output=./S2A_MSIL1C_20250730T100051_N0511_R122.vrt \
+    bands=./bands_s2.json file_pattern="S2A_MSIL1C_20250730T100051_N0511_R122_*"
+</pre></div>
+
+<h3>Create a virtual Sentinel-3 Image mosaic from single-band GeoTiffs</h3>
+<div class="code"><pre>
+tee ./bands_s3.json <<EOF
+{
+    "S3_F1_BT_fn": "Greyscale",
+    "S3_F2_BT_in": "Greyscale",
+    "S3_S1_reflectance_an": "Greyscale",
+    "S3_S2_reflectance_an": "Greyscale",
+    "S3_SLSTR_cloud_mask": "Greyscale",
+    "S3_SLSTR_fractional_snow_cover": "Greyscale",
+    "S3_S3_reflectance_an": "Greyscale",
+    "S3_S4_reflectance_an": "Greyscale",
+    "S3_S5_reflectance_an": "Greyscale",
+    "S3_S6_reflectance_an": "Greyscale",
+    "S3_S7_BT_in": "Greyscale",
+    "S3_S8_BT_in": "Greyscale",
+    "S3_S9_BT_in": "Greyscale",
+    "S3_solar_azimuth": "Greyscale",
+    "S3_solar_zenith": "Greyscale",
+    "S3_swath_mask": "Greyscale"
+}
+EOF
+i.buildvrt.gdal --v -s input=./ output=./S3B_SL_2_RBT_112_080_20251010.vrt \
+    bands=./bands_s3.json file_pattern="S3B_SL_2_RBT_112_080_20251010_*" \
+    resolution=250 data_type=Float32
+</pre></div>
+
+
+<h2>SEE ALSO</h2>
+<a href="">r.buildvrt</a>,
+<a href="">r.buildvrt.gdal</a>
+
+<h2>REFERENCES</h2>
+
+<a href="https://gdal.org/en/stable/programs/gdalbuildvrt.html">gdalbuildvrt</a>
+
+<h2>AUTHOR</h2>
+Stefan Blumentrath, NVE
