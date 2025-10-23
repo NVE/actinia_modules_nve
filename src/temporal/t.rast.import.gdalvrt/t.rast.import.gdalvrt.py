@@ -387,7 +387,8 @@ def main() -> None:
     except ValueError:
         gs.fatal(
             _("Input for '{}' is not a valid ISO format. Got {}").format(
-                dt, options[dt],
+                dt,
+                options[dt],
             ),
         )
 

@@ -47,7 +47,6 @@ for details.
 # % guisection: Filter
 # %end
 
-
 import json
 import sys
 from datetime import datetime, timedelta
@@ -166,7 +165,11 @@ def aggregate_metadata(json_files: Path, product_type: str = "S2MSIL1C") -> dict
                             datetime.fromisoformat(meta_data.get(key).replace("Z", "")),
                         )
                 else:
-                    gs.warning(_("Expected key '{}' not in metadata {}.").format(key, str(json_file)))
+                    gs.warning(
+                        _("Expected key '{}' not in metadata {}.").format(
+                            key, str(json_file)
+                        )
+                    )
 
             valid_data_total += valid_data_percent
         except json.JSONDecodeError as e:
