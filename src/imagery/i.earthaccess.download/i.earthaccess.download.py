@@ -135,6 +135,7 @@ COPYRIGHT: (C) 2024 by NVE, Stefan Blumentrath
 
 # %option G_OPT_M_NPROCS
 # % key: nprocs
+# % answer: 1
 # % description: Number of cores used for downloading
 # %end
 
@@ -163,6 +164,11 @@ COPYRIGHT: (C) 2024 by NVE, Stefan Blumentrath
 # % multiple: yes
 # % description: Comma separated list of sort parameters
 # % options: temporal,revision_date
+# %end
+
+# %flag
+# % key: i
+# % description: Ignore failure of downloads for single files (give a warning instead of error)
 # %end
 
 # %flag
@@ -318,7 +324,7 @@ def get_temporal_query_parameters(user_options: dict) -> dict:
             gs.fatal(
                 _(
                     "Invalid input for <{}>. It must be a sing or pair of ISO-formated datetime(s)",
-                ),
+                ).format(search_option),
             )
         if len(list(filter_values)) < 2:
             filter_values = (filter_values[0], None)
@@ -328,6 +334,8 @@ def get_temporal_query_parameters(user_options: dict) -> dict:
 
 
 def extract_core_umm_metadata(dataset_dict: dict) -> dict:
+    """Extract core UMM metadata from dataset dictionary.
+
     umm_keys = {
         "Abstract",
         "AccessConstraints",
@@ -373,6 +381,8 @@ def extract_core_umm_metadata(dataset_dict: dict) -> dict:
         "Version",
         "VersionDescription",
     }
+
+    """
 
     def _get_spatial_extent(dataset_dict: dict) -> str:
         """Extract spatial extent from UMM metadata."""
@@ -438,7 +448,8 @@ def extract_core_umm_metadata(dataset_dict: dict) -> dict:
             datetime_range = datetime_range.get("RangeDateTime", "")
         if datetime_range:
             return datetime_range.get("BeginningDateTime", ""), datetime_range.get(
-                "EndingDateTime", ""
+                "EndingDateTime",
+                "",
             )
         return None
 
@@ -512,7 +523,34 @@ def extract_core_umm_metadata(dataset_dict: dict) -> dict:
     return {k: metadata_conversion[k](dataset_dict) for k in metadata_conversion}
 
 
-def main():
+def check_scene_exists(granule, download_dir: Path) -> bool:
+    """Check if all files for a granule exist in the download directory."""
+    return all(
+        (download_dir / Path(file).name).exists() for file in granule.data_links()
+    )
+
+
+def retry_single_scene_download(granule, download_dir: Path) -> None:
+    """ "Retry downloading a single data granule."""
+    if check_scene_exists(granule, download_dir):
+        return
+    scene_name = ", ".join(Path(scene_url).stem for scene_url in granule.data_links())
+    gs.verbose(_("Retry downloading scene {}.").format(scene_name))
+    try:
+        earthaccess.download(
+            granule,
+            download_dir,
+            threads=1,
+        )
+    except Exception as e:  # earthaccess.exceptions.DownloadFailure
+        gs.warning(
+            _("Failed to download scene {scene}: {error}.").format(
+                scene=scene_name, error=e
+            )
+        )
+
+
+def main() -> None:
     """Search and download data products using earthaccess API."""
     check_scenes = options["check_scenes"]
     skip = flags["s"] or check_scenes in {"all", "existing"}
@@ -548,7 +586,7 @@ def main():
     # Try login to earthaccess
     try:
         earthaccess.login()
-    except Exception:
+    except ConnectionError:
         gs.warning(
             _(
                 "Login to EarthData failed. Download may fail or search may return incomplete results.",
@@ -562,7 +600,7 @@ def main():
             search_options["keyword"] = "*"
         try:
             datasets = earthaccess.search_datasets(**search_options)
-        except:
+        except RuntimeError:
             gs.fatal(
                 _(
                     "Collection search failed. Please check the search parameters and login information.",
@@ -609,6 +647,11 @@ def main():
         gs.warning(
             _("'keyword' is not a supported parameter for granule search. Ignoring..."),
         )
+    gs.debug(
+        _("Searching for data granules with the following options:\n{}").format(
+            search_options
+        )
+    )
 
     # https://github.com/podaac/tutorials/blob/master/notebooks/SearchDownload_SWOTviaCMR.ipynb
     data_granules = earthaccess.search_data(**search_options)
@@ -617,35 +660,48 @@ def main():
         if format == "json":
             print(
                 json.dumps(
-                    [extract_core_umm_metadata(dg) for dg in data_granules], indent=2
-                )
+                    [extract_core_umm_metadata(dg) for dg in data_granules],
+                    indent=2,
+                ),
             )
         else:
             metadata = [extract_core_umm_metadata(dg) for dg in data_granules]
-            print(",".join(list(metadata[0].keys())))
             for dg in metadata:
                 print(
                     ",".join(
                         [
                             (
                                 "|".join(map(str, k))
-                                if isinstance(k, (list, tuple))  # noqa: UP038
+                                if isinstance(k, list | tuple)
                                 else str(k)
                             )
                             for k in dg.values()
-                        ]
-                    )
+                        ],
+                    ),
                 )
 
         sys.exit(0)
 
-    if flags["s"]:
-        for file in data_granules:
-            if (
-                file.properties["fileName"].endswith("iso.xml")
-                and file.properties["processingLevel"] == "METADATA_GRD_HD"
-            ):
-                data_granules.remove(file)
+    if skip:
+        filtered_granules = []
+        for data_granule in data_granules:
+            if check_scene_exists(data_granule, download_dir):
+                gs.verbose(
+                    _("Granule {gran} exists in {dir}. Skipping...").format(
+                        gran=", ".join(
+                            [Path(file).name for file in data_granule.data_links()],
+                        ),
+                        dir=download_dir,
+                    ),
+                )
+            else:
+                filtered_granules.append(data_granule)
+        data_granules = filtered_granules
+
+    # Exit greacefully if nothing to download
+    if not data_granules:
+        gs.info(_("No data granules to download found for the given search criteria."))
+        sys.exit(0)
 
     nprocs = int(options["nprocs"])
     gs.verbose(
@@ -656,13 +712,29 @@ def main():
     )
 
     try:
-        earthaccess.download(data_granules, download_dir, threads=nprocs)
-    except:
-        gs.fatal(
+        earthaccess.download(
+            data_granules,
+            download_dir,
+            show_progress=gs.verbosity() > 1,
+            threads=nprocs,
+        )
+    except Exception as e:
+        if not flags["i"]:
+            gs.fatal(
+                _(
+                    "Downloading data failed with the following error:\n %s"
+                    ". Please check search parameters and login information.",
+                )
+                % str(e),
+            )
+        gs.warning(
             _(
-                "Downloading data failed. Please check search parameters and login information.",
+                "Failure during data Download. Retry with ignoring failed scenes.",
             ),
         )
+        # Run a single scene download
+        for data_granule in data_granules:
+            retry_single_scene_download(data_granule, download_dir)
 
 
 if __name__ == "__main__":
