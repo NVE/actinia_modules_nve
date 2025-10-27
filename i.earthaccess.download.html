@@ -55,12 +55,15 @@ grassLogoLink.after(temp.content);
 <h2>SYNOPSIS</h2>
 <div id="name"><b>i.earthaccess.download</b><br></div>
 <b>i.earthaccess.download --help</b><br>
-<div id="synopsis"><b>i.earthaccess.download</b> [-<b>sw</b>]  [<b>output_directory</b>=<em>string</em>]   [<b>aoi</b>=<em>string</em>]   [<b>temporal</b>=<em>string</em>[,<i>string</i>,...]]   [<b>created_at</b>=<em>string</em>[,<i>string</i>,...]]   [<b>production_date</b>=<em>string</em>[,<i>string</i>,...]]   [<b>revision_date</b>=<em>string</em>[,<i>string</i>,...]]   [<b>keyword</b>=<em>string</em>]   [<b>short_name</b>=<em>string</em>]   [<b>granule_name</b>=<em>string</em>]   [<b>provider</b>=<em>string</em>]   [<b>limit</b>=<em>integer</em>]   [<b>print</b>=<em>string</em>]   [<b>format</b>=<em>string</em>]   [<b>file</b>=<em>name</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>check_scenes</b>=<em>string</em>]   [<b>scenes</b>=<em>string</em>]   [<b>order_by</b>=<em>string</em>[,<i>string</i>,...]]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+<div id="synopsis"><b>i.earthaccess.download</b> [-<b>isw</b>]  [<b>output_directory</b>=<em>string</em>]   [<b>aoi</b>=<em>string</em>]   [<b>temporal</b>=<em>string</em>[,<i>string</i>,...]]   [<b>created_at</b>=<em>string</em>[,<i>string</i>,...]]   [<b>production_date</b>=<em>string</em>[,<i>string</i>,...]]   [<b>revision_date</b>=<em>string</em>[,<i>string</i>,...]]   [<b>keyword</b>=<em>string</em>]   [<b>short_name</b>=<em>string</em>]   [<b>granule_name</b>=<em>string</em>]   [<b>provider</b>=<em>string</em>]   [<b>limit</b>=<em>integer</em>]   [<b>print</b>=<em>string</em>]   [<b>format</b>=<em>string</em>]   [<b>file</b>=<em>name</em>]   [<b>nprocs</b>=<em>integer</em>]   [<b>check_scenes</b>=<em>string</em>]   [<b>scenes</b>=<em>string</em>]   [<b>order_by</b>=<em>string</em>[,<i>string</i>,...]]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
 </div>
 
 <div id="flags">
 <h3>Flags:</h3>
 <dl>
+<dt><b>-i</b></dt>
+<dd>Ignore failure of downloads for single files (give a warning instead of error)</dd>
+
 <dt><b>-s</b></dt>
 <dd>Skip downloading existing scenes</dd>
 
@@ -243,7 +246,7 @@ Stefan Blumentrath
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Thursday Oct 23 07:25:10 2025
+  Accessed: Monday Oct 27 08:18:23 2025
 </p>
 <hr class="header">
 <p>
