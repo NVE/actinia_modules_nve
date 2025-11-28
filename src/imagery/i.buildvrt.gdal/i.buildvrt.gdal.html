@@ -105,7 +105,7 @@ i.buildvrt.gdal --v input=./ output=./S2A_MSIL1C_20250730T100051_N0511_R122.vrt 
 
 <h3>Create a virtual Sentinel-3 Image mosaic from single-band GeoTiffs</h3>
 <div class="code"><pre>
-tee ./bands_s3.json <<EOF
+tee ./bands_s3.json &lt;&lt;EOF
 {
     "S3_F1_BT_fn": "Greyscale",
     "S3_F2_BT_in": "Greyscale",
