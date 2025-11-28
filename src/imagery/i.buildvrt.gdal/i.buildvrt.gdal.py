@@ -133,7 +133,7 @@ def get_gdal_band_color_interpretation() -> dict:
                 "Synthetic Aperture Radar (SAR) S": gdal.GCI_SAR_S_Band,  # [7.5 - 15 cm / 2 - 4 GHz]
                 "Synthetic Aperture Radar (SAR) L": gdal.GCI_SAR_L_Band,  # [15 - 30 cm / 1 - 2 GHz]
                 "Synthetic Aperture Radar (SAR) P": gdal.GCI_SAR_P_Band,  # [30 - 100 cm / 0.3 - 1 GHz]
-                "SAR Reserved value": gdal.GCI_SAR_Reserved_1,  # Do not set it !
+                # "SAR Reserved value": gdal.GCI_SAR_Reserved_1,  # Do not set it !
                 # "SAR Reserved value": gdal.GCI_SAR_Reserved_2,  # Do not set it !
                 "Max current value": gdal.GCI_Max,  # (equals to GCI_SAR_Reserved_2 currently)
             },
