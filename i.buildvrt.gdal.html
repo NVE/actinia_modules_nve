@@ -1,0 +1,294 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <meta name="Author" content="GRASS Development Team">
+ <meta http-equiv="content-language" content="en-us">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>i.buildvrt.gdal - GRASS GIS manual</title>
+ <meta name="description" content="i.buildvrt.gdal: Create a VRT (Virtual Raster Tile) from multiple raster files and import it to a STRDS.">
+ <meta name="keywords" content="imagery, raster, gdal, vrt">
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+<div id="container">
+
+<a href="file:///usr/lib/grass84/docs/html/index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<script>
+// Create hamburger menu TOC HTML elements by the JavaScript
+let temp = document.createElement('template');
+const toc = '<ul class="toc-mobile-screen" id="toc-mobile-screen">' + 
+'<li><a class="toc-item" href="#description">DESCRIPTION</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#note">NOTE</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#examples">EXAMPLES</a>' + 
+'<ul>' + 
+'<li><a class="toc-item" href="#create-a-virtual-sentinel-2-image-mosaic-from-multiband-cogs">Create a virtual Sentinel-2 Image mosaic from multiband COGs</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#create-a-virtual-sentinel-3-image-mosaic-from-single-band-geotiffs">Create a virtual Sentinel-3 Image mosaic from single-band GeoTiffs</a>' + 
+'</li>' + 
+'</ul></li>' + 
+'<li><a class="toc-item" href="#see-also">SEE ALSO</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#references">REFERENCES</a>' + 
+'</li>' + 
+'<li><a class="toc-item" href="#author">AUTHOR</a>' + 
+'</li>' +
+'<a class="close" href="#">' +
+'<img src="./hamburger_menu_close.svg" alt="close">' +
+'</a>' +
+'</ul>' +
+'<a class="hamburger" href="#toc-mobile-screen">' +
+'<img src="./hamburger_menu.svg" alt="menu">' +
+'</a>';
+temp.innerHTML = toc;
+const grassLogoLink = document.getElementsByTagName("img")[0];
+grassLogoLink.after(temp.content);
+</script>
+<hr class="header">
+
+<h2>NAME</h2>
+<em><b>i.buildvrt.gdal</b></em>  - Create a VRT (Virtual Raster Tile) from multiple raster files and import it to a STRDS.
+<h2>KEYWORDS</h2>
+<a href="file:///usr/lib/grass84/docs/html/imagery.html">imagery</a>, <a href="file:///usr/lib/grass84/docs/html/topic_raster.html">raster</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#gdal">gdal</a>, <a href="file:///usr/lib/grass84/docs/html/keywords.html#vrt">vrt</a>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>i.buildvrt.gdal</b><br></div>
+<b>i.buildvrt.gdal --help</b><br>
+<div id="synopsis"><b>i.buildvrt.gdal</b> [-<b>s</b>] <b>input</b>=<em>name</em> <b>output</b>=<em>name</em> <b>bands</b>=<em>name</em>  [<b>file_pattern</b>=<em>string</em>]   [<b>data_type</b>=<em>string</em>]   [<b>resolution</b>=<em>string</em>]   [<b>memory</b>=<em>integer</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>]  [--<b>ui</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-s</b></dt>
+<dd>Stack input raster files as bands in VRT</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+<dt><b>--ui</b></dt>
+<dd>Force launching GUI dialog</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>input</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of input directory with raster files to create VRT from</dd>
+
+<dt><b>output</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to the VRT file to be written</dd>
+
+<dt><b>bands</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>JSON file with band configuration</dd>
+
+<dt><b>file_pattern</b>=<em>string</em></dt>
+<dd>File name pattern to import</dd>
+
+<dt><b>data_type</b>=<em>string</em></dt>
+<dd>GDAL data type of the output VRT (if data type of input rasters differs</dd>
+<dd>Options: <em>Byte, Int8, UInt16, Int16, UInt32, Int32, UInt64, Int64, CInt16, CInt32, Float32, Float64, CFloat32, CFloat64</em></dd>
+
+<dt><b>resolution</b>=<em>string</em></dt>
+<dd>Resolution of the output VRT (if resolution of input rasters differs) can be an integer for the target resolution or one of 'average', 'highest', 'lowest'</dd>
+<dd>Default: <em>highest</em></dd>
+
+<dt><b>memory</b>=<em>integer</em></dt>
+<dd>Maximum memory to be used (in MB)</dd>
+<dd>Cache size for raster rows</dd>
+<dd>Default: <em>2048</em></dd>
+
+</dl>
+</div>
+<div class="toc">
+<h4 class="toc">Table of contents</h4>
+<ul class="toc">
+    <li class="toc"><a href="#description" class="toc">DESCRIPTION</a></li>
+    <li class="toc"><a href="#note" class="toc">NOTE</a></li>
+    <li class="toc"><a href="#examples" class="toc">EXAMPLES</a>
+    <ul class="toc">
+        <li class="toc"><a href="#create-a-virtual-sentinel-2-image-mosaic-from-multiband-cogs" class="toc">Create a virtual Sentinel-2 Image mosaic from multiband COGs</a></li>
+        <li class="toc"><a href="#create-a-virtual-sentinel-3-image-mosaic-from-single-band-geotiffs" class="toc">Create a virtual Sentinel-3 Image mosaic from single-band GeoTiffs</a></li>
+    </ul></li>
+    <li class="toc"><a href="#see-also" class="toc">SEE ALSO</a></li>
+    <li class="toc"><a href="#references" class="toc">REFERENCES</a></li>
+    <li class="toc"><a href="#author" class="toc">AUTHOR</a></li>
+</ul>
+</div>
+<h2><a name="description">DESCRIPTION</a></h2>
+
+<em>i.buildvrt.gdal</em> creates a Virtual Raster Tile (VRT) from multiple, GDAL-readable
+input raster files. The module is basically a wrapper around <i>gdalbuildvrt</i>.
+
+<p>
+Users have to provide an <b>input</b> directory with raster files to create VRT from,
+a JSON file describing the input <b>bands</b> to be included in the VRT file, and
+specify an <b>output</b> path for the VRT.
+
+<p>
+The <b>bands</b> JSON file should contain the band ID (semantic_label) and
+the name of a GDAL color representation ("Undefined" is used as a default and
+fallback).  See examples below for how the JSON file should be structured.
+
+<p>
+The following GDAL color names are allowed (with GDAL < 3.10):
+<div class="code"><pre>
+    "Undefined": gdal.GCI_Undefined,
+    "Greyscale": gdal.GCI_GrayIndex,
+    "Paletted": gdal.GCI_PaletteIndex,  # (see associated color table)
+    "Red": gdal.GCI_RedBand,  # RGBA image, or red spectral band [0.62 - 0.69 um]
+    "Green": gdal.GCI_GreenBand,  # RGBA image, or green spectral band [0.51 - 0.60 um]
+    "Blue": gdal.GCI_BlueBand,  # RGBA image, or blue spectral band [0.45 - 0.53 um]
+    "Alpha": gdal.GCI_AlphaBand,  # (0=transparent, 255=opaque)
+    "Hue": gdal.GCI_HueBand,  # HLS image
+    "Saturation": gdal.GCI_SaturationBand,  # HLS image
+    "Lightness": gdal.GCI_LightnessBand,  # HLS image
+    "Cyan": gdal.GCI_CyanBand,  # CMYK image
+    "Magenta": gdal.GCI_MagentaBand,  # CMYK image
+    "Yellow": gdal.GCI_YellowBand,  # CMYK image, or yellow spectral band [0.58 - 0.62 um]
+    "Black": gdal.GCI_BlackBand,  # CMYK image
+    "Y": gdal.GCI_YCbCr_YBand,  # Luminance
+    "Cb": gdal.GCI_YCbCr_CbBand,  # Chroma
+    "Cr": gdal.GCI_YCbCr_CrBand,  # Chroma
+</pre></div>
+
+And starting with GDAL 3.10, the following additional color names are supported:
+The following GDAL color names are allowed:
+<div class="code"><pre>
+    "Panchromatic": gdal.GCI_PanBand,  # [0.40 - 1.00 um]
+    "Coastal": gdal.GCI_CoastalBand,  # [0.40 - 0.45 um]
+    "Red-edge": gdal.GCI_RedEdgeBand,  # [0.69 - 0.79 um]
+    "Near-InfraRed (NIR)": gdal.GCI_NIRBand,  # [0.75 - 1.40 um]
+    "Short-Wavelength InfraRed (SWIR)": gdal.GCI_SWIRBand,  # [1.40 - 3.00 um]
+    "Mid-Wavelength InfraRed (MWIR)": gdal.GCI_MWIRBand,  # [3.00 - 8.00 um]
+    "Long-Wavelength InfraRed (LWIR)": gdal.GCI_LWIRBand,  # [8.00 - 15 um]
+    "Thermal InfraRed (TIR)": gdal.GCI_TIRBand,  # (MWIR or LWIR) [3 - 15 um]
+    "Other infrared": gdal.GCI_OtherIRBand,  # [0.75 - 1000 um]
+    # "Reserved value": gdal.GCI_IR_Reserved_1,  # Do not set it !
+    # "Reserved value": gdal.GCI_IR_Reserved_2,  # Do not set it !
+    # "Reserved value": gdal.GCI_IR_Reserved_3,  # Do not set it !
+    # "Reserved value": gdal.GCI_IR_Reserved_4,  # Do not set it !
+    "Synthetic Aperture Radar (SAR) Ka": gdal.GCI_SAR_Ka_Band,  # [0.8 - 1.1 cm / 27 - 40 GHz]
+    "Synthetic Aperture Radar (SAR) K": gdal.GCI_SAR_K_Band,  # [1.1 - 1.7 cm / 18 - 27 GHz]
+    "Synthetic Aperture Radar (SAR) Ku": gdal.GCI_SAR_Ku_Band,  # [1.7 - 2.4 cm / 12 - 18 GHz]
+    "Synthetic Aperture Radar (SAR) X": gdal.GCI_SAR_X_Band,  # [2.4 - 3.8 cm / 8 - 12 GHz]
+    "Synthetic Aperture Radar (SAR) C": gdal.GCI_SAR_C_Band,  # [3.8 - 7.5 cm / 4 - 8 GHz]
+    "Synthetic Aperture Radar (SAR) S": gdal.GCI_SAR_S_Band,  # [7.5 - 15 cm / 2 - 4 GHz]
+    "Synthetic Aperture Radar (SAR) L": gdal.GCI_SAR_L_Band,  # [15 - 30 cm / 1 - 2 GHz]
+    "Synthetic Aperture Radar (SAR) P": gdal.GCI_SAR_P_Band,  # [30 - 100 cm / 0.3 - 1 GHz]
+    "SAR Reserved value": gdal.GCI_SAR_Reserved_1,  # Do not set it !
+    # "SAR Reserved value": gdal.GCI_SAR_Reserved_2,  # Do not set it !
+    "Max current value": gdal.GCI_Max,  # (equals to GCI_SAR_Reserved_2 currently)
+</pre></div>
+
+<p>
+Optionally, input files can be filtered with the <b>file_pattern</b> option. The
+default pattern is '*.tif', meaning all tif files files are considered. The
+<b>memory</b> option allows to optimize GDAL-caching (maximum is 2048 MB).
+
+<p>
+If the <b>-f</b> flag is set input files are stacked as bands in the
+VRT file and input raster should be single-band files with common
+extent.
+
+<h2><a name="note">NOTE</a></h2>
+Multidimensional raster files, raster files with sub-datasets are
+not supported. 
+
+<h2><a name="examples">EXAMPLES</a></h2>
+
+<h3><a name="create-a-virtual-sentinel-2-image-mosaic-from-multiband-cogs">Create a virtual Sentinel-2 Image mosaic from multiband COGs</a></h3>
+<div class="code"><pre>
+tee ./bands_s2.json &lt;&lt;EOF
+{
+    "S2_10": "Greyscale",
+    "S2_11": "Short-Wavelength InfraRed (SWIR)",
+    "S2_12": "Short-Wavelength InfraRed (SWIR)",
+    "S2_1": "Greyscale",
+    "S2_2": "Blue",
+    "S2_3": "Green",
+    "S2_4": "Red",
+    "S2_5": "Red-edge",
+    "S2_6": "Greyscale",
+    "S2_7": "Greyscale",
+    "S2_8": "Near-InfraRed (NIR)",
+    "S2_8A": "Greyscale",
+    "S2_9": "Greyscale"
+}
+EOF
+i.buildvrt.gdal --v input=./ output=./S2A_MSIL1C_20250730T100051_N0511_R122.vrt \
+    bands=./bands_s2.json file_pattern="S2A_MSIL1C_20250730T100051_N0511_R122_*"
+</pre></div>
+
+<h3><a name="create-a-virtual-sentinel-3-image-mosaic-from-single-band-geotiffs">Create a virtual Sentinel-3 Image mosaic from single-band GeoTiffs</a></h3>
+<div class="code"><pre>
+tee ./bands_s3.json &lt;&lt;EOF
+{
+    "S3_F1_BT_fn": "Greyscale",
+    "S3_F2_BT_in": "Greyscale",
+    "S3_S1_reflectance_an": "Greyscale",
+    "S3_S2_reflectance_an": "Greyscale",
+    "S3_SLSTR_cloud_mask": "Greyscale",
+    "S3_SLSTR_fractional_snow_cover": "Greyscale",
+    "S3_S3_reflectance_an": "Greyscale",
+    "S3_S4_reflectance_an": "Greyscale",
+    "S3_S5_reflectance_an": "Greyscale",
+    "S3_S6_reflectance_an": "Greyscale",
+    "S3_S7_BT_in": "Greyscale",
+    "S3_S8_BT_in": "Greyscale",
+    "S3_S9_BT_in": "Greyscale",
+    "S3_solar_azimuth": "Greyscale",
+    "S3_solar_zenith": "Greyscale",
+    "S3_swath_mask": "Greyscale"
+}
+EOF
+i.buildvrt.gdal --v -s input=./ output=./S3B_SL_2_RBT_112_080_20251010.vrt \
+    bands=./bands_s3.json file_pattern="S3B_SL_2_RBT_112_080_20251010_*" \
+    resolution=250 data_type=Float32
+</pre></div>
+
+
+<h2><a name="see-also">SEE ALSO</a></h2>
+<a href="">r.buildvrt</a>,
+<a href="">r.buildvrt.gdal</a>
+
+<h2><a name="references">REFERENCES</a></h2>
+
+<a href="https://gdal.org/en/stable/programs/gdalbuildvrt.html">gdalbuildvrt</a>
+
+<h2><a name="author">AUTHOR</a></h2>
+Stefan Blumentrath, NVE
+<h2>SOURCE CODE</h2>
+<p>
+  Available at:
+  <a href="">i.buildvrt.gdal source code</a>
+  (<a href="">history</a>)
+</p>
+<p>
+  Accessed: Friday Nov 28 14:07:20 2025
+</p>
+<hr class="header">
+<p>
+<a href="file:///usr/lib/grass84/docs/html/index.html">Main index</a> |
+<a href="file:///usr/lib/grass84/docs/html/imagery.html">Imagery index</a> |
+<a href="file:///usr/lib/grass84/docs/html/topics.html">Topics index</a> |
+<a href="file:///usr/lib/grass84/docs/html/keywords.html">Keywords index</a> |
+<a href="file:///usr/lib/grass84/docs/html/graphical_index.html">Graphical index</a> |
+<a href="file:///usr/lib/grass84/docs/html/full_index.html">Full index</a>
+</p>
+<p>
+&copy; 2003-2025
+<a href="https://grass.osgeo.org">GRASS Development Team</a>,
+GRASS GIS 8.4.1 Reference Manual
+</p>
+
+</div>
+</body>
+</html>
