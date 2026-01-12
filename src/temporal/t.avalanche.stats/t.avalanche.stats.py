@@ -214,7 +214,7 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
                 overwrite=True,
             )
             for map_type in ["elevation", "slope", "aspect"]:
-                prefix = {"elevation": "dtm", "slope": "slp", "aspect": "asp"}[map_type]
+                prefix = {"elevation": "dem", "slope": "slp", "aspect": "asp"}[map_type]
                 rmap = kwargs.get(map_type)
                 univar_stats = (
                     Module(
