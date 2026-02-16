@@ -8,6 +8,11 @@ The module options largely represent search parameters for collections and
 archives (granules). 
 
 <p>
+The earthaccess library is quite restrictive with regards to formating of
+the <b>aoi</b> GeoJSON. Only polygons (no multi or 3D geometries) are
+supported with counter-clockwise ordering of vertices.
+
+<p>
 The optional temporal search parameters (<b>temporal</b>, <b>created_at</b>,
 <b>production_date</b>, <b>revision_date</b>) are given as a comma separated
 pair of ISO-formated datetime strings.
