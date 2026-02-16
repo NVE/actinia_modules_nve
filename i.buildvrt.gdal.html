@@ -207,7 +207,7 @@ not supported.
 <h3><a name="create-a-virtual-sentinel-2-image-mosaic-from-multiband-cogs">Create a virtual Sentinel-2 Image mosaic from multiband COGs</a></h3>
 <div class="code"><pre>
 tee ./bands_s2.json &lt;&lt;EOF
-{
+&#123;
     "S2_10": "Greyscale",
     "S2_11": "Short-Wavelength InfraRed (SWIR)",
     "S2_12": "Short-Wavelength InfraRed (SWIR)",
@@ -221,7 +221,7 @@ tee ./bands_s2.json &lt;&lt;EOF
     "S2_8": "Near-InfraRed (NIR)",
     "S2_8A": "Greyscale",
     "S2_9": "Greyscale"
-}
+&#125;
 EOF
 i.buildvrt.gdal --v input=./ output=./S2A_MSIL1C_20250730T100051_N0511_R122.vrt \
     bands=./bands_s2.json file_pattern="S2A_MSIL1C_20250730T100051_N0511_R122_*"
@@ -230,7 +230,7 @@ i.buildvrt.gdal --v input=./ output=./S2A_MSIL1C_20250730T100051_N0511_R122.vrt 
 <h3><a name="create-a-virtual-sentinel-3-image-mosaic-from-single-band-geotiffs">Create a virtual Sentinel-3 Image mosaic from single-band GeoTiffs</a></h3>
 <div class="code"><pre>
 tee ./bands_s3.json &lt;&lt;EOF
-{
+&#123;
     "S3_F1_BT_fn": "Greyscale",
     "S3_F2_BT_in": "Greyscale",
     "S3_S1_reflectance_an": "Greyscale",
@@ -247,7 +247,7 @@ tee ./bands_s3.json &lt;&lt;EOF
     "S3_solar_azimuth": "Greyscale",
     "S3_solar_zenith": "Greyscale",
     "S3_swath_mask": "Greyscale"
-}
+&#125;
 EOF
 i.buildvrt.gdal --v -s input=./ output=./S3B_SL_2_RBT_112_080_20251010.vrt \
     bands=./bands_s3.json file_pattern="S3B_SL_2_RBT_112_080_20251010_*" \
@@ -272,7 +272,7 @@ Stefan Blumentrath, NVE
   (<a href="">history</a>)
 </p>
 <p>
-  Accessed: Monday Feb 16 13:41:06 2026
+  Accessed: Monday Feb 16 13:43:41 2026
 </p>
 <hr class="header">
 <p>
