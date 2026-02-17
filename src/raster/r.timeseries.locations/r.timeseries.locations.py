@@ -3,8 +3,8 @@
 """
 MODULE:       r.timeseries.locations
 AUTHOR(S):    Stefan Blumentrath
-PURPOSE:      Manage locations for time series in NVE time series DB
-COPYRIGHT:    (C) 2023 by Stefan Blumentrath
+PURPOSE:      Manage locations for time series in NVE TimeSeries DB
+COPYRIGHT:    (C) 2023-2025 by NVE, Stefan Blumentrath
 
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ COPYRIGHT:    (C) 2023 by Stefan Blumentrath
 """
 
 # %module
-# % description: Manage locations for time series in NVE time series DB
+# % description: Manage locations for time series in NVE TimeSeries DB
 # % keyword: NVE
 # % keyword: import
 # % keyword: export
@@ -60,6 +60,9 @@ COPYRIGHT:    (C) 2023 by Stefan Blumentrath
 # % description: Layer name of the OGR data source to import
 # %end
 
+# %option G_OPT_V_TYPE
+# %end
+
 # %option G_OPT_DB_WHERE
 # %end
 
@@ -74,7 +77,7 @@ COPYRIGHT:    (C) 2023 by Stefan Blumentrath
 
 # %option
 # % key: method
-# % options: percentile,linear,database
+# % options: percentile,linear,database,map_units
 # % required: no
 # % multiple: no
 # % description: Method for generating subunits
@@ -141,6 +144,7 @@ COPYRIGHT:    (C) 2023 by Stefan Blumentrath
 # % collective: locations_subunits,method,continuous_subdivision_map
 # %end
 
+import json
 import os
 import sys
 from functools import partial
@@ -150,8 +154,8 @@ import grass.script as gs
 import numpy as np
 
 
-def round_to_closest(x, y):
-    """Round value x to closest y"""
+def round_to_closest(x, y) -> tuple:
+    """Round value x to closest y."""
     if not y:
         return x
     return tuple(np.round(np.array(x).astype(float) / y, 0).astype(type(y)) * y)
@@ -196,8 +200,38 @@ def create_graph(
     return f"graph({raster_map},{','.join(value_list)})"
 
 
+def range_dict_from_map_combination(grass_options: dict, range_scale: int) -> dict:
+    """
+    :param options: The GRASS GIS options dict from g.parser
+    :type options: dict
+    :param range_scale: Integer to scale the locations map with
+    :type range_scale: int
+    :return: A dict with class breaks per ID
+    """
+    stats = Module(
+        "r.stats",
+        flags="cin",
+        input=[grass_options["locations"], grass_options["continuous_subdivision_map"]],
+        stdout_=PIPE,
+    )
+
+    map_stats = np.genfromtxt(
+        stats.outputs.stdout.split("\n"),
+        delimiter=" ",
+        names=["cat", "sub_cat", "n"],
+        dtype=None,
+        encoding="UTF8",
+    )
+    map_stats = {
+        int(m["cat"] * range_scale + m["sub_cat"]): (int(m["sub_cat"]), int(m["n"]))
+        for m in map_stats
+    }
+    return dict(sorted(map_stats.items()))
+
+
 def range_dict_from_db(grass_options):
-    """Read user defined breaks for each ID from DB
+    """Read user defined breaks for each ID from DB.
+
     :param options: The GRASS GIS options dict from g.parser
     :type options: dict
     :return: A dict with class breaks per ID
@@ -351,7 +385,7 @@ def main():
         "v.to.rast",
         input=locations,
         output=locations,
-        type="area",
+        type=options["type"],
         use="attr",
         attribute_column="id",
         label_column="name",
@@ -360,19 +394,53 @@ def main():
     gs.raster.raster_history(locations, overwrite=True)
 
     if options["locations_subunits"]:
-        if options["method"] == "database":
-            range_dict = range_dict_from_db(options)
-        elif options["method"] in ["percentile", "linear"]:
-            range_dict = range_dict_from_statistics(options)
+        if options["method"] == "map_units":
+            map_stats = gs.parse_key_val(
+                Module(
+                    "r.info",
+                    flags="gr",
+                    map=options["locations_subunits"],
+                    stdout_=PIPE,
+                ).outputs.stdout
+            )
+            if not map_stats["max"]:
+                map_stats = json.loads(
+                    Module(
+                        "r.univar",
+                        map=options["locations_subunits"],
+                        format="json",
+                        stdout_=PIPE,
+                    ).outputs.stdout
+                )
+            range_scale = int(
+                np.pow(
+                    10,
+                    len(
+                        str(
+                            int(np.min([0, np.floor(float(map_stats["min"]))]))
+                            + int(np.ceil(float(map_stats["max"])))
+                        )
+                    ),
+                )
+            )
+            mc_expression = (
+                f"{locations} * {range_scale} + int({options['locations_subunits']})"
+            )
+            range_dict = range_dict_from_map_combination(options, range_scale)
+        else:
+            if options["method"] == "database":
+                range_dict = range_dict_from_db(options)
+            elif options["method"] in ["percentile", "linear"]:
+                range_dict = range_dict_from_statistics(options)
 
-        create_sub_graph = partial(
-            create_graph,
-            continuous_subdivision_map,
-            min_value=-9999,
-            max_value=9999,
-            epsilon=0.000001,
-        )
-        mc_expression = f"""{options["locations_subunits"]}=int(graph({locations},{", ".join(f"{cat}, int({create_sub_graph(values)})" for cat, values in range_dict.items())}))"""
+            create_sub_graph = partial(
+                create_graph,
+                continuous_subdivision_map,
+                min_value=-9999,
+                max_value=9999,
+                epsilon=0.000001,
+            )
+            mc_expression = f"""{options["locations_subunits"]}=int(graph({locations},{", ".join(f"{cat}, int({create_sub_graph(values)})" for cat, values in range_dict.items())}))"""
 
         if int(options["nprocs"]) > 1:
             Module(
