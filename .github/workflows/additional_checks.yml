@@ -20,7 +20,7 @@ concurrency:
 jobs:
   additional-checks:
     name: Additional checks
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repository contents
@@ -45,7 +45,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
         with:
-          python-version: '3.10'
+          python-version: '3.12'
 
       - run: pip install pre-commit && pre-commit run -a
         if: ${{ steps.changes.outputs.precommit == 'true' }}
