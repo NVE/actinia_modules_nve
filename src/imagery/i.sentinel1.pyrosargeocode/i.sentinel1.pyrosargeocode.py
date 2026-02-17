@@ -277,7 +277,7 @@ def get_gpt_options(nprocs):
     return gpt, [
         "-x",
         "-c",
-        f"{int(float(xmx_option[:-1])*0.5)}{xmx_option[-1]}",
+        f"{int(float(xmx_option[:-1]) * 0.5)}{xmx_option[-1]}",
         "-q",
         str(nprocs),
     ]
