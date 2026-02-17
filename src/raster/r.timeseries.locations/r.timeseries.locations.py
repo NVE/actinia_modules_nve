@@ -153,7 +153,7 @@ import grass.script as gs
 import numpy as np
 
 
-def round_to_closest(x: float | np.array, y: float) -> tuple:
+def round_to_closest(x: float | np.ndarray, y: float) -> tuple:
     """Round value x to closest y."""
     if not y:
         return x
