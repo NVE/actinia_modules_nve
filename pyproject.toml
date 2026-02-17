@@ -1,11 +1,11 @@
 [project]
 name = "actinia_modules_nve"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 
 [tool.black]
-required-version = '24'
+required-version = '26'
 line-length = 88
-target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+target-version = ['py39', 'py310', 'py311', 'py312']
 # 'extend-exclude' excludes files or directories in addition to the defaults
 include = '\.pyi?$'
 exclude = '''
