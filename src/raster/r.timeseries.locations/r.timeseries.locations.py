@@ -267,7 +267,7 @@ def range_dict_from_db(grass_options: dict) -> dict:
         if row[0] in range_dict:
             range_dict[row[0]].append(row[1:])
         else:
-            range_dict[row[0]] = [(row[1:])]
+            range_dict[row[0]] = [row[1:]]
 
     return range_dict
 
