@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-"""
-MODULE:       r.timeseries.locations
+"""MODULE:       r.timeseries.locations
 AUTHOR(S):    Stefan Blumentrath
 PURPOSE:      Manage locations for time series in NVE TimeSeries DB
 COPYRIGHT:    (C) 2023-2025 by NVE, Stefan Blumentrath
@@ -154,7 +153,7 @@ import grass.script as gs
 import numpy as np
 
 
-def round_to_closest(x, y) -> tuple:
+def round_to_closest(x: float | np.array, y: float) -> tuple:
     """Round value x to closest y."""
     if not y:
         return x
@@ -162,10 +161,15 @@ def round_to_closest(x, y) -> tuple:
 
 
 def keepass_to_env(
-    keepass_file, keepass_pwd, title, username_var, password_var, first=True
-):
-    """Write KeePass entries into environment variables"""
-
+    keepass_file: str,
+    keepass_pwd: str,
+    title: str,
+    username_var: str,
+    password_var: str,
+    *,
+    first: bool = True,
+) -> None:
+    """Write KeePass entries into environment variables."""
     kp = PyKeePass(keepass_file, password=keepass_pwd)
     entry = kp.find_entries(title=title, first=first)
     os.environ[username_var] = entry.username
@@ -173,17 +177,22 @@ def keepass_to_env(
 
 
 def create_graph(
-    raster_map, values, min_value="-Inf", max_value="Inf", epsilon=0.00000001
-):
-    """Create a map calculator graph() function from a mapname and a list of range values
+    raster_map: str,
+    values: tuple[int],
+    min_value: float | str = "-Inf",
+    max_value: float | str = "Inf",
+    epsilon: float = 0.00000001,
+) -> str:
+    """Create a map calculator graph() function from a mapname and a list of range values.
+
     :param raster_map: Name of the raster map to create the graph function for
     :type raster_map: str
     :param values: tuple with break points to build the graph with
     :type values: tuple
-    :param min: Minimum value of the input raster map
-    :type min: float
-    :param max: Maximum value of the input raster map
-    :type max: float
+    :param min_value: Minimum value of the input raster map
+    :type min_value: float | str
+    :param max_value: Maximum value of the input raster map
+    :type max_value: float | str
     :param epsilon: minimal value to dstigush break boundaries
     :type epsilon: float
     :return: A string with a graph() function for r.mapcalc
@@ -201,7 +210,8 @@ def create_graph(
 
 
 def range_dict_from_map_combination(grass_options: dict, range_scale: int) -> dict:
-    """
+    """Create ranges from the combination of location and continuous_subdivision_map.
+
     :param options: The GRASS GIS options dict from g.parser
     :type options: dict
     :param range_scale: Integer to scale the locations map with
@@ -229,7 +239,7 @@ def range_dict_from_map_combination(grass_options: dict, range_scale: int) -> di
     return dict(sorted(map_stats.items()))
 
 
-def range_dict_from_db(grass_options):
+def range_dict_from_db(grass_options: dict) -> dict:
     """Read user defined breaks for each ID from DB.
 
     :param options: The GRASS GIS options dict from g.parser
@@ -239,7 +249,7 @@ def range_dict_from_db(grass_options):
     # Get data from DB
     conn = pyodbc.connect(
         grass_options["locations_url"].replace("MSSQL:", "")
-        + f";UID={os.environ.get('MSSQLSPATIAL_UID')};PWD={os.environ.get('MSSQLSPATIAL_PWD')}"
+        + f";UID={os.environ.get('MSSQLSPATIAL_UID')};PWD={os.environ.get('MSSQLSPATIAL_PWD')}",
     )
     cursor = conn.cursor()
     res = cursor.execute(
@@ -247,7 +257,7 @@ def range_dict_from_db(grass_options):
   FROM {grass_options["layer"]}
   WHERE domain_id = {grass_options["domain_id"]} AND parent_id IS NOT NULL
   ORDER BY parent_id, minimum_elevation_m, maximum_elevation_m
-;"""
+;""",
     )
     range_table = res.fetchall()
     conn.close()
@@ -262,9 +272,11 @@ def range_dict_from_db(grass_options):
     return range_dict
 
 
-def range_dict_from_statistics(grass_options):
-    """Compute breaks from statistics of the continuous_subdivision_map
-    according to user given method, class_number and rounding precision
+def range_dict_from_statistics(grass_options: dict) -> dict:
+    """Compute breaks from statistics of the continuous_subdivision_map.
+
+    Breaks are computed according to user given method, class_number and
+    rounding precision.
     :param options: The GRASS GIS options dict from g.parser
     :type options: dict
     :return: A dict with class breaks per ID
@@ -274,8 +286,9 @@ def range_dict_from_statistics(grass_options):
     if grass_options["method"] == "percentile":
         univar_percentile = list(
             np.round(
-                np.linspace(0, 100, num=class_number + 1, endpoint=True), 0
-            ).astype(int)
+                np.linspace(0, 100, num=class_number + 1, endpoint=True),
+                0,
+            ).astype(int),
         )
         univar_flags = "et"
 
@@ -314,10 +327,13 @@ def range_dict_from_statistics(grass_options):
             int(s["zone"]): list(
                 round_to_closest(
                     np.linspace(
-                        s["min"], s["max"], num=class_number + 1, endpoint=True
+                        s["min"],
+                        s["max"],
+                        num=class_number + 1,
+                        endpoint=True,
                     ),
                     float(grass_options["round_to_closest"]),
-                )
+                ),
             )
             for s in univar_stats
             if not np.isnan(s["max"])
@@ -332,8 +348,8 @@ def range_dict_from_statistics(grass_options):
     }
 
 
-def main():
-    """Do the main work"""
+def main() -> None:
+    """Do the main work."""
     locations = options["locations"]
     where = f"domain_id = {options['domain_id']} AND parent_id IS NULL"
     continuous_subdivision_map = options["continuous_subdivision_map"]
@@ -343,11 +359,13 @@ def main():
         if "KEEPASS_PWD" not in os.environ:
             gs.fatal(
                 _(
-                    "The KeePass password needs to be provided through environment variable 'KEEPASS_PWD'"
-                )
+                    "The KeePass password needs to be provided through environment variable 'KEEPASS_PWD'",
+                ),
             )
         gs.verbose(
-            _("Trying to get keepass entries from <{}>").format(options["keepass_file"])
+            _("Trying to get keepass entries from <{}>").format(
+                options["keepass_file"],
+            ),
         )
         keepass_to_env(
             options["keepass_file"],
@@ -362,7 +380,6 @@ def main():
     Module(
         "v.in.ogr",
         flags="o",
-        # Until GDAL 3.6 is available UID and PWD have to be provided in the connection string
         input=options["locations_url"] + f";Tables={schema}.{layer}",
         layer=layer if schema == "dbo" else f"{schema}.{layer}",
         where=where + " AND " + options["where"] if options["where"] else where,
@@ -401,7 +418,7 @@ def main():
                     flags="gr",
                     map=options["locations_subunits"],
                     stdout_=PIPE,
-                ).outputs.stdout
+                ).outputs.stdout,
             )
             if not map_stats["max"]:
                 map_stats = json.loads(
@@ -410,7 +427,7 @@ def main():
                         map=options["locations_subunits"],
                         format="json",
                         stdout_=PIPE,
-                    ).outputs.stdout
+                    ).outputs.stdout,
                 )
             range_scale = int(
                 np.pow(
@@ -418,10 +435,10 @@ def main():
                     len(
                         str(
                             int(np.min([0, np.floor(float(map_stats["min"]))]))
-                            + int(np.ceil(float(map_stats["max"])))
-                        )
+                            + int(np.ceil(float(map_stats["max"]))),
+                        ),
                     ),
-                )
+                ),
             )
             mc_expression = (
                 f"{locations} * {range_scale} + int({options['locations_subunits']})"
@@ -430,7 +447,7 @@ def main():
         else:
             if options["method"] == "database":
                 range_dict = range_dict_from_db(options)
-            elif options["method"] in ["percentile", "linear"]:
+            elif options["method"] in {"percentile", "linear"}:
                 range_dict = range_dict_from_statistics(options)
 
             create_sub_graph = partial(
@@ -461,7 +478,7 @@ def main():
                 [
                     "\n".join([f"{row[0]}\t{row[1]} - {row[2]}" for row in val])
                     for val in range_dict.values()
-                ]
+                ],
             ),
         )
         gs.raster.raster_history(options["locations_subunits"], overwrite=True)
@@ -495,7 +512,7 @@ def main():
         # Load geometries of subunits to MS SQL
         conn = pyodbc.connect(
             options["locations_url"].replace("MSSQL:", "")
-            + f";UID={os.environ.get('MSSQLSPATIAL_UID')};PWD={os.environ.get('MSSQLSPATIAL_PWD')}"
+            + f";UID={os.environ.get('MSSQLSPATIAL_UID')};PWD={os.environ.get('MSSQLSPATIAL_PWD')}",
         )
         cursor = conn.cursor()
         cursor.executemany(
