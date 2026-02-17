@@ -21,20 +21,20 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
 
     env:
       # renovate: datasource=python-version depName=python
-      PYTHON_VERSION: "3.10"
-      MIN_PYTHON_VERSION: "3.8"
+      PYTHON_VERSION: "3.12"
+      MIN_PYTHON_VERSION: "3.9"
       # renovate: datasource=pypi depName=black
-      BLACK_VERSION: "24.4.2"
+      BLACK_VERSION: "26.1.0"
       # renovate: datasource=pypi depName=flake8
-      FLAKE8_VERSION: "5.0.4"
+      FLAKE8_VERSION: "7.3.0"
       # renovate: datasource=pypi depName=pylint
-      PYLINT_VERSION: "2.12.2"
+      PYLINT_VERSION: "4.0.4"
       # renovate: datasource=pypi depName=bandit
-      BANDIT_VERSION: "1.7.9"
+      BANDIT_VERSION: "1.9.3"
 
     runs-on: ${{ matrix.os }}
     permissions:
@@ -126,7 +126,7 @@ jobs:
 
       - name: Run Pylint on other files using pytest
         run: |
-          pip install pytest==7.4.4 pytest-pylint==0.19
+          pip install pytest==9.0.2 pytest-pylint==0.21.0
           echo "::warning file=.github/workflows/python-code-quality.yml,line=149,col=42,endColumn=48::\
             Temporarily downgraded pytest-pylint and pytest to allow merging other PRs.\
             The errors reported with a newer version seem legitimite and should be fixed \
