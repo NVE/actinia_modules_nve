@@ -4,6 +4,20 @@
 coherent sub-units based on a continuous raster map and break values for
 subdivisions. It is written for locations in NVEs time series database.
 
+The tool supports the following <b>method</b>s to create subdivision maps:
+<ul>
+  <li><em>percentile</em>: creates sub-units from the <b>continuous_subdivision_map</b>
+  using user-given <b>percentiles</b> for intervals.</li>
+  <li><em>linear</em>: creates sub-units from the <b>continuous_subdivision_map</b> 
+  using linear scaled intervals.</li>
+  <li><em>database</em>: creates sub-units from intervals that are pre-defined in 
+  the database using the <b>continuous_subdivision_map</b>.</li>
+  <li><em>map_units</em>: creates sub-units from the unique categories of the 
+  <b>continuous_subdivision_map</b>. The <b>continuous_subdivision_map</b> 
+  should thus contain integer values. Floating point values will be 
+  rounded according to quantization rules in <em>r.stats</em></li>
+</ul>
+
 <h2>EXAMPLES</h2>
 
 <h3>Subdivide watersheds using altitude bands and breaks from DB</h3>
@@ -17,13 +31,26 @@ r.timeseries.locations locations_url="MSSQL:driver=FreeTDS;server=tst.sql.server
   --o --v
 </pre></div>
 
+<h3>Subdivide glacier lines using altitude pixels</h3>
+
+<div class="code"><pre>
+r.timeseries.locations locations_url="MSSQL:driver=FreeTDS;server=tst.sql.server.com;port=1433;database=testdatabase" \
+  where="parent_id IS NULL" locations=glacier_lines continuous_subdivision_map="DTM" \
+  round_to_closest=1 method=database domain_id=80 layer="dbo.region" type="line" \
+  locations_subunits="glacier_lines_altitude" nprocs=20 \
+  keepass_file="/hdata/fjernanalyse3/CopernicusUtviklingOgTest/data/actinia_secrets.kdbx" keepass_title=mssql \
+  --o --v
+</pre></div>
+
 <h2>SEE ALSO</h2>
 
 <em>
-<a href="v.in.ogr.html">v.in.ogr</a>,
-<a href="r.to.vect.html">r.to.vect</a>,
-<a href="v.to.rast.html">v.to.rast</a>,
 <a href="r.mapcalc.html">r.mapcalc</a>,
+<a href="r.stats.html">r.stats</a>,
+<a href="r.to.vect.html">r.to.vect</a>,
+<a href="r.univar.html">r.univar</a>,
+<a href="v.in.ogr.html">v.in.ogr</a>,
+<a href="v.to.rast.html">v.to.rast</a>,
 </em>
 
 <h2>AUTHOR</h2>
