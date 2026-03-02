@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-"""
-MODULE:       i.pytorch.predict
+"""MODULE:       i.pytorch.predict
 AUTHOR(S):    Stefan Blumentrath
 PURPOSE:      Apply Deep Learning model to imagery group using pytorch
 COPYRIGHT:    (C) 2023-2024 by Norwegian Water and Energy Directorate
@@ -17,9 +16,10 @@ COPYRIGHT:    (C) 2023-2024 by Norwegian Water and Energy Directorate
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
 
-ToDo:
+Todo:
 - tiling from vector map (to avoid unnecessary data reads outside core AOI)
 - test case
+
 """
 
 # %module
@@ -137,9 +137,9 @@ import sys
 from copy import deepcopy
 from functools import partial
 from itertools import product
-
-# from multiprocessing import Pool
 from pathlib import Path
+from resource import RLIMIT_NOFILE, getrlimit
+from tempfile import NamedTemporaryFile
 
 import grass.script as gs
 from grass.exceptions import CalledModuleError
@@ -152,12 +152,13 @@ TMP_NAME = gs.tempname(12)
 
 def group_to_dict(
     imagery_group_name,
-    subgroup=None,
-    dict_keys="semantic_labels",
-    dict_values="map_names",
-    fill_semantic_label=True,
-    env=None,
-):
+    subgroup: str | None = None,
+    dict_keys: str = "semantic_labels",
+    dict_values: str = "map_names",
+    *,
+    fill_semantic_label: bool = True,
+    env: dict | None = None,
+) -> dict:
     """Create a dictionary to represent an imagery group with metadata.
 
     Defined by the dict_keys option, the dictionary uses either the names
@@ -232,8 +233,9 @@ def group_to_dict(
     if subgroup and not maps_in_group:
         gs.warning(
             _("Empty result returned for subgroup <{sg}> in group <{g}>").format(
-                sg=subgroup, g=imagery_group_name
-            )
+                sg=subgroup,
+                g=imagery_group_name,
+            ),
         )
 
     for idx, raster_map in enumerate(maps_in_group):
@@ -255,8 +257,8 @@ def group_to_dict(
             if not key or key == '"none"':
                 gs.warning(
                     _(
-                        "Raster map {m} in group <{g}> does not have a semantic label."
-                    ).format(m=raster_map, g=imagery_group_name)
+                        "Raster map {m} in group <{g}> does not have a semantic label.",
+                    ).format(m=raster_map, g=imagery_group_name),
                 )
                 if fill_semantic_label:
                     key = str(idx + 1)
@@ -273,15 +275,16 @@ def group_to_dict(
             gs.warning(
                 _(
                     "Key {k} from raster map {m} already present in group dictionary."
-                    "Overwriting existing entry..."
-                ).format(k=key, r=raster_map)
+                    "Overwriting existing entry...",
+                ).format(k=key, r=raster_map),
             )
         group_dict[key] = val
     return group_dict
 
 
 def read_config(module_options):
-    """Read band configuration for input deep learning model
+    """Read band configuration for input deep learning model.
+
     Example for configuration se manual:
     {"model":  # Dictinary matching the parameters of the signature of the UNet model code
        {
@@ -376,7 +379,8 @@ def read_config(module_options):
 
     # Validate config file
     config, backbone, model_kwargs = validate_config(
-        json_path, Path(module_options["model_code"])
+        json_path,
+        Path(module_options["model_code"]),
     )
 
     input_group_dict = {}
@@ -384,7 +388,7 @@ def read_config(module_options):
     mask_rules = None
     if module_options["mask_json"]:
         mask_rules = {}
-        with open(module_options["mask_json"]) as mask_json:
+        with Path(module_options["mask_json"]).open() as mask_json:
             masks = json.load(mask_json)
 
     for img_group in ["input", "reference_group", "auxillary_group"]:
@@ -397,8 +401,8 @@ def read_config(module_options):
             if config.get(config_key):
                 gs.fatal(
                     _(
-                        "{} required according to model configuration but missing from input."
-                    ).format(img_group)
+                        "{} required according to model configuration but missing from input.",
+                    ).format(img_group),
                 )
             continue
 
@@ -414,7 +418,7 @@ def read_config(module_options):
                 ]
                 if mask_pattern_match:
                     mask_rules[semantic_label] = {
-                        raster_map: masks[mask_pattern_match[0].string]
+                        raster_map: masks[mask_pattern_match[0].string],
                     }
 
             for label in config[config_key]:
@@ -441,8 +445,8 @@ def read_config(module_options):
                 ):
                     gs.warning(
                         _(
-                            "Minimum of raster map <{0}> ({1}) exeeds lower bound ({2}) of valid range"
-                        ).format(raster_map, raster_map_info["min"], valid_range[0])
+                            "Minimum of raster map <{0}> ({1}) exeeds lower bound ({2}) of valid range",
+                        ).format(raster_map, raster_map_info["min"], valid_range[0]),
                     )
                 if (
                     valid_range
@@ -451,12 +455,12 @@ def read_config(module_options):
                 ):
                     gs.warning(
                         _(
-                            "Maximum of raster map <{0}> ({1}) exeeds upper bound ({2}) of valid range"
-                        ).format(raster_map, raster_map_info["max"], valid_range[1])
+                            "Maximum of raster map <{0}> ({1}) exeeds upper bound ({2}) of valid range",
+                        ).format(raster_map, raster_map_info["max"], valid_range[1]),
                     )
             else:
                 gs.warning(
-                    _("Input map <{}> does not contain valid data").format(raster_map)
+                    _("Input map <{}> does not contain valid data").format(raster_map),
                 )
 
             input_group_dict[config[config_key][matched_label]["order"]] = (
@@ -474,8 +478,9 @@ def read_config(module_options):
             if not band_pattern_match:
                 gs.fatal(
                     _("Band '{0}' is missing in input group <{1}>").format(
-                        band, img_group
-                    )
+                        band,
+                        img_group,
+                    ),
                 )
 
     if masks:
@@ -486,14 +491,14 @@ def read_config(module_options):
         for mask_entry in masks:
             if mask_entry not in mask_rules:
                 gs.fatal(
-                    _("No raster map found for requested mask {}").format(mask_entry)
+                    _("No raster map found for requested mask {}").format(mask_entry),
                 )
         mask_rules_list = []
         for idx, mask_config in enumerate(mask_rules.values()):
             raster_map, rules = list(mask_config.items())[0]
             if any(symbol in rules for symbol in "<>=,"):
                 mask_rules_list.extend(
-                    [f"{raster_map}{rule}" for rule in rules.split(",")]
+                    [f"{raster_map}{rule}" for rule in rules.split(",")],
                 )
             else:
                 reclass_map = f"{TMP_NAME}_mask_{idx}"
@@ -510,9 +515,10 @@ def read_config(module_options):
     return config, backbone, model_kwargs, input_group_dict, mask_rules
 
 
-def apply_mask(input_map, output_map, fill_value, masking):
+def apply_mask(input_map, output_map, fill_value, masking) -> None:
     """Apply mask(s) to the input map, and replace fill_value
-    to produce the output map"""
+    to produce the output map
+    """
     masked_pixels = f"if({masking}, {input_map}, null())" if masking else input_map
     valid_pixels = (
         f"if({input_map}=={fill_value}, null(),{masked_pixels})"
@@ -522,7 +528,7 @@ def apply_mask(input_map, output_map, fill_value, masking):
     gs.mapcalc(f"{output_map}={valid_pixels}")
 
 
-def create_tiling_from_vector(vector_map, overlap=128, region=None):
+def create_tiling_from_vector(vector_map, overlap=128, region=None) -> dict:
     """Create tiling aligned to a given or current region with
     tiles of a fixed number of rows and column and at least
     overlap number of pixels around
@@ -569,7 +575,7 @@ def create_tiling_from_vector(vector_map, overlap=128, region=None):
     return tiling_dict
 
 
-def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
+def create_tiling(tile_rows, tile_cols, overlap=128, region=None) -> dict:
     """Create tiling aligned to a given or current region with
     tiles of a fixed number of rows and column and at least
     overlap number of pixels around
@@ -595,7 +601,7 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
         _("Setting up tiling {rows} rows and {columns} columns ...").format(
             rows=np.ceil(tile_rows_n).astype(int),
             columns=np.ceil(tile_cols_n).astype(int),
-        )
+        ),
     )
 
     x_offset = ((np.ceil(tile_cols_n) - tile_cols_n) * (inner_tile_cols)) / 2.0
@@ -606,8 +612,8 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
             product(
                 range(np.ceil(tile_cols_n).astype(int)),
                 range(np.ceil(tile_rows_n).astype(int)),
-            )
-        )
+            ),
+        ),
     ):
         tiling_dict[cat + 1] = {
             "inner": {
@@ -656,9 +662,11 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None):
 
 
 def read_bands(raster_map_dict, bbox, null_value=0):
-    """Read band maps and return stacked numpy array for all bands
-    after applying nan-replacement, scale, offset and clamping to valid range"""
+    """Read band maps and return stacked numpy array for all bands.
 
+    Read band maps and return stacked numpy array for all bands
+    after applying nan-replacement, scale, offset and clamping to valid range
+    """
     # pygrass sets region for pygrass tasks
     pygrass_region = Region()
     raster_region = deepcopy(pygrass_region)
@@ -714,8 +722,8 @@ def read_bands(raster_map_dict, bbox, null_value=0):
     return data_cube, mask
 
 
-def write_result(np_array, map_name, bbox):
-    """Write prediction results to raster"""
+def write_result(np_array, map_name, bbox) -> int:
+    """Write prediction results to raster."""
     dtype2grass = {
         "uint8": "CELL",
         "int8": "CELL",
@@ -754,19 +762,24 @@ def tiled_prediction(
     group_dict=None,
     dl_config=None,
     dl_model=None,
-    device=None,
-    limit=False,
-):
-    """Predict function to be parallelized"""
+    device: str | None = None,
+    limit: bool = False,
+) -> int:
+    """Wrap predict function for parallelized execution."""
     data_cube, mask = read_bands(group_dict, bboxes["outer"], null_value=0)
     if data_cube is None:
         return None
     prediction_result = predict_torch(
-        data_cube, model_config=dl_config["model"], device=device, dl_model=dl_model
+        data_cube,
+        model_config=dl_config["model"],
+        device=device,
+        dl_model=dl_model,
     )
     inner_mask = get_inner_bbox(mask, bboxes["outer"], bboxes["inner"])
     prediction_result = get_inner_bbox(
-        prediction_result, bboxes["outer"], bboxes["inner"]
+        prediction_result,
+        bboxes["outer"],
+        bboxes["inner"],
     )
 
     # Write each output band
@@ -810,7 +823,8 @@ def tiled_prediction(
         if out_numpy.dtype != np.dtype(output_dtype):
             if output_dtype.startswith("float"):
                 out_numpy = np.round(
-                    out_numpy, np.finfo(output_dtype).precision
+                    out_numpy,
+                    np.finfo(output_dtype).precision,
                 ).astype(output_dtype)
             else:
                 out_numpy = np.round(out_numpy).astype(output_dtype)
@@ -824,16 +838,23 @@ def tiled_prediction(
 
 
 def patch_results(
-    output_map, output_band, masking=None, fill_value=None, dl_config=None, nprocs=1
-):
-    """Patch resulting raster maps"""
+    output_map,
+    output_band,
+    masking=None,
+    fill_value=None,
+    dl_config: dict | None = None,
+    nprocs: int = 1,
+) -> None:
+    """Patch resulting raster maps (tiles) to final map with metadata."""
     output_band_config = dl_config["output_bands"][output_band]
     output_map_name = f"{output_map}_{output_band}"
     patch_map_name = output_map_name if not masking else f"{TMP_NAME}_{output_map_name}"
     input_maps = [
         rmap
         for rmap in gs.read_command(
-            "g.list", type="raster", pattern=f"{TMP_NAME}_{output_band}*"
+            "g.list",
+            type="raster",
+            pattern=f"{TMP_NAME}_{output_band}*",
         )
         .strip()
         .split("\n")
@@ -848,6 +869,24 @@ def patch_results(
             raster=f"{input_maps[0]},{patch_map_name}",
             quiet=True,
         )
+    elif (len(input_maps) * nprocs) >= getrlimit(RLIMIT_NOFILE)[0]:
+        # r.patch may hit limit of open files with many input
+        # maps and many cores, see:
+        # https://github.com/OSGeo/grass/issues/6615
+        input_maps_list = "\n".join(input_maps) + "\n"
+        with NamedTemporaryFile() as fp:
+            fp.write(input_maps_list.encode("UTF8"))
+            fp.flush()
+            gs.run_command(
+                "r.series",
+                flags="z",
+                method="mode",
+                file=fp.name,
+                output=patch_map_name,
+                overwrite=gs.overwrite(),
+                quiet=True,
+                nprocs=nprocs,
+            )
     else:
         gs.run_command(
             "r.patch",
@@ -881,7 +920,7 @@ def patch_results(
         title=output_band_config["title"],
         units=output_band_config["units"],
         source1=", ".join(
-            [dl_config["model"]["model_name"], dl_config["model"]["model_version"]]
+            [dl_config["model"]["model_name"], dl_config["model"]["model_version"]],
         ),
         description=output_band_config["description"],
         semantic_label=output_band_config["semantic_label"],
@@ -891,9 +930,12 @@ def patch_results(
 
 
 def get_inner_bbox(data_cube, outer_bbox, inner_bbox):
-    """Get offset indices based on inner and outer (with overlap) bbox
+    """Get subset of data cube from inner bounding box.
+
+    Get offset indices based on inner and outer (with overlap) bbox
     starting from upper left corner (n / w) and subset input data_cube
-    using those indices"""
+    using those indices.
+    """
     offset_n = int((outer_bbox["n"] - inner_bbox["n"]) / outer_bbox["nsres"])
     offset_w = int((inner_bbox["w"] - outer_bbox["w"]) / outer_bbox["ewres"])
     bound_s = offset_n + inner_bbox["rows"]
@@ -904,9 +946,8 @@ def get_inner_bbox(data_cube, outer_bbox, inner_bbox):
     return data_cube[offset_n:bound_s, offset_w:bound_e]
 
 
-def main():
-    """Do the main work"""
-
+def main() -> None:
+    """Do the main work."""
     # Check device
     device = "cuda" if torch.cuda.is_available() and not flags["c"] else "cpu"
 
@@ -931,8 +972,8 @@ def main():
         if result["file"] and not gs.overwrite():
             gs.fatal(
                 _(
-                    "Output raster map <{}> exists. Use --overwrite to overwrite."
-                ).format(map_name)
+                    "Output raster map <{}> exists. Use --overwrite to overwrite.",
+                ).format(map_name),
             )
 
     # Here we could check if the tile_size and dl_model_kwargs are compatible with model
@@ -944,8 +985,8 @@ def main():
 
     gs.verbose(
         _("Using {device}").format(
-            device="cpu" if flags["c"] or not torch.cuda.is_available() else "gpu"
-        )
+            device="cpu" if flags["c"] or not torch.cuda.is_available() else "gpu",
+        ),
     )
 
     overlap = int(options["overlap"]) or 0
@@ -977,11 +1018,9 @@ def main():
     )
     nprocs = int(options["nprocs"])
 
-    if device == "cpu":  # and nprocs > 1:
+    if device == "cpu":
         torch.set_num_threads(nprocs)
-        # with Pool(nprocs) as pool:
-        #     pool.map(tiled_group_rediction, tile_set.values())
-    # else:
+
     for idx, tile_def in enumerate(tile_set.values()):
         gs.percent(idx, len(tile_set), 3)
         tiled_group_rediction(tile_def)
@@ -998,8 +1037,8 @@ def main():
         )
 
 
-def cleanup():
-    """Remove all temporary data"""
+def cleanup() -> None:
+    """Remove all temporary data."""
     # Remove Raster map files
     gs.run_command(
         "g.remove",
@@ -1012,7 +1051,7 @@ def cleanup():
     external = gs.parse_key_val(gs.read_command("r.external.out", flags="p"), sep=": ")
     if "directory" in external:
         for map_file in Path(external["directory"]).glob(
-            f"{TMP_NAME}_*{external['extension']}"
+            f"{TMP_NAME}_*{external['extension']}",
         ):
             if map_file.is_file():
                 map_file.unlink()
@@ -1024,8 +1063,6 @@ if __name__ == "__main__":
     # Lazy imports
     try:
         import torch
-
-        # from torch.multiprocessing import Pool, set_start_method
     except ImportError:
         gs.fatal(_("Could not import pytorch. Please make sure it is installed."))
 
@@ -1044,8 +1081,8 @@ if __name__ == "__main__":
     except ImportError:
         gs.fatal(
             _(
-                "Could not import included unet library. Please check the addon installation."
-            )
+                "Could not import included unet library. Please check the addon installation.",
+            ),
         )
 
     sys.exit(main())
