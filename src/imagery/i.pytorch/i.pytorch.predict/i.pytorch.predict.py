@@ -138,7 +138,6 @@ from copy import deepcopy
 from functools import partial
 from itertools import product
 from pathlib import Path
-from resource import RLIMIT_NOFILE, getrlimit
 from tempfile import NamedTemporaryFile
 
 import grass.script as gs
@@ -151,7 +150,7 @@ TMP_NAME = gs.tempname(12)
 
 
 def group_to_dict(
-    imagery_group_name,
+    imagery_group_name: str,
     subgroup: str | None = None,
     dict_keys: str = "semantic_labels",
     dict_values: str = "map_names",
@@ -282,7 +281,7 @@ def group_to_dict(
     return group_dict
 
 
-def read_config(module_options):
+def read_config(module_options: dict):
     """Read band configuration for input deep learning model.
 
     Example for configuration se manual:
@@ -515,7 +514,9 @@ def read_config(module_options):
     return config, backbone, model_kwargs, input_group_dict, mask_rules
 
 
-def apply_mask(input_map, output_map, fill_value, masking) -> None:
+def apply_mask(
+    input_map: str, output_map: str, fill_value: str | int, masking: str
+) -> None:
     """Apply mask(s) to the input map, and replace fill_value
     to produce the output map
     """
@@ -528,7 +529,7 @@ def apply_mask(input_map, output_map, fill_value, masking) -> None:
     gs.mapcalc(f"{output_map}={valid_pixels}")
 
 
-def create_tiling_from_vector(vector_map, overlap=128, region=None) -> dict:
+def create_tiling_from_vector(vector_map: str, overlap: int = 128, region=None) -> dict:
     """Create tiling aligned to a given or current region with
     tiles of a fixed number of rows and column and at least
     overlap number of pixels around
@@ -575,7 +576,9 @@ def create_tiling_from_vector(vector_map, overlap=128, region=None) -> dict:
     return tiling_dict
 
 
-def create_tiling(tile_rows, tile_cols, overlap=128, region=None) -> dict:
+def create_tiling(
+    tile_rows: int, tile_cols: int, overlap: int = 128, region: dict | None = None
+) -> dict:
     """Create tiling aligned to a given or current region with
     tiles of a fixed number of rows and column and at least
     overlap number of pixels around
@@ -661,7 +664,7 @@ def create_tiling(tile_rows, tile_cols, overlap=128, region=None) -> dict:
     return tiling_dict
 
 
-def read_bands(raster_map_dict, bbox, null_value=0):
+def read_bands(raster_map_dict: dict, bbox: dict, null_value: float = 0):
     """Read band maps and return stacked numpy array for all bands.
 
     Read band maps and return stacked numpy array for all bands
@@ -722,7 +725,7 @@ def read_bands(raster_map_dict, bbox, null_value=0):
     return data_cube, mask
 
 
-def write_result(np_array, map_name, bbox) -> int:
+def write_result(np_array, map_name: str, bbox: dict) -> int:
     """Write prediction results to raster."""
     dtype2grass = {
         "uint8": "CELL",
@@ -838,10 +841,10 @@ def tiled_prediction(
 
 
 def patch_results(
-    output_map,
-    output_band,
-    masking=None,
-    fill_value=None,
+    output_map: str,
+    output_band: str,
+    masking: str | None = None,
+    fill_value: int | None = None,
     dl_config: dict | None = None,
     nprocs: int = 1,
 ) -> None:
@@ -863,16 +866,19 @@ def patch_results(
 
     if len(input_maps) == 0:
         return
+
     if len(input_maps) == 1:
         gs.run_command(
             "g.rename",
             raster=f"{input_maps[0]},{patch_map_name}",
             quiet=True,
         )
-    elif (len(input_maps) * nprocs) >= getrlimit(RLIMIT_NOFILE)[0]:
-        # r.patch may hit limit of open files with many input
-        # maps and many cores, see:
+    else:
+        # r.patch may hit limit of open files esp. with
+        # many input maps and many cores, see:
         # https://github.com/OSGeo/grass/issues/6615
+        # However, also concurrency may cause the same issue
+        # Thus, r.series is used here.
         input_maps_list = "\n".join(input_maps) + "\n"
         with NamedTemporaryFile() as fp:
             fp.write(input_maps_list.encode("UTF8"))
@@ -887,15 +893,6 @@ def patch_results(
                 quiet=True,
                 nprocs=nprocs,
             )
-    else:
-        gs.run_command(
-            "r.patch",
-            input=input_maps,
-            output=patch_map_name,
-            overwrite=gs.overwrite(),
-            quiet=True,
-            nprocs=nprocs,
-        )
     if masking:
         apply_mask(patch_map_name, output_map_name, fill_value, masking)
 
@@ -929,7 +926,7 @@ def patch_results(
     )
 
 
-def get_inner_bbox(data_cube, outer_bbox, inner_bbox):
+def get_inner_bbox(data_cube, outer_bbox: dict, inner_bbox: dict):
     """Get subset of data cube from inner bounding box.
 
     Get offset indices based on inner and outer (with overlap) bbox
