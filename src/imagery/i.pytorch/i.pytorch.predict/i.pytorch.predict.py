@@ -526,7 +526,8 @@ def apply_mask(
         if fill_value
         else input_map
     )
-    gs.mapcalc(f"{output_map}={valid_pixels}")
+    # Needs to be single-threaded, see: https://github.com/OSGeo/grass/issues/6615
+    gs.mapcalc(f"{output_map}={valid_pixels}", nprocs=1)
 
 
 def create_tiling_from_vector(vector_map: str, overlap: int = 128, region=None) -> dict:
@@ -851,7 +852,7 @@ def patch_results(
     """Patch resulting raster maps (tiles) to final map with metadata."""
     output_band_config = dl_config["output_bands"][output_band]
     output_map_name = f"{output_map}_{output_band}"
-    patch_map_name = output_map_name if not masking else f"{TMP_NAME}_{output_map_name}"
+    patch_map_name = f"{TMP_NAME}_{output_map_name}"
     input_maps = [
         rmap
         for rmap in gs.read_command(
@@ -870,7 +871,7 @@ def patch_results(
     if len(input_maps) == 1:
         gs.run_command(
             "g.rename",
-            raster=f"{input_maps[0]},{patch_map_name}",
+            raster=f"{input_maps[0]},{output_map_name if not masking else patch_map_name}",
             quiet=True,
         )
     else:
@@ -878,20 +879,25 @@ def patch_results(
         # many input maps and many cores, see:
         # https://github.com/OSGeo/grass/issues/6615
         # However, also concurrency may cause the same issue
-        # Thus, r.series is used here.
+        # r.series seems very slow with -z flag
+        # Thus, r.buildvrt + r.mapcalc is used here.
         input_maps_list = "\n".join(input_maps) + "\n"
         with NamedTemporaryFile() as fp:
             fp.write(input_maps_list.encode("UTF8"))
             fp.flush()
             gs.run_command(
-                "r.series",
-                flags="z",
-                method="mode",
+                "r.buildvrt",
                 file=fp.name,
                 output=patch_map_name,
                 overwrite=gs.overwrite(),
                 quiet=True,
-                nprocs=nprocs,
+            )
+        if not masking:
+            gs.run_command(
+                "r.mapcalc",
+                expression=f"{output_map_name}={patch_map_name}",
+                # Parallel processing fails with many maps in VRT
+                nprocs=1,
             )
     if masking:
         apply_mask(patch_map_name, output_map_name, fill_value, masking)
