@@ -1130,7 +1130,7 @@ class Sentinel2Importer:
                 "outputType": data_type,
             }
             if nodata is not None:
-                kwargs["srcNodata"] = nodata
+                kwargs["srcNodata"] = " ".join(map(str, nodata)) if isinstance(nodata, list | tuple) else nodata
             # Resolution should be probably taken from region rather than from source dataset
             # Cropping to computational region should only be done with r-flag
             if region_cropping:
