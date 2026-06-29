@@ -423,6 +423,7 @@ def aggregate_with_condition(
 
     agg_module = pymod.Module(
         "r.mapcalc",
+        nprocs=1,
         overwrite=gs.overwrite(),
         quiet=True,
         run_=False,
