@@ -144,6 +144,7 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
     Module(
         "r.mapcalc",
         expression=f"{reclass_map}=int(if({avalanche_map_id}==1,1,null()))",
+        nprocs=1,
         overwrite=True,
         quiet=True,
     )
