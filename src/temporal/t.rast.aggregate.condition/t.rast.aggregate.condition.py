@@ -567,7 +567,7 @@ def aggregate_with_condition(
             )
             output_list.append(map_layer)
             condition_module = deepcopy(agg_module)
-            condition_module.inputs.file = condition_expression_file
+            condition_module.inputs.file = str(condition_expression_file)
 
             expression = ""
             for aggregation_label in aggregation_labels:
@@ -602,7 +602,7 @@ def aggregate_with_condition(
 
             mc_module = deepcopy(agg_module)
 
-            mc_module.inputs.file = mc_expression_file
+            mc_module.inputs.file = str(mc_expression_file)
             process_queue.put(pymod.MultiModule([condition_module, mc_module]))
             aggregate_granules += 1
 
