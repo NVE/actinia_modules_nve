@@ -121,7 +121,7 @@ def aggregate_metadata(json_files: Path, product_type: str = "S2MSIL1C") -> dict
         )
     valid_data_total = 0.0
     for json_file in json_files:
-        try:
+        try:  # noqa: PLW0717
             meta_data = json.loads(json_file.read_text(encoding="utf-8"))
             if "metadata" in meta_data:
                 meta_data = meta_data.get("metadata")
