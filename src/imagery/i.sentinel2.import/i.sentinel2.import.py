@@ -3,7 +3,7 @@
 AUTHOR(S):      Stefan Blumentrath
 PURPOSE:        Imports Sentinel-2 satellite data downloaded from e.g. the
                 Copernicus Data Space Ecosystem
-COPYRIGHT:      (C) 2018-2025 by Stefan Blumentrath
+COPYRIGHT:      (C) 2018-2026 by Stefan Blumentrath
                 and the GRASS development team
 
 This program is free software under the GNU General Public
@@ -178,7 +178,7 @@ if TYPE_CHECKING:
 BAND_SUFFIX = ".jp2"
 BAND_PATTERN = {
     "S2_MSI_L2A": r".*(MSK_|_B[0-9]|_WVP|_AOT|_SCL).*0m.jp2$",
-    "S2_MSI_L1C": r".*(_B[0-9]..jp2$",
+    "S2_MSI_L1C": r".*IMG_DATA.*_B[0-9A-Z]+\.jp2$",
 }
 RESAMPLE_DICT = {
     "nearest": "near",
@@ -371,7 +371,7 @@ def get_band_info(product_type: str) -> dict:
                     "semantic_label": "S2_cloud_probability",
                 },
                 "MSK_SNWPRB_20m": {
-                    "file_path": f"MSK_CLDPRB_20m{BAND_SUFFIX}",
+                    "file_path": f"MSK_SNWPRB_20m{BAND_SUFFIX}",
                     "resample": "nearest",
                     "data_type": gdal.GDT_Byte,
                     "id": None,
@@ -529,18 +529,13 @@ class TreeBuilder(saxhandler.ContentHandler):
         """
         self.keys.remove(name)
 
-    def characters(self, content: str) -> list:
+    def characters(self, content: str) -> None:
         """Get the content of the element.
 
         Parameters
         ----------
         content: str
             The content of the element
-
-        Returns
-        -------
-        list
-            A list with the requested key-value pairs
 
         """
         content = content.strip()
@@ -553,7 +548,6 @@ class TreeBuilder(saxhandler.ContentHandler):
             self._dict[intersect[0]].append(
                 {self.name: (attrs, content) if attrs else content},
             )
-        return [self.keys[0:-1], {self.name: (attrs, content) if attrs else content}]
 
 
 def get_key_value_pairs(builder: TreeBuilder, parent_key: str) -> dict:
@@ -599,7 +593,7 @@ def get_scene_metadata(scene_path: Path, product_type: str = "S2_MSI_L2A") -> di
     """
     builder = TreeBuilder(product_type)
     for mtd_file in scene_path.glob("**/MTD_*.xml"):
-        sax.parseString(mtd_file.read_text(), builder)  # NOQA: S317
+        sax.parse(str(mtd_file), builder)  # NOQA: S317
 
     scene_metadata = {}
     # Get the product info
@@ -978,32 +972,6 @@ class Sentinel2Importer:
             "categories": Module("r.category", separator=":", rules="-", **kwargs),
         }
 
-    def __del__(self) -> None:
-        """Cleanup temporary files."""
-        """For map in self._map_list:
-            if gs.find_file(map, element="cell", mapset=".")["file"]:
-                gs.run_command(
-                    "g.remove", flags="fb", type="raster", name=map, quiet=True
-                )
-            if gs.find_file(map, element="vector", mapset=".")["file"]:
-                gs.run_command(
-                    "g.remove", flags="f", type="vector", name=map, quiet=True
-                )
-
-        if flags["l"]:
-            # unzipped files are required when linking
-            return
-
-        # otherwise unzipped directory can be removed (?)
-        for dirname in self._dir_list:
-            dirpath = self.unzip_dir / dirname
-            gs.debug("Removing <{}>".format(str(dirpath)))
-            try:
-                shutil.rmtree(dirpath)
-            except OSError:
-                pass
-        """
-
     def create_vrt(
         self,
         product_path: Path,
@@ -1017,7 +985,6 @@ class Sentinel2Importer:
         offset: float = 0.0,
         data_type: int | None = None,
         equal_proj: bool = True,
-        transform: bool = True,
         region_cropping: bool = False,
         recreate: bool = False,
     ) -> str:
@@ -1030,7 +997,6 @@ class Sentinel2Importer:
         - scale: float
         - offset: float
         - equal_proj: bool
-        - transform: bool
         - region_cropping: bool
         - recreate: bool
         Offset needs to be applied separate (two steps) or as rescaled values
@@ -1130,7 +1096,11 @@ class Sentinel2Importer:
                 "outputType": data_type,
             }
             if nodata is not None:
-                kwargs["srcNodata"] = " ".join(map(str, nodata)) if isinstance(nodata, list | tuple) else nodata
+                kwargs["srcNodata"] = (
+                    " ".join(map(str, nodata))
+                    if isinstance(nodata, list | tuple)
+                    else nodata
+                )
             # Resolution should be probably taken from region rather than from source dataset
             # Cropping to computational region should only be done with r-flag
             if region_cropping:
@@ -1243,23 +1213,7 @@ class Sentinel2Importer:
         units = gs.parse_command("g.proj", flags="g")["units"]
         return units.lower() == "meters"
 
-    def filter_bands(self, pattern: str | None = None) -> None:
-        """Filter bands from SAFE files.
-
-        Parameters
-        ----------
-        pattern : str, optional
-            Pattern to filter bands.
-
-        """
-        filter_p = (
-            rf".*{pattern}.*.jp2" if pattern else BAND_PATTERN.get(self.product_type)
-        )
-
-        gs.debug(_("Filter: {}").format(filter_p), 1)
-        self.files = self._filter(filter_p, force_unzip=not flags["n"])
-
-    def _prepare_product_import(self, safe: Path) -> tuple:
+    def _prepare_product_import(self, safe: Path) -> tuple | None:
         """Prepare import of Sentinel-2 products.
 
         Parameters
@@ -1288,7 +1242,19 @@ class Sentinel2Importer:
         result_maps = []
 
         # Filter bands
-        bands = list(safe.glob(f"**/*{BAND_SUFFIX}"))
+        filter_p = re.compile(
+            rf".*{self.band_filter}.*\.jp2"
+            if self.band_filter
+            else BAND_PATTERN.get(self.product_type)
+        )
+        bands = [b for b in safe.glob(f"**/*{BAND_SUFFIX}") if filter_p.match(str(b))]
+        if not bands:
+            gs.warning(
+                _(
+                    "No bands files found to import in scene <{}>. Please check input and pattern options.",
+                ).format(scene),
+            )
+            return None
         for band, band_config in self.selected_bands.items():
             matched_bands = [
                 b for b in bands if str(b).endswith(band_config["file_path"])
@@ -1296,6 +1262,12 @@ class Sentinel2Importer:
             if not matched_bands:
                 gs.warning(_("Band <{}> not found in scene <{}>.").format(band, scene))
                 continue
+            if len(matched_bands) > 1:
+                gs.warning(
+                    _(
+                        "Multiple files found for band <{}> in scene <{}>. Using first match.",
+                    ).format(band, scene),
+                )
             jp2 = matched_bands[0]
             semantic_label = BANDS[band]["semantic_label"]
             product_name = f"{scene}.{semantic_label}"
@@ -1467,19 +1439,11 @@ class Sentinel2Importer:
         nprocs = min(len(self.module_list), self.nprocs)
         if nprocs > 1:
             with Pool(nprocs) as pool:
-                pool.map(self._run_product_import, *[self.module_list])
+                pool.map(self._run_product_import, self.module_list)
         else:
             for mod in self.module_list:
                 gs.debug(mod[-1].get_bash())
                 self._run_product_import(mod)
-
-    def print_products(self) -> None:
-        """Print list of products to import."""
-        for f in self.safe_files:
-            print(
-                f"{f} {1 if self._check_projection(f) else 0}"
-                f" (EPSG: {self._raster_epsg(f)})\n",
-            )
 
     def write_metadata(self) -> None:
         """Write metadata for maps."""
@@ -1587,7 +1551,7 @@ def main() -> None:
         Path(options["input"]),
         Path(options["unzip_dir"]),
         product_type=options["product"],
-        projection_wkt=gs.read_command("g.proj", flags="wf").strip(),
+        projection_wkt=gs.read_command("g.proj", flags="pf", format="wkt").strip(),
         selected_bands=(
             options["bands"].split(",")
             if options["bands"]
