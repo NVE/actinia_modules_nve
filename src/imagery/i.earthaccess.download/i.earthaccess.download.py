@@ -195,7 +195,7 @@ from grass.pygrass.vector import VectorTopo
 
 
 def get_spatial_query_parameter(aoi: str) -> dict:
-    """Generate the spatial query parameter from user input
+    """Generate the spatial query parameter from user input.
 
     The input aoi (=area of interest) can be:
      a) a valid GeoJSON
