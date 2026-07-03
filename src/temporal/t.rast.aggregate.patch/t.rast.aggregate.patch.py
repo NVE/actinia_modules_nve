@@ -459,7 +459,7 @@ def main():
         overwrite=overwrite,
     )
     if output_list:
-        temporal_type, semantic_type, title, description = sp.get_initial_values()
+        temporal_type, semantic_type, _title, _description = sp.get_initial_values()
         # Initialize SpaceTimeRasterDataset (STRDS) using tgis
         strds_long_name = f"{options['output']}@{current_mapset}"
         output_strds = tgis.SpaceTimeRasterDataset(strds_long_name)
