@@ -14,13 +14,13 @@ and <b>sampling</b> options.<p> The temporal extent of the resulting
 raster maps is calculated as follows:
 <em>new_start_time</em> = adjust_datetime_to_granularity(start_time) +
 <em>temporal_offset</em> - <em>temporal_buffer</em><br>
-<em>new_end_time</em> = adjust_datetime_to_granularity(start_time) + 
+<em>new_end_time</em> = adjust_datetime_to_granularity(start_time) +
 <em>granularity</em> + <em>temporal_offset</em> + <em>temporal_buffer</em>
 
 <p>
 For example, if <b>granularity</b> is set to "1 day" and the
 <b>temporal_buffer</b> is set to "1 day", and the <b>temoral_offset</b> is
-not given or 0, the granule for a raster map with the start_time 
+not given or 0, the granule for a raster map with the start_time
 "2024-12-12 13:45" will have a start_time of "2024-12-11 00:00"
 and an end_time of "2024-12-14 00:00". If the <b>temporal_offset</b> is
 set to "-1 day", the start_time will be "2024-12-10 00:00" and the end_time
@@ -101,10 +101,10 @@ t.info Sentinel_3_SLSTR_FSC
 <h3>5-day moving window mosaic for Sentinel-3 Fractiona Snow Cover</h3>
 Patching the Sentinel-3 Fractional Snow Cover (FSC) to 5-day mosaics, filling missing
 pixels from other maps within the same granule, and selecting pixels with the lowest
-solar zenith angle if more FSC maps contain valid values for the same pixel. The 
+solar zenith angle if more FSC maps contain valid values for the same pixel. The
 granule is a 5-day period (granularity + 2 * temporal_buffer), placed as a moving
-window in relation to each time step (granularity) in the SpaceTimeRasterDataset. 
-End time in the example is at the end of each time step (day) where the 
+window in relation to each time step (granularity) in the SpaceTimeRasterDataset.
+End time in the example is at the end of each time step (day) where the
 <em>>granule end time = start of current day + granularity + temporal_buffer +
 temporal_offset</em>. Start time in the example is 4 days before the start of each
 time step (day) where the <em>>granule start time = start of current day -
