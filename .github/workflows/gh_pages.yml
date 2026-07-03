@@ -36,8 +36,7 @@ jobs:
           find ./src/ -maxdepth 2 -mindepth 2 -type d -regextype posix-extended \
           -iregex '.*(g|i|r|t|v|m|d|db).*\..*' -print0 | while IFS= read -r -d '' line; do
             grass --tmp-location XY --exec g.extension prefix=build \
-              --verbose url="$line" extension="$(basename "$line")"
-          done
+              --verbose url="$line" extension="$(basename "$line")"; done
       - name: Copy the page as index.html
         run: |
           mkdir -p build/docs/html
