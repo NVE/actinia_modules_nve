@@ -63,7 +63,6 @@ COPYRIGHT: (C) 2024 by NVE, Stefan Blumentrath
 
 import atexit
 import sys
-import os
 from pathlib import Path
 from subprocess import PIPE
 from zipfile import ZipFile
@@ -88,7 +87,7 @@ def cleanup():
     )
 
 
-def zip_shape(shape_file):
+def zip_shape(shape_file: Path) -> None:
     """Move shape file components into zip archive in the same directory"""
     # Extract shape file path components
     directory = shape_file.parent
@@ -102,12 +101,12 @@ def zip_shape(shape_file):
     # Write to zip-file
     with ZipFile(str(directory / f"{base_name}.zip"), "w") as zf:
         for shape_file_part in shape_file_parts:
-            zf.write(shape_file_part, os.path.basename(shape_file_part))
+            zf.write(shape_file_part, Path(shape_file_part).name)
             shape_file_part.unlink()
 
 
 def process_avalanche_map(avalanche_map_row, **kwargs):
-    """Extract avalache statistics for a detection raster map"""
+    """Extract avalanche statistics for a detection raster map."""
 
     avalanche_map_id = avalanche_map_row["id"]
     avalanche_map = avalanche_map_id.split("@")[0]
@@ -270,8 +269,9 @@ def process_avalanche_map(avalanche_map_row, **kwargs):
     zip_shape(kwargs["output"] / f"{avalanche_map}.shp")
 
 
-def main():
-    """Get options and run statistics extraction"""
+def main() -> None:
+    """Get options and run statistics extraction."""
+
     # Initialize TGIS
     tgis.init()
 
