@@ -34,17 +34,15 @@ jobs:
       - name: Install the modules to directory called build
         run:
           find ./src/ -maxdepth 2 -mindepth 2 -type d -iwholename "*[g|i|r|t|v|m|d|db]*.*" > .addons.txt
-          for a in $(cat .addons.txt)
-          do
-            echo "Installing $a"
-            grass --tmp-location XY --exec g.extension prefix=build --verbose url="$a" extension="$(basename $a)"
-          done
+          while read line; do
+            grass --tmp-location XY --exec g.extension prefix=build \
+            --verbose url="$line" extension="$(basename $line)" ;\
+          done < .addons.txt
       - name: Copy the page as index.html
         run: |
           echo "# Manual pages for actinia modules from NVE" > build/docs/html/index.md
           echo " " >> build/docs/html/index.md
-          find ./src/ -maxdepth 2 -mindepth 2 -type d -iwholename "*[g|i|r|t|v|m|d|db]*.*" > .addons.txt
-          cat .addons.txt | awk -v FS="/" "{print(\"- [\" \$4 \"](./\" \$4 \".html)\")}" | \
+          awk -v FS="/" "{print(\"- [\" \$4 \"](./\" \$4 \".html)\")}" .addons.txt | \
           sort >> build/docs/html/index.md
       - name: Deploy
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
