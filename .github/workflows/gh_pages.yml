@@ -33,17 +33,19 @@ jobs:
           sudo mv grassdocs.css /usr/lib/grass84/docs/html/grassdocs.css
       - name: Install the modules to directory called build
         run:
-          find ./src/ -maxdepth 2 -mindepth 2 -type d -iwholename "*[g|i|r|t|v|m|d|db]*.*" > .addons.txt
-          while read line; do
+          find ./src/ -maxdepth 2 -mindepth 2 -type d -regextype posix-extended \
+          -iregex '.*(g|i|r|t|v|m|d|db).*\..*' -print0 | while IFS= read -r -d '' line; do
             grass --tmp-location XY --exec g.extension prefix=build \
-            --verbose url="$line" extension="$(basename $line)" ;\
-          done < .addons.txt
+              --verbose url="$line" extension="$(basename "$line")"
+          done
       - name: Copy the page as index.html
         run: |
+          mkdir -p build/docs/html
           echo "# Manual pages for actinia modules from NVE" > build/docs/html/index.md
           echo " " >> build/docs/html/index.md
-          awk -v FS="/" "{print(\"- [\" \$4 \"](./\" \$4 \".html)\")}" .addons.txt | \
-          sort >> build/docs/html/index.md
+          find ./src/ -maxdepth 2 -mindepth 2 -type d -regextype posix-extended -iregex \
+          '.*(g|i|r|t|v|m|d|db).*\..*' | awk -F/ '{print "- [" $4 "](./" $4 ".html)"}' | \
+            sort >> build/docs/html/index.md
       - name: Deploy
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:
