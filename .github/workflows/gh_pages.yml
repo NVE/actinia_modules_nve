@@ -6,42 +6,50 @@ on:
     branches:
       - main
 
+permissions: {}
+
 jobs:
   build-deploy:
 
     runs-on: ubuntu-24.04
-
+    permissions:
+      contents: read
+      pages: write
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository contents
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - name: Install GRASS GIS and other dependencies
         run: |
           sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable -y
           sudo apt-get update -qq
           sudo apt-get install -y -qq grass grass-dev grass-doc wget
-      - name: Fix GRASS GIS installation for g.extension (needed for Ubuntu 18.04 grass packages)
+      - name: Fix GRASS GIS installation for g.extension
         run: |
-          wget https://grass.osgeo.org/grass84/manuals/grass_logo.png
+          wget https://grass.osgeo.org/images/logos/grass-logo/grass-logo-green-transparent@1x.png
           wget https://grass.osgeo.org/grass84/manuals/grassdocs.css
-          sudo mv grass_logo.png /usr/lib/grass84/docs/html/grass_logo.png
+          sudo mv grass-logo-green-transparent@1x.png /usr/lib/grass84/docs/html/grass_logo.png
           sudo mv grassdocs.css /usr/lib/grass84/docs/html/grassdocs.css
       - name: Install the modules to directory called build
-        run: |
-          find ./src/ -maxdepth 2 -mindepth 2 -type d \
-          -iwholename "*[g|i|r|t|v|m|d|db]*.*" -exec bash -c \
-          'echo {} | awk -v FS="/" \
-          "{print(\"grass --tmp-location XY --exec g.extension prefix=build --verbose url=\"\$0 \" extension=\"\$4)}" \
-          | bash' \;
+        run:
+          find ./src/ -maxdepth 2 -mindepth 2 -type d -regextype posix-extended \
+          -iregex '.*(g|i|r|t|v|m|d|db).*\..*' -print0 | while IFS= read -r -d '' line; do
+            grass --tmp-location XY --exec g.extension prefix=build \
+              --verbose url="$line" extension="$(basename "$line")"; done
       - name: Copy the page as index.html
         run: |
+          mkdir -p build/docs/html
           echo "# Manual pages for actinia modules from NVE" > build/docs/html/index.md
           echo " " >> build/docs/html/index.md
-          find ./src/ -maxdepth 2 -mindepth 2 -type d -iwholename "*[g|i|r|t|v|m|d|db]*.*" -exec \
-          bash -c 'echo {} | awk -v FS="/" "{print(\"- [\" \$4 \"](./\" \$4 \".html)\")}"' \; | \
-          sort >> build/docs/html/index.md
+          find ./src/ -maxdepth 2 -mindepth 2 -type d -regextype posix-extended -iregex \
+          '.*(g|i|r|t|v|m|d|db).*\..*' | awk -F/ '{print "- [" $4 "](./" $4 ".html)"}' | \
+            sort >> build/docs/html/index.md
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/docs/html
           publish_branch: gh-pages
           enable_jekyll: true
+          persist-credentials: false

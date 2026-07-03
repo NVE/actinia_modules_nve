@@ -189,22 +189,22 @@ def get_aoi_wkt(geojson_file=None):
     return ogr_feature.geometry().ExportToIsoWkt()
 
 
-def checksum_test(expected_checksum, _dfile):
+def checksum_test(expected_checksum, dfile):
     """Test if md5 checksum matches for a file"""
     if not isinstance(expected_checksum, str):
         gs.warning(
             _("Reference checksum for {} not readable. Skipping checksum test").format(
-                _dfile.name
+                dfile.name
             )
         )
         return True
-    checksum = hashlib.md5(_dfile.read_bytes()).hexdigest()
+    checksum = hashlib.md5(dfile.read_bytes()).hexdigest()
     if checksum != expected_checksum:
-        gs.verbose(_("Checksum test failed for {}").format(_dfile.name))
-        _dfile.unlink()
-        gs.verbose(_("{} is deleted").format(_dfile.name))
+        gs.verbose(_("Checksum test failed for {}").format(dfile.name))
+        dfile.unlink()
+        gs.verbose(_("{} is deleted").format(dfile.name))
         return False
-    gs.verbose(_("Checksum test OK for {}").format(_dfile.name))
+    gs.verbose(_("Checksum test OK for {}").format(dfile.name))
     return True
 
 
@@ -259,9 +259,7 @@ def check_scene(
             if check_properties and skip_existing:
                 if (
                     datetime.fromisoformat(
-                        asf_search_result.properties["processingDate"].replace(
-                            "Z", "+00:00"
-                        )
+                        asf_search_result.properties["processingDate"]
                     ).timestamp()
                     > alternative_format.stat().st_mtime
                 ):
@@ -331,26 +329,26 @@ def get_asf_token(token_file=None):
 def download_with_checksumtest(asf_search_result, download_path="./", session=None):
     """Download ASFProduct with checksum test"""
     download_path = Path(download_path)
-    _dfile = download_path / asf_search_result.properties["fileName"]
-    gs.verbose(_("Downloading scene {}").format(_dfile.name))
+    dfile = download_path / asf_search_result.properties["fileName"]
+    gs.verbose(_("Downloading scene {}").format(dfile.name))
     asf_search_result.download(path=download_path, session=session)
     i = 0
     checksum_match = False
     while i < 3 and not checksum_match:
-        checksum_match = checksum_test(asf_search_result.properties["md5sum"], _dfile)
+        checksum_match = checksum_test(asf_search_result.properties["md5sum"], dfile)
         if not checksum_match:
             gs.verbose(
                 _("Checksum test for {} failed. Trying to download again").format(
-                    _dfile.name
+                    dfile.name
                 )
             )
             asf_search_result.download(path=download_path, session=session)
             i += 1
     if not checksum_match:
-        gs.warning(_("Failed to fully download {}").format(_dfile.name))
-        return {"failed_downloads": str(_dfile.name)}
-    gs.verbose(_("Successfully downloaded {}").format(_dfile.name))
-    return {"downloaded": str(_dfile.name)}
+        gs.warning(_("Failed to fully download {}").format(dfile.name))
+        return {"failed_downloads": str(dfile.name)}
+    gs.verbose(_("Successfully downloaded {}").format(dfile.name))
+    return {"downloaded": str(dfile.name)}
 
 
 def checkout_results(
@@ -434,14 +432,16 @@ def main():
             scenes = scenes_input.read_text(encoding="UTF8").strip().split("\n")
         else:
             scenes = options["scenes"].split(",")
-        results = asf.granule_search(scenes)
+
         # Remove metadata from download
-        for file in results:
-            if (
+        results = [
+            file
+            for file in asf.granule_search(scenes)
+            if not (
                 file.properties["fileName"].endswith("iso.xml")
                 and file.properties["processingLevel"] == "METADATA_GRD_HD"
-            ):
-                results.remove(file)
+            )
+        ]
     else:
         results = asf.geo_search(**opts)
     checkout_results(results)

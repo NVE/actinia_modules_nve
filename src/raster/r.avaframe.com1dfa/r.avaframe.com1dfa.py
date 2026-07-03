@@ -263,7 +263,7 @@ def run_com1dfa(thickness, config_dict=None):
     # Start logging
     log = logUtils.initiateLogger(str(avalanche_dir), "r.avaframe.com1dfa")
     log.info("MAIN SCRIPT")
-    log.info("Current avalanche: %s", str(avalanche_dir))
+    log.info("Current avalanche: %s", avalanche_dir)
 
     # call com1DFA and perform simulations
     return com1DFA.com1DFAMain(str(avalanche_dir), cfgInfo=cfg_ini_file)
