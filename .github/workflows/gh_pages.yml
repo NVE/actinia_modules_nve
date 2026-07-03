@@ -25,21 +25,21 @@ jobs:
           sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable -y
           sudo apt-get update -qq
           sudo apt-get install -y -qq grass grass-dev grass-doc wget
-      - name: Fix GRASS GIS installation for g.extension (needed for Ubuntu 18.04 grass packages)
+      - name: Fix GRASS GIS installation for g.extension
         run: |
-          wget https://grass.osgeo.org/grass84/manuals/grass_logo.png
+          wget https://grass.osgeo.org/images/logos/grass-logo/grass-logo-green-transparent@1x.png
           wget https://grass.osgeo.org/grass84/manuals/grassdocs.css
-          sudo mv grass_logo.png /usr/lib/grass84/docs/html/grass_logo.png
+          sudo mv grass-logo-green-transparent@1x.png /usr/lib/grass84/docs/html/grass_logo.png
           sudo mv grassdocs.css /usr/lib/grass84/docs/html/grassdocs.css
       - name: Install the modules to directory called build
-        run: |
+        run: |  # zizmor: ignore[shellcheck]
           find ./src/ -maxdepth 2 -mindepth 2 -type d \
           -iwholename "*[g|i|r|t|v|m|d|db]*.*" -exec bash -c \
           'echo {} | awk -v FS="/" \
           "{print(\"grass --tmp-location XY --exec g.extension prefix=build --verbose url=\"\$0 \" extension=\"\$4)}" \
           | bash' \;
       - name: Copy the page as index.html
-        run: |
+        run: |  # zizmor: ignore[shellcheck]
           echo "# Manual pages for actinia modules from NVE" > build/docs/html/index.md
           echo " " >> build/docs/html/index.md
           find ./src/ -maxdepth 2 -mindepth 2 -type d -iwholename "*[g|i|r|t|v|m|d|db]*.*" -exec \
