@@ -51,7 +51,7 @@ def check_dependencies(module_name, check_version=False):
     """
 
     module_cfg = MODULES[module_name]
-    try:
+    try:  # noqa: PLW0717
         module = importlib.import_module(module_name)
         if module_cfg["check_version"]:
             message = "{inst_ver} {req_ver}".format(
@@ -67,11 +67,11 @@ def check_dependencies(module_name, check_version=False):
             )
 
             for index, package in enumerate(module_cfg["package"]):
-                _package = importlib.import_module(package)
+                package = importlib.import_module(package)
 
                 if module_cfg.get("method"):
                     for method in module_cfg.get("method")[index]:
-                        if not hasattr(_package, method):
+                        if not hasattr(package, method):
                             sys.stderr.write(message)
 
                 elif module_cfg.get("module"):

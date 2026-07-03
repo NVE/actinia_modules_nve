@@ -191,6 +191,7 @@ GNU General Public License for more details.
 import sys
 from copy import deepcopy
 from datetime import datetime
+from pathlib import Path
 
 import grass.pygrass.modules as pymod
 import grass.script as gs
@@ -423,6 +424,7 @@ def aggregate_with_condition(
 
     agg_module = pymod.Module(
         "r.mapcalc",
+        nprocs=1,
         overwrite=gs.overwrite(),
         quiet=True,
         run_=False,
@@ -552,8 +554,12 @@ def aggregate_with_condition(
             output_name = f"{basename}_{suffix}"
 
             # Compile expressions
+            condition_expression_file = Path(gs.tempfile())
             maps = ",".join(res_dict["mask_labels"])
-            expression = f"{output_name}_{condition_label}_{aggregate_condition}={aggregate_condition}({maps})\n"
+            condition_expression_file.write_text(
+                f"{output_name}_{condition_label}_{aggregate_condition}={aggregate_condition}({maps})\n",
+                encoding="utf-8",
+            )
             map_layer = initialize_raster_layer(
                 f"{output_name}_{condition_label}_{aggregate_condition}@{current_mapset}",
                 granule_temporal_extent,
@@ -561,7 +567,8 @@ def aggregate_with_condition(
             )
             output_list.append(map_layer)
             condition_module = deepcopy(agg_module)
-            condition_module.inputs.expression = expression
+            condition_module.inputs.file = str(condition_expression_file)
+
             expression = ""
             for aggregation_label in aggregation_labels:
                 maps = ",".join(list(res_dict[aggregation_label]))
@@ -574,8 +581,17 @@ def aggregate_with_condition(
                 output_list.append(map_layer)
             maps = ",".join(res_dict["mask_map_labels"])
             expression += f"{output_name}_{mask_label}=nmin({maps})"
-            expression = expression.format(
-                output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}",
+            mc_expression_file = Path(gs.tempfile())
+            print(
+                expression.format(
+                    output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}",
+                )
+            )
+            mc_expression_file.write_text(
+                expression.format(
+                    output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}",
+                ),
+                encoding="utf-8",
             )
             map_layer = initialize_raster_layer(
                 f"{output_name}_{mask_label}@{current_mapset}",
@@ -585,9 +601,8 @@ def aggregate_with_condition(
             output_list.append(map_layer)
 
             mc_module = deepcopy(agg_module)
-            mc_module.inputs.expression = expression.format(
-                output_condition_map=f"{output_name}_{condition_label}_{aggregate_condition}",
-            )
+
+            mc_module.inputs.file = str(mc_expression_file)
             process_queue.put(pymod.MultiModule([condition_module, mc_module]))
             aggregate_granules += 1
 
