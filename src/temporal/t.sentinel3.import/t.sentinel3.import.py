@@ -175,7 +175,7 @@ COPYRIGHT:   (C) 2024-2025 by Norwegian Water and Energy Directorate,
 
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import partial
 from math import floor
 from multiprocessing import Pool
@@ -297,15 +297,15 @@ def parse_s3_file_name(file_name: str) -> dict:
             "level": file_name[7],
             "product": file_name[9:12],
             "start_time": datetime.strptime(file_name[16:31], "%Y%m%dT%H%M%S").replace(
-                tzinfo=timezone.utc,
+                tzinfo=UTC,
             ),
             "end_time": datetime.strptime(file_name[32:47], "%Y%m%dT%H%M%S").replace(
-                tzinfo=timezone.utc,
+                tzinfo=UTC,
             ),
             "ingestion_time": datetime.strptime(
                 file_name[48:63],
                 "%Y%m%dT%H%M%S",
-            ).replace(tzinfo=timezone.utc),
+            ).replace(tzinfo=UTC),
             "duration": file_name[64:68],
             "cycle": file_name[69:72],
             "relative_orbit": file_name[73:76],
@@ -395,7 +395,7 @@ def process_scene_group(
                 ),
             )
         else:
-            swath_mask_band_map, start_time, end_time, semantic_label = [
+            swath_mask_band_map, start_time, end_time, _semantic_label = [
                 line.split("|")
                 for line in module_stdout.split("\n")
                 if swath_mask_band in line

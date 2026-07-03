@@ -98,6 +98,7 @@ ignore = [
     "A002",    # builtin-argument-shadowing
     "ANN",     # flake8-annotations (ANN)
     "ARG001",  # unused-function-argument
+    "B909",    # Mutation to loop iterable during iteration
     "BLE001",  # blind-except
     "C405",    # unnecessary-literal-set
     "C416",    # unnecessary-comprehension
@@ -168,6 +169,7 @@ ignore = [
     "RUF002",  # ambiguous-unicode-character-docstring
     "RUF003",  # ambiguous-unicode-character-comment
     "RUF015",  # unnecessary-iterable-allocation-for-first-element
+    "RUF071",  # os.path.commonprefix() compares strings character-by-character
     "RUF100",  # unused-noqa
     "S101",    #assert
     "S108",    # hardcoded-temp-file

@@ -726,7 +726,7 @@ def process_scene_group(
 
     gs.verbose(_("Processing group {}...").format(output_name))
 
-    try:
+    try:  # noqa: PLW0717
         torch_mod = Module(
             "i.pytorch.predict",
             output=output_name,

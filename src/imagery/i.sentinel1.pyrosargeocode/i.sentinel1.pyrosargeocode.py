@@ -549,7 +549,7 @@ def main():
         geocode_kwargs["refarea"] = ["sigma0", "gamma0"]
 
     # Pre-configure geocode function
-    _geocode_snap = partial(
+    geocode_snap = partial(
         process_image_file,
         kwargs=geocode_kwargs,
         aoi=get_aoi_geometry(options["aoi"]) if options["aoi"] else None,
@@ -559,11 +559,11 @@ def main():
     # Execute geocoding (in paralell if requested)
     if nprocs_outer > 1:
         with Pool(nprocs_outer) as pool:
-            geocoded_files = pool.map(_geocode_snap, file_input)
+            geocoded_files = pool.map(geocode_snap, file_input)
     else:
         geocoded_files = []
         for s1_file in file_input:
-            geocoded_files.append(_geocode_snap(s1_file))
+            geocoded_files.append(geocode_snap(s1_file))
 
     geocoded_files = [
         geocoded_file for geocoded_file in geocoded_files if geocoded_file

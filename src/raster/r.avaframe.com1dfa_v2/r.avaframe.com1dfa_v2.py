@@ -356,7 +356,7 @@ def run_com1dfa(config_dict=None):
     # Start logging
     log = logUtils.initiateLogger(str(avalanche_dir), "r.avaframe.com1dfa")
     log.info("MAIN SCRIPT")
-    log.info("Current avalanche: %s", str(avalanche_dir))
+    log.info("Current avalanche: %s", avalanche_dir)
 
     # call com1DFA and perform simulations
     return com1DFA.com1DFAMain(config_dict["main"], cfgInfo=cfg_ini_file)
@@ -416,8 +416,7 @@ def get_shape_file_and_config(area_type, module_config, module_options):
     config_area = dict(feat)  # first feature contains config attributes
     entries_to_remove = ("OBJECTID", "Id", "Shape__Area", "Shape__Length")
     for key in entries_to_remove:
-        if key in config_area:
-            del config_area[key]
+        config_area.pop(key, None)
     module_config.update(config_area)
     (module_config["avalanche_dir"] / area_type).mkdir(parents=True, exist_ok=True)
     ds = gdal.VectorTranslate(

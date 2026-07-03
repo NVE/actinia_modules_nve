@@ -66,7 +66,7 @@ def unzip_file(file_path, out_dir=None, remove=False):
 
     out_dir = Path("./") if not out_dir else Path(out_dir)
 
-    try:
+    try:  # noqa: PLW0717
         with ZipFile(file_path) as zip_file_object:
             for zipped_file in zip_file_object.infolist():
                 file_name, file_date_time = (
@@ -89,8 +89,7 @@ def unzip_file(file_path, out_dir=None, remove=False):
     except OSError:
         if flags["s"]:
             return 0
-        else:
-            gs.fatal(_("Could not unzip file <{}>.").format(file_path))
+        gs.fatal(_("Could not unzip file <{}>.").format(file_path))
 
     if not remove:
         return 0
