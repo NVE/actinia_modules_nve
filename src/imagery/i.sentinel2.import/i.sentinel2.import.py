@@ -631,7 +631,7 @@ def get_scene_metadata(scene_path: Path, product_type: str = "S2_MSI_L2A") -> di
                 else "Radiometric_Offset_List"
             ),
         )
-        for k, v in d.items()
+        for v in d.values()
     }
 
     # Get the scene classification list
@@ -666,7 +666,7 @@ def get_scene_metadata(scene_path: Path, product_type: str = "S2_MSI_L2A") -> di
         {
             v[0][0][1]: v[1]
             for d in builder._dict.get("Quality_Inspections")
-            for k, v in d.items()
+            for v in d.values()
         },
     )
     return scene_metadata
