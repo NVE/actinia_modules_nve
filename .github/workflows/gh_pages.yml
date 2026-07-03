@@ -6,13 +6,20 @@ on:
     branches:
       - main
 
+permissions: {}
+
 jobs:
   build-deploy:
 
     runs-on: ubuntu-24.04
-
+    permissions:
+      contents: read
+      pages: write
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository contents
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - name: Install GRASS GIS and other dependencies
         run: |
           sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable -y
@@ -39,9 +46,10 @@ jobs:
           bash -c 'echo {} | awk -v FS="/" "{print(\"- [\" \$4 \"](./\" \$4 \".html)\")}"' \; | \
           sort >> build/docs/html/index.md
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/docs/html
           publish_branch: gh-pages
           enable_jekyll: true
+          persist-credentials: false
