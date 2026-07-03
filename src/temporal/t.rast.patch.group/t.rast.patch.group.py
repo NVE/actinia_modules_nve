@@ -181,26 +181,26 @@ def main():
         }
 
         if (start_time, end_time) not in map_groups:
-            map_groups[(start_time, end_time)] = {row["semantic_label"]: [row["id"]]}
+            map_groups[start_time, end_time] = {row["semantic_label"]: [row["id"]]}
         else:
             map_groups[row["semantic_label"]] = {}
         if gran:
             # else:
-            if row["semantic_label"] in map_groups[(start_time, end_time)]:
-                map_groups[(start_time, end_time)][row["semantic_label"]].append(
+            if row["semantic_label"] in map_groups[start_time, end_time]:
+                map_groups[start_time, end_time][row["semantic_label"]].append(
                     row["id"]
                 )
             else:
-                map_groups[(start_time, end_time)][row["semantic_label"]] = [row["id"]]
+                map_groups[start_time, end_time][row["semantic_label"]] = [row["id"]]
 
         elif (row["start_time"], row["end_time"]) not in map_groups:
-            map_groups[(row["start_time"], row["end_time"])] = {
+            map_groups[row["start_time"], row["end_time"]] = {
                 row["semantic_label"]: row["id"]
             }
         else:
-            map_groups[(row["start_time"], row["end_time"])][row["semantic_label"]] = (
-                row["id"]
-            )
+            map_groups[row["start_time"], row["end_time"]][row["semantic_label"]] = row[
+                "id"
+            ]
 
     if not map_rows:
         gs.warning(_("No maps found to process"))
