@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-"""
-MODULE:    t.rast.aggregate.patch
+"""MODULE:    t.rast.aggregate.patch
 AUTHOR(S): Stefan Blumentrath
 
 PURPOSE:   Aggregates rasters maps in space and time by means of patching (r.patch/r.buildvrt)
-COPYRIGHT: (C) 2024 by Stefan Blumentrath, Norwegian Water and Energy Directorate and the GRASS Development Team
+COPYRIGHT: (C) 2024-2026 by Stefan Blumentrath, Norwegian Water and Energy Directorate and the GRASS Development Team
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -171,23 +170,24 @@ from grass.temporal.spatio_temporal_relationships import SpatioTemporalTopologyB
 
 
 def patch_by_topology(
-    granularity_list,
-    granularity,
-    map_list,
-    topo_list,
-    basename,
-    time_suffix,
-    offset=0,
-    module="r.patch",
-    nprocs=1,
-    sort="asc",
+    granularity_list: list[RasterDataset],
+    granularity: str,
+    map_list: list[RasterDataset],
+    topo_list: list[str],
+    basename: str,
+    time_suffix: str,
+    offset: int = 0,
+    module: str = "r.patch",
+    nprocs: int = 1,
+    sort: str = "asc",
     dbif=None,
-    patch_flags="",
-    overwrite=False,
-):
-    """Aggregate a list of raster input maps with r.series
+    patch_flags: str = "",
+    *,
+    overwrite: bool = False,
+) -> list[str] | None:
+    """Aggregate a list of raster input maps with r.series.
 
-    :param granularity_list: A list of AbstractMapDataset objects.
+    :param granularity_list: A list of RasterDataset objects.
                              The temporal extents of the objects are used
                              to build the spatio-temporal topology with the
                              map list objects
@@ -202,7 +202,7 @@ def patch_by_topology(
     :param offset: Use a numerical offset for suffix generation
                    (overwritten by time_suffix)
     :param module: The GRASS GIS module to use for aggregation (r.patch or r.buildvrt)
-    :param nprocs: The number of processes used for parallel computation (only used with )
+    :param nprocs: The number of processes used for parallel computation
     :param sort: Sort order for raster maps send to r.patch/r.buildvrt
     :param dbif: The database interface to be used
     :param patch_flags: Flags set for patch module ("", "z" or "s")
@@ -220,7 +220,6 @@ def patch_by_topology(
     map_dict = {}
 
     for row in map_list:
-        # semantic_label = row.semantic_label
         if row.metadata.semantic_label in map_dict:
             map_dict[row.metadata.semantic_label].append(row)
         else:
@@ -244,7 +243,11 @@ def patch_by_topology(
 
     # Copy map if only one map is found in granule
     copy_module = pymod.Module(
-        "g.copy", raster=["spam", "spamspam"], quiet=True, run_=False, finish_=False
+        "g.copy",
+        raster=["spam", "spamspam"],
+        quiet=True,
+        run_=False,
+        finish_=False,
     )
 
     output_list = []
@@ -260,85 +263,100 @@ def patch_by_topology(
             msgr.percent(count, len(granularity_list), 1)
             count += 1
 
-            start_time, end_time = granule.get_temporal_extent_as_tuple()
-
             aggregation_list = []
+            start_time_list = set()
+            end_time_list = set()
 
             for topology in topo_list:
                 matching_objects = getattr(granule, topology)
                 # Check if any maps are temporally related to the granule with the given topology
                 if matching_objects:
                     aggregation_list.extend(
-                        [map_layer.get_name() for map_layer in matching_objects]
+                        [map_layer.get_name() for map_layer in matching_objects],
+                    )
+                    start_time_list.update(
+                        [map_layer.get_start_time() for map_layer in matching_objects],
+                    )
+                    end_time_list.update(
+                        [map_layer.get_end_time() for map_layer in matching_objects],
                     )
             # Reset Spatio-Temporal-Topology
             granule.set_spatial_topology_build_false()
             granule.set_temporal_topology_build_false()
 
-            if aggregation_list:
-                msgr.verbose(
+            if not aggregation_list:
+                continue
+            start_time_list.remove(None)
+            end_time_list.remove(None)
+            start_time = min(start_time_list)
+            end_time = max(end_time_list or start_time_list)  # end_time can be None
+            msgr.verbose(
+                _(
+                    "Aggregating {n} raster maps from '{start}' to '{end}'"
+                    " with semantic label '{semantic_label}'",
+                ).format(
+                    n=len(aggregation_list),
+                    start=str(start_time),
+                    end=str(granule.temporal_extent.get_end_time()),
+                    semantic_label=semantic_label,
+                ),
+            )
+
+            # The suffix for the output raster map is determined by the
+            # granule's temporal extent to keep the file naming consistent.
+            if granule.is_time_absolute() is True and time_suffix == "gran":
+                suffix = create_suffix_from_datetime(
+                    granule.temporal_extent.get_start_time(),
+                    granularity,
+                )
+            elif granule.is_time_absolute() is True and time_suffix == "time":
+                suffix = create_time_suffix(granule)
+            else:
+                suffix = create_numeric_suffix(
+                    "",
+                    count + int(offset),
+                    time_suffix,
+                ).removeprefix("_")
+            output_name = (
+                f"{basename}_{semantic_label}_{suffix}"
+                if semantic_label
+                else f"{basename}_{suffix}"
+            )
+
+            map_layer = RasterDataset(f"{output_name}@{current_mapset}")
+
+            if map_layer.map_exists() is True and overwrite is False:
+                msgr.fatal(
                     _(
-                        "Aggregating {n} raster maps from '{start}' to '{end}'"
-                        " with semantic label '{semantic_label}'"
-                    ).format(
-                        n=len(aggregation_list),
-                        start=str(start_time),
-                        end=str(granule.temporal_extent.get_end_time()),
-                        semantic_label=semantic_label,
-                    )
+                        "Unable to perform aggregation. Output raster "
+                        "map <{name}> exists and overwrite flag was "
+                        "not set",
+                    ).format(name=output_name),
                 )
 
-                if granule.is_time_absolute() is True and time_suffix == "gran":
-                    suffix = create_suffix_from_datetime(start_time, granularity)
-                elif granule.is_time_absolute() is True and time_suffix == "time":
-                    suffix = create_time_suffix(granule)
+            output_list.append(
+                "|".join(
+                    [
+                        f"{output_name}@{current_mapset}",
+                        start_time.isoformat(),
+                        end_time.isoformat(),
+                        semantic_label,
+                    ],
+                ),
+            )
 
-                else:
-                    suffix = create_numeric_suffix(
-                        "", count + int(offset), time_suffix
-                    ).removeprefix("_")
-                output_name = (
-                    f"{basename}_{semantic_label}_{suffix}"
-                    if semantic_label
-                    else f"{basename}_{suffix}"
-                )
+            if sort == "desc":
+                aggregation_list.reverse()
+            if len(aggregation_list) > 1:
+                # Create the r.patch / r.buildvrt module
+                mod = deepcopy(patch_module)
+                mod(input=",".join(aggregation_list[::-1]), output=output_name)
+            else:
+                # Create the g.copy module for single input maps
+                mod = deepcopy(copy_module)
+                mod(raster=[aggregation_list[0], output_name])
 
-                map_layer = RasterDataset(f"{output_name}@{current_mapset}")
-                # map_layer.set_temporal_extent(granule.get_temporal_extent())
-                # map_layer.set_semantic_label(semantic_label)
-
-                if map_layer.map_exists() is True and overwrite is False:
-                    msgr.fatal(
-                        _(
-                            "Unable to perform aggregation. Output raster "
-                            "map <{name}> exists and overwrite flag was "
-                            "not set"
-                        ).format(name=output_name)
-                    )
-
-                output_list.append(
-                    "|".join(
-                        [
-                            f"{output_name}@{current_mapset}",
-                            start_time.isoformat(),
-                            end_time.isoformat(),
-                            semantic_label,
-                        ]
-                    )
-                )
-
-                if sort == "desc":
-                    aggregation_list.reverse()
-                if len(aggregation_list) > 1:
-                    # Create the r.patch / r.buildvrt module
-                    mod = deepcopy(patch_module)
-                    mod(input=",".join(aggregation_list[::-1]), output=output_name)
-                else:
-                    # Create the g.copy module for single input maps
-                    mod = deepcopy(copy_module)
-                    mod(raster=[aggregation_list[0], output_name])
-
-                process_queue.put(mod)
+            process_queue.put(mod)
 
     process_queue.wait()
 
@@ -350,8 +368,8 @@ def patch_by_topology(
     return output_list
 
 
-def main():
-    """Main function"""
+def main() -> None:
+    """Run aggregation."""
     # lazy imports
     overwrite = gs.overwrite()
 
@@ -384,8 +402,8 @@ def main():
     if not map_list:
         gs.warning(
             _("No maps found to process in Space time raster dataset <{}>.").format(
-                options["input"]
-            )
+                options["input"],
+            ),
         )
         dbif.close()
         sys.exit(0)
@@ -417,9 +435,8 @@ def main():
         if has_end_time is True:
             if start_time >= end_time:
                 break
-        else:
-            if start_time > end_time:
-                break
+        elif start_time > end_time:
+            break
 
         granule = tgis.RasterDataset(None)
         start = start_time
@@ -435,7 +452,7 @@ def main():
 
     if flags["g"] and not gs.find_program("r.buildvrt.gdal", "--help"):
         gs.fatal(
-            _("Cannot find addon <r.buildvrt.gdal>. Please make sure it is installed.")
+            _("Cannot find addon <r.buildvrt.gdal>. Please make sure it is installed."),
         )
 
     if flags["v"]:
@@ -464,13 +481,14 @@ def main():
         strds_long_name = f"{options['output']}@{current_mapset}"
         output_strds = tgis.SpaceTimeRasterDataset(strds_long_name)
 
-        # Check if target STRDS exists and create it if not or abort if overwriting is not allowed
+        # Check if target STRDS exists and create it if not
+        # or abort if overwriting is not allowed
         if output_strds.is_in_db() and not overwrite:
             gs.fatal(
                 _(
                     "Output STRDS <{}> exists."
-                    "Use --overwrite together with -e to modify the existing STRDS."
-                ).format(options["output"])
+                    "Use --overwrite together with -e to modify the existing STRDS.",
+                ).format(options["output"]),
             )
 
         # Create STRDS if needed
@@ -496,10 +514,6 @@ def main():
             fs="|",
             update_cmd_list=False,
         )
-
-        # Update the raster metadata table entries with aggregation type
-        # output_strds.set_aggregation_type(method)
-        # output_strds.metadata.update(dbif)
 
     dbif.close()
 
