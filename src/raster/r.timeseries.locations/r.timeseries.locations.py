@@ -232,11 +232,25 @@ def range_dict_from_map_combination(grass_options: dict, range_scale: int) -> di
         dtype=None,
         encoding="UTF8",
     )
-    map_stats = {
-        int(m["cat"] * range_scale + m["sub_cat"]): (int(m["sub_cat"]), int(m["n"]))
-        for m in map_stats
-    }
-    return dict(sorted(map_stats.items()))
+    map_stats_dict = {}
+    for m in map_stats:
+        if m["cat"] in map_stats_dict:
+            map_stats_dict[int(m["cat"])].append(
+                (
+                    int(m["cat"] * range_scale + m["sub_cat"]),
+                    int(m["sub_cat"]),
+                    int(m["n"]),
+                ),
+            )
+        else:
+            map_stats_dict[int(m["cat"])] = [
+                (
+                    int(m["cat"] * range_scale + m["sub_cat"]),
+                    int(m["sub_cat"]),
+                    int(m["n"]),
+                ),
+            ]
+    return dict(sorted(map_stats_dict.items()))
 
 
 def range_dict_from_db(grass_options: dict) -> dict:
@@ -384,6 +398,8 @@ def main() -> None:
         layer=layer if schema == "dbo" else f"{schema}.{layer}",
         where=where + " AND " + options["where"] if options["where"] else where,
         output=locations,
+        key="id",
+        columns="id,name,valid_from,domain_id,domain_internal_id,parent_id,minimum_elevation_m,maximum_elevation_m,domain_external_id",
         snap=options["snap"],
     )
     gs.vector.vector_history(locations, replace=True)
@@ -416,15 +432,16 @@ def main() -> None:
                 Module(
                     "r.info",
                     flags="gr",
-                    map=options["locations_subunits"],
+                    map=continuous_subdivision_map,
                     stdout_=PIPE,
                 ).outputs.stdout,
             )
+
             if not map_stats["max"]:
                 map_stats = json.loads(
                     Module(
                         "r.univar",
-                        map=options["locations_subunits"],
+                        map=continuous_subdivision_map,
                         format="json",
                         stdout_=PIPE,
                     ).outputs.stdout,
@@ -440,9 +457,7 @@ def main() -> None:
                     ),
                 ),
             )
-            mc_expression = (
-                f"{locations} * {range_scale} + int({options['locations_subunits']})"
-            )
+            mc_expression = f"{options['locations_subunits']}=int({locations} * {range_scale} + round({continuous_subdivision_map}))"
             range_dict = range_dict_from_map_combination(options, range_scale)
         else:
             if options["method"] == "database":
@@ -459,14 +474,7 @@ def main() -> None:
             )
             mc_expression = f"""{options["locations_subunits"]}=int(graph({locations},{", ".join(f"{cat}, int({create_sub_graph(values)})" for cat, values in range_dict.items())}))"""
 
-        if int(options["nprocs"]) > 1:
-            Module(
-                "r.mapcalc.tiled",
-                expression=mc_expression,
-                nprocs=int(options["nprocs"]),
-            )
-        else:
-            Module("r.mapcalc", expression=mc_expression)
+        Module("r.mapcalc", expression=mc_expression, nprocs=int(options["nprocs"]))
 
         # Add category labels
         Module(
@@ -499,10 +507,13 @@ def main() -> None:
         vector_map.open("r")
 
         geom_dict = {}
-        for parent_id in range_dict.values():
-            for area_id in parent_id:
+        parent_id_dict = {}
+        for parent_id, sub_cats in range_dict.items():
+            for area_id in sub_cats:
                 geom_dict[area_id[0]] = ""
+                parent_id_dict[area_id[0]] = parent_id
         geom_dict[None] = ""
+        parent_id_dict[None] = ""
 
         for area in vector_map.viter("areas"):
             geom_dict[area.cat] += area.to_wkt().replace("POLYGON", "")
@@ -515,14 +526,29 @@ def main() -> None:
             + f";UID={os.environ.get('MSSQLSPATIAL_UID')};PWD={os.environ.get('MSSQLSPATIAL_PWD')}",
         )
         cursor = conn.cursor()
-        cursor.executemany(
-            "UPDATE [dbo].[region] SET geom = geometry::STGeomFromText(?, 25833) WHERE id = ?",
-            [
-                (f"MULTIPOLYGON ({polygons.replace(') (', '), (')})", polygon_id)
-                for polygon_id, polygons in geom_dict.items()
-                if polygon_id and polygons
-            ],
-        )
+        if options["method"] == "database":
+            cursor.executemany(
+                "UPDATE [dbo].[region] SET geom = geometry::STGeomFromText(?, 25833) WHERE id = ?",
+                [
+                    (f"MULTIPOLYGON ({polygons.replace(') (', '), (')})", polygon_id)
+                    for polygon_id, polygons in geom_dict.items()
+                    if polygon_id and polygons
+                ],
+            )
+        else:
+            cursor.executemany(
+                "INSERT INTO [dbo].[region] (domain_id, parent_id, domain_internal_id, geom) VALUES (?, ?, ?, ?)",
+                [
+                    (
+                        int(options["domain_id"]),
+                        parent_id_dict[polygon_id],
+                        polygon_id,
+                        f"MULTIPOLYGON ({polygons.replace(') (', '), (')})",
+                    )
+                    for polygon_id, polygons in geom_dict.items()
+                    if polygon_id and polygons and parent_id_dict.get(polygon_id)
+                ],
+            )
         cursor.commit()
         conn.close()
 
