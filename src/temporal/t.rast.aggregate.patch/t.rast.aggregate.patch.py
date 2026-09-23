@@ -286,12 +286,12 @@ def patch_by_topology(
 
             if not aggregation_list:
                 continue
-            start_time_list.remove(None)
+            start_time_list.discard(None)
             start_time = min(start_time_list)
             # end_time can be None or users may mix up
             # maps with and without endtime thus merging
             # start and end time lists
-            end_time_list.remove(None)
+            end_time_list.discard(None)
             end_time_list.update(start_time_list)
             end_time = max(end_time_list)
             msgr.verbose(
