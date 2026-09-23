@@ -514,7 +514,9 @@ def main():
 
     # Link or import result ASCII files
     result_files = list((avalanche_dir).rglob("**/Outputs/com1DFA/peakFiles/*.asc"))
-    with Pool(min(int(options["nprocs"]), len(result_files))) as pool:
+    with Pool(
+        min(int(options["nprocs"]) or os.cpu_count() or 1, len(result_files))
+    ) as pool:
         if options["export_directory"]:
             convert_result_gtiff = partial(
                 convert_result,

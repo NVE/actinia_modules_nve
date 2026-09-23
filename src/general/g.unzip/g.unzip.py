@@ -131,7 +131,7 @@ def main() -> None:
 
     unzip = partial(unzip_file, out_dir=str(output_directory), remove=flags["r"])
     # G_OPT_NPROCS returns now 0 to get max number of available CPU cores for OpenMP
-    nprocs = min(int(options["nprocs"]) or os.cpu_count(), len(input_files))
+    nprocs = min(int(options["nprocs"]) or os.cpu_count() or 1, len(input_files))
     if nprocs == 1:
         for zip_file in input_files:
             unzip(zip_file)

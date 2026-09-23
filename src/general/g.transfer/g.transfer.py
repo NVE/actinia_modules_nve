@@ -48,6 +48,7 @@ comes with GRASS for details.
 
 # ruff: noqa: PTH207
 
+import os
 import shutil
 import sys
 from functools import partial
@@ -120,7 +121,7 @@ def main():
     transfer_function = partial(
         transfer, target=target_directory, move=flags["m"], overwrite=flags["o"]
     )
-    nprocs = int(options["nprocs"])
+    nprocs = int(options["nprocs"]) or os.cpu_count() or 1
 
     if nprocs > 1:
         with Pool(nprocs) as pool:

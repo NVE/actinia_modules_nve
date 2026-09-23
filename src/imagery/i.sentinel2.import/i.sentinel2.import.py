@@ -150,6 +150,7 @@ for details.
 # %end
 
 import json
+import os
 import re
 import sys
 
@@ -1562,7 +1563,7 @@ def main() -> None:
         link=flags["l"] or flags["f"],
         group=flags["i"],
         override=flags["o"],
-        nprocs=int(options["nprocs"]),
+        nprocs=int(options["nprocs"]) or os.cpu_count() or 1,
     )
     importer.unzip(file_pattern=file_filter_pattern, force=flags["n"])
     importer.filter_safe_files(file_pattern=file_filter_pattern)

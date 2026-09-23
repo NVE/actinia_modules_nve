@@ -448,7 +448,7 @@ def main():
     initial_scene_number = len(results)
 
     # Check for parallelization
-    nprocs = min(int(options["nprocs"]), len(results))
+    nprocs = min(int(options["nprocs"]) or os.cpu_count() or 1, len(results))
 
     # Authenticate for download if needed
     if not flags["l"]:
