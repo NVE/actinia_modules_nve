@@ -229,7 +229,7 @@ def patch_by_topology(
     process_queue = pymod.ParallelModuleQueue(nprocs)
 
     # Dummy process object that will be deep copied
-    # and be put into the process queue
+    # and the copy put into the process queue
     patch_module = pymod.Module(
         module,
         overwrite=overwrite,
@@ -269,7 +269,7 @@ def patch_by_topology(
 
             for topology in topo_list:
                 matching_objects = getattr(granule, topology)
-                # Check if any maps are temporally related to the granule with the given topology
+                # Check if any maps are temporaly related to the granule with the given topology
                 if matching_objects:
                     aggregation_list.extend(
                         [map_layer.get_name() for map_layer in matching_objects],
