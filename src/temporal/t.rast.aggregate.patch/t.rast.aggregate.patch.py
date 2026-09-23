@@ -147,6 +147,7 @@ GNU General Public License for more details.
 # % required: -e,title,description
 # %end
 
+import os
 import sys
 from copy import deepcopy
 from io import StringIO
@@ -475,7 +476,7 @@ def main() -> None:
         time_suffix=options["suffix"],
         offset=options["offset"],
         module=patch_module,
-        nprocs=int(options["nprocs"]),
+        nprocs=int(options["nprocs"]) or os.cpu_count() or 1,
         sort=options["sort"],
         overwrite=overwrite,
     )
