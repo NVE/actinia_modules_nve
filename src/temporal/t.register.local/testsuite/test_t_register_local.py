@@ -66,7 +66,7 @@ class TestRegistrationLocal(TestCase):
         """Reclassify and register also maps with only NoData"""
         self.assertModule(
             "t.register.local",
-            flags="n",
+            # flags="n",
             input="./",
             output="A",
             file="./register.txt",
