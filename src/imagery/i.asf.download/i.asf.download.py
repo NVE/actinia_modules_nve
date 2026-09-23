@@ -508,7 +508,7 @@ def main():
         checkout_results(
             results, initial_scenes=initial_scene_number, print_results=flags["l"]
         )
-        nprocs = min(int(options["nprocs"]), len(results))
+        nprocs = min(nprocs, len(results))
         if check_scenes in ["downloaded", "all"] and not flags["l"]:
             with Pool(nprocs) as pool:
                 download_with_checksumtest_parallel = partial(
