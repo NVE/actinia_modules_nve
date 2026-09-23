@@ -3,7 +3,7 @@
 MODULE:    g.unzip
 AUTHOR(S): Stefan Blumentrath
 PURPOSE:	 Unzip zip-files in a directory in parallel
-COPYRIGHT: (C) 2023-2024 by Stefan Blumentrath and the GRASS Development Team
+COPYRIGHT: (C) 2023-2026 by Stefan Blumentrath and the GRASS Development Team
 
 This program is free software under the GNU General
 Public License (>=v2). Read the file COPYING that
@@ -98,8 +98,8 @@ def unzip_file(file_path, out_dir=None, remove=False):
     return 0
 
 
-def main():
-    """Do the main work"""
+def main() -> None:
+    """Do the main work."""
     input_path = Path(options["input"])
 
     if not input_path.exists():
@@ -130,8 +130,8 @@ def main():
         )
 
     unzip = partial(unzip_file, out_dir=str(output_directory), remove=flags["r"])
-
-    nprocs = min(int(options["nprocs"]), len(input_files))
+    # G_OPT_NPROCS returns now 0 to get max number of available CPU cores for OpenMP
+    nprocs = min(int(options["nprocs"]) or os.cpu_count(), len(input_files))
     if nprocs == 1:
         for zip_file in input_files:
             unzip(zip_file)
