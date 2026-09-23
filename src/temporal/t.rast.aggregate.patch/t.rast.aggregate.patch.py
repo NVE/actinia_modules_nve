@@ -301,7 +301,7 @@ def patch_by_topology(
                 ).format(
                     n=len(aggregation_list),
                     start=str(start_time),
-                    end=str(granule.temporal_extent.get_end_time()),
+                    end=str(end_time),
                     semantic_label=semantic_label,
                 ),
             )
