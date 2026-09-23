@@ -1171,7 +1171,7 @@ class Sentinel2Importer:
         # Unzip archives in parallel
         nprocs = min(len(self.zip_archives), self.nprocs)
         if nprocs > 1:
-            with Pool(self.nprocs) as pool:
+            with Pool(nprocs) as pool:
                 pool.map(self._unzip, self.zip_archives)
         else:
             for archive in self.zip_archives:
