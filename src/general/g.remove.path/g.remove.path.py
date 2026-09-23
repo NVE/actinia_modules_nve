@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#!/usr/bin/env python3
 """
 MODULE:    g.remove.path
 AUTHOR(S): Stefan Blumentrath
