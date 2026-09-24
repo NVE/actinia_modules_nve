@@ -359,7 +359,7 @@ def checkout_results(
     with_scene_check=False,
     download_path=Path("./"),
 ):
-    """Helper function for checking, printing and logging search results"""
+    """Helper function for checking, printing and logging search results."""
 
     if len(result_set) == 0 and not log_results:
         if initial_scenes:
@@ -509,7 +509,7 @@ def main():
             results, initial_scenes=initial_scene_number, print_results=flags["l"]
         )
         nprocs = min(nprocs, len(results))
-        if check_scenes in ["downloaded", "all"] and not flags["l"]:
+        if check_scenes in ["downloaded", "all"] and not flags["l"] and nprocs:
             with Pool(nprocs) as pool:
                 download_with_checksumtest_parallel = partial(
                     download_with_checksumtest,
