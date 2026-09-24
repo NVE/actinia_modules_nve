@@ -436,6 +436,7 @@ def get_shape_file_and_config(area_type, module_config, module_options):
 def main():
     """Run com1DFA simulation from Avaframe with selected configuration"""
 
+    nprocs = int(options["nprocs"]) or os.cpu_count() or 1
     friction_model_dict = {
         0: "samosAT",
         1: "Coulomb",
@@ -466,7 +467,7 @@ def main():
     config = {
         "avalanche_dir": avalanche_dir,
         "release_name": release_name,
-        "nCPU": options["nprocs"],
+        "nCPU": nprocs,
     }
 
     # Get release area
@@ -514,9 +515,7 @@ def main():
 
     # Link or import result ASCII files
     result_files = list((avalanche_dir).rglob("**/Outputs/com1DFA/peakFiles/*.asc"))
-    with Pool(
-        min(int(options["nprocs"]) or os.cpu_count() or 1, len(result_files))
-    ) as pool:
+    with Pool(min(nprocs, len(result_files))) as pool:
         if options["export_directory"]:
             convert_result_gtiff = partial(
                 convert_result,
