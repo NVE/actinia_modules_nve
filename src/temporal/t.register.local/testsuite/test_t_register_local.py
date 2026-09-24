@@ -9,6 +9,9 @@ for details.
 """
 
 import os
+import tempfile
+from datetime import datetime, timedelta
+from pathlib import Path
 
 import grass.temporal as tgis
 from grass.gunittest.case import TestCase
@@ -63,32 +66,57 @@ class TestRegistrationLocal(TestCase):
         self.runModule("t.remove", flags="df", type="strds", inputs="B")
 
     def test_register_maps_from_file(self):
-        """Reclassify and register also maps with only NoData"""
-        self.assertModule(
-            "t.register.local",
-            # flags="n",
-            input="./",
-            output="A",
-            file="./register.txt",
-            title="B",
-            description="B",
-            nprocs=2,
-            units="m2",
-            semantic_label="label_a",
-            overwrite=True,
-        )
-        info = SimpleModule(
-            "t.info",
-            flags="g",
-            input="B",
-        ).run()
-        print(info.outputs.stdout)
+        """Register maps listed in a register_file (pipe-separated CSV)"""
+        map_names = ["a1", "a2", "a3", "a4", "a5", "a6"]
+        start = datetime(2001, 1, 15, 12, 5, 45)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            register_lines = []
+            for index, map_name in enumerate(map_names):
+                file_path = Path(tmp_dir) / f"{map_name}.tif"
+                self.assertModule(
+                    "r.out.gdal",
+                    input=map_name,
+                    output=str(file_path),
+                    format="GTiff",
+                    overwrite=True,
+                )
+                map_start = start + timedelta(days=14 * index)
+                map_end = map_start + timedelta(days=14)
+                register_lines.append(
+                    "|".join(
+                        [
+                            f"b{index + 1}_label_a",
+                            map_start.isoformat(sep=" "),
+                            map_end.isoformat(sep=" "),
+                            "label_a",
+                            str(file_path),
+                        ]
+                    )
+                )
+            register_file = Path(tmp_dir) / "register.txt"
+            register_file.write_text("\n".join(register_lines), encoding="UTF8")
 
-        list_mod1 = SimpleModule(
-            "g.list",
-            type="raster",
-            pattern="*_label_a",
-        ).run()
+            self.assertModule(
+                "t.register.local",
+                output="B",
+                register_file=str(register_file),
+                long_name="B",
+                units="m2",
+                nprocs=2,
+                overwrite=True,
+            )
+            info = SimpleModule(
+                "t.info",
+                flags="g",
+                input="B",
+            ).run()
+            print(info.outputs.stdout)
+
+            list_mod1 = SimpleModule(
+                "g.list",
+                type="raster",
+                pattern="*_label_a",
+            ).run()
 
     def test_reclass_no_null_maps(self):
         """Reclassify and not register maps with only NoData"""
