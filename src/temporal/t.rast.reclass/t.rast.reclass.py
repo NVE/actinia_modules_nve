@@ -121,6 +121,7 @@
 # - add semantic label support to register_map_object_list
 #   https://grass.osgeo.org/grass83/manuals/libpython/_modules/temporal/register.html#register_maps_in_space_time_dataset
 
+import os
 import sys
 from copy import deepcopy
 from multiprocessing import Pool
@@ -249,7 +250,7 @@ def main():
     input = options["input"]
     output = options["output"]
     where = options["where"]
-    nprocs = int(options["nprocs"])
+    nprocs = int(options["nprocs"]) or os.cpu_count() or 1
 
     # Initialize TGIS
     tgis.init()

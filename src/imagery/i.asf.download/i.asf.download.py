@@ -359,7 +359,7 @@ def checkout_results(
     with_scene_check=False,
     download_path=Path("./"),
 ):
-    """Helper function for checking, printing and logging search results"""
+    """Helper function for checking, printing and logging search results."""
 
     if len(result_set) == 0 and not log_results:
         if initial_scenes:
@@ -448,7 +448,7 @@ def main():
     initial_scene_number = len(results)
 
     # Check for parallelization
-    nprocs = min(int(options["nprocs"]), len(results))
+    nprocs = min(int(options["nprocs"]) or os.cpu_count() or 1, len(results))
 
     # Authenticate for download if needed
     if not flags["l"]:
@@ -508,8 +508,8 @@ def main():
         checkout_results(
             results, initial_scenes=initial_scene_number, print_results=flags["l"]
         )
-        nprocs = min(int(options["nprocs"]), len(results))
-        if check_scenes in ["downloaded", "all"] and not flags["l"]:
+        nprocs = min(nprocs, len(results))
+        if check_scenes in ["downloaded", "all"] and not flags["l"] and nprocs:
             with Pool(nprocs) as pool:
                 download_with_checksumtest_parallel = partial(
                     download_with_checksumtest,

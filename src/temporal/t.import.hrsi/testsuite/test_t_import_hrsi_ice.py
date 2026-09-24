@@ -9,12 +9,14 @@ for details.
 """
 
 import os
+import unittest
 
 import grass.script as gs
 from grass.gunittest.case import TestCase
 from grass.gunittest.gmodules import SimpleModule
 
 
+@unittest.skip("HRSI currently not used.")
 class TestAggregationAbsolute(TestCase):
     @classmethod
     def setUpClass(cls):

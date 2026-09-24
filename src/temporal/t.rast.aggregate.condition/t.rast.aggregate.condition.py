@@ -188,6 +188,7 @@ GNU General Public License for more details.
 # - make mask optional (do not require masking)
 # - allow empty (or *) mask_value, if * all values in mask raster are considered valid data
 
+import os
 import sys
 from copy import deepcopy
 from datetime import datetime
@@ -813,7 +814,7 @@ def main() -> None:
         time_unit=relative_time_unit,
         basename=options["basename"],
         offset=options["offset"],
-        nprocs=int(options["nprocs"]),
+        nprocs=int(options["nprocs"]) or os.cpu_count() or 1,
         topo_list=options["sampling"].split(","),
         aggregate_condition=options["aggregate_condition"],
         time_suffix=options["suffix"],

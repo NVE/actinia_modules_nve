@@ -173,6 +173,7 @@ COPYRIGHT:   (C) 2024-2025 by Norwegian Water and Energy Directorate,
 # % required: -e,title,description
 # %end
 
+import os
 import re
 import sys
 from datetime import UTC, datetime
@@ -469,7 +470,7 @@ def main() -> None:
 
     # Distribute cores
     nprocs_inner, nprocs_outer = distribute_cores(
-        int(options["nprocs"]),
+        int(options["nprocs"]) or os.cpu_count() or 1,
         len(groups_to_process),
     )
 

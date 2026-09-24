@@ -132,6 +132,7 @@ Todo:
 
 import atexit
 import json
+import os
 import re
 import sys
 from copy import deepcopy
@@ -1019,7 +1020,7 @@ def main() -> None:
         device=device,
         limit=flags["l"],
     )
-    nprocs = int(options["nprocs"])
+    nprocs = int(options["nprocs"]) or os.cpu_count() or 1
 
     if device == "cpu":
         torch.set_num_threads(nprocs)
