@@ -276,10 +276,16 @@ def patch_by_topology(
                         [map_layer.get_name() for map_layer in matching_objects],
                     )
                     start_time_list.update(
-                        [map_layer.get_start_time() for map_layer in matching_objects],
+                        [
+                            map_layer.temporal_extent.get_start_time()
+                            for map_layer in matching_objects
+                        ],
                     )
                     end_time_list.update(
-                        [map_layer.get_end_time() for map_layer in matching_objects],
+                        [
+                            map_layer.temporal_extent.get_end_time()
+                            for map_layer in matching_objects
+                        ],
                     )
             # Reset Spatio-Temporal-Topology
             granule.set_spatial_topology_build_false()
