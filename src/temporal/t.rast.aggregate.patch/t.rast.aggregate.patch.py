@@ -186,7 +186,7 @@ def patch_by_topology(
     *,
     overwrite: bool = False,
 ) -> list[str] | None:
-    """Aggregate a list of raster input maps with r.series.
+    """Aggregate a list of raster input maps with r.patch or r.buildvrt.
 
     :param granularity_list: A list of RasterDataset objects.
                              The temporal extents of the objects are used
