@@ -343,8 +343,8 @@ def patch_by_topology(
                 "|".join(
                     [
                         f"{output_name}@{current_mapset}",
-                        start_time.isoformat(),
-                        end_time.isoformat(),
+                        str(start_time),
+                        str(end_time),
                         semantic_label,
                     ],
                 ),
