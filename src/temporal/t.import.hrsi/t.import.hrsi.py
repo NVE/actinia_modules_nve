@@ -1595,7 +1595,7 @@ def main():
         import_module=import_module,
         category_module=category_module,
         batch_size=options["batch_size"],
-        cores=int(options["nprocs"]),
+        cores=int(options["nprocs"]) or os.cpu_count() or 1,
     )
 
     # Initialize query

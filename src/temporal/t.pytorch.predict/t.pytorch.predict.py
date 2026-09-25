@@ -849,7 +849,7 @@ def main():
         device = "gpu"
 
     # Distribute cores
-    nprocs_inner, nprocs_outer = int(options["nprocs"]), 1
+    nprocs_inner, nprocs_outer = int(options["nprocs"]) or os.cpu_count() or 1, 1
     if nprocs_inner > 1 and device == "cpu":
         # Distribute cores across inner and outer processes
         # if module runs on CPU

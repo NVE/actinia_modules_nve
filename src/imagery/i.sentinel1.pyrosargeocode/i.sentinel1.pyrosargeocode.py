@@ -489,7 +489,7 @@ def main():
 
     dem_info["GDAL_path"] = get_raster_gdalpath(options["elevation"])
 
-    nprocs = int(options["nprocs"])
+    nprocs = int(options["nprocs"]) or os.cpu_count() or 1
     nprocs_outer = min(nprocs, len(file_input))
     nprocs_inner = nprocs if len(file_input) == 1 else 1
 

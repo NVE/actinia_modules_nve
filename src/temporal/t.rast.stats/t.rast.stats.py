@@ -207,6 +207,7 @@ COPYRIGHT:    (C) 2023 by the Stefan Blumentrath and
 # % requires: -g, -1
 # %end
 
+import os
 import sys
 from copy import deepcopy
 from functools import partial
@@ -343,11 +344,11 @@ def main():
     where = options["where"]
     sep = gs.utils.separator(options["separator"])
     output = Path(options["output"]) if options["output"] else None
-    nprocs = int(options["nprocs"])
+    nprocs = int(options["nprocs"]) or os.cpu_count() or 1
     region_relation = options["region_relation"]
 
     if output:
-        # CHeck if output exists and can be overwritten
+        # Check if output exists and can be overwritten
         if output.exists() and not gs.overwrite():
             gs.fatal(_("Output file <{}> exists").format(str(output)))
         # Check if output file can be written

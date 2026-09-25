@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#!/usr/bin/env python3
 """
 MODULE:    g.transfer
 AUTHOR(S): Stefan Blumentrath
@@ -48,6 +48,7 @@ comes with GRASS for details.
 
 # ruff: noqa: PTH207
 
+import os
 import shutil
 import sys
 from functools import partial
@@ -65,7 +66,12 @@ def transfer(source, target=None, move=False, overwrite=False):
         target_name = target / source.name
         if target_name.exists():
             if not overwrite:
-                gs.fatal(_("Target <{}> exists. Please use the overwrite flag."))
+                # Raise instead of gs.fatal() to not block multiprocessing
+                raise RuntimeError(
+                    _("Target <{}> exists. Please use the overwrite flag.").format(
+                        target_name
+                    )
+                )
             target_name.unlink()
         if move:
             gs.verbose(
@@ -85,7 +91,7 @@ def transfer(source, target=None, move=False, overwrite=False):
         )
         target_dir = target / source.name
         if target_dir.exists() and not overwrite:
-            gs.fatal(
+            raise RuntimeError(
                 _("Target <{}> exists. Please use the overwrite flag.").format(
                     str(target_dir)
                 )
@@ -120,14 +126,17 @@ def main():
     transfer_function = partial(
         transfer, target=target_directory, move=flags["m"], overwrite=flags["o"]
     )
-    nprocs = int(options["nprocs"])
+    nprocs = int(options["nprocs"]) or os.cpu_count() or 1
 
-    if nprocs > 1:
-        with Pool(nprocs) as pool:
-            pool.map(transfer_function, paths_to_transfer)
-    else:
-        for transfer_path in paths_to_transfer:
-            transfer_function(transfer_path)
+    try:
+        if nprocs > 1:
+            with Pool(nprocs) as pool:
+                pool.map(transfer_function, paths_to_transfer)
+        else:
+            for transfer_path in paths_to_transfer:
+                transfer_function(transfer_path)
+    except RuntimeError as error:
+        gs.fatal(str(error))
 
 
 if __name__ == "__main__":

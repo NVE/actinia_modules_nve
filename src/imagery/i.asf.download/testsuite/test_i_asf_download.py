@@ -9,11 +9,13 @@ for details.
 """
 
 import os
+import unittest
 
 import grass.script as gs
 from grass.gunittest.case import TestCase
 
 
+@unittest.skip("ASF currently not used and test requires up-to-date token.")
 class TestAggregationAbsolute(TestCase):
     @classmethod
     def setUpClass(cls):

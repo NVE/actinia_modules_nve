@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#!/usr/bin/env python3
 """MODULE:    t.rast.exporttree
 AUTHOR(S): Stefan Blumentrath
 PURPOSE:   Transfer raster map files from STRDS in external GDAL format to target directory

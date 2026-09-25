@@ -647,7 +647,7 @@ def main():
     mapset = Mapset()
 
     # Get number of cores to use for processing
-    nprocs = int(options["nprocs"])
+    nprocs = int(options["nprocs"]) or os.cpu_count() or 1
 
     # Add gisenv to options
     options.update(gs.gisenv())

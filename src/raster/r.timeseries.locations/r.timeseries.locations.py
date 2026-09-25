@@ -368,6 +368,7 @@ def main() -> None:
     where = f"domain_id = {options['domain_id']} AND parent_id IS NULL"
     continuous_subdivision_map = options["continuous_subdivision_map"]
     schema, layer = options["layer"].split(".")
+    nprocs = int(options["nprocs"]) or os.cpu_count() or 1
 
     if options["keepass_file"]:
         if "KEEPASS_PWD" not in os.environ:
@@ -474,7 +475,7 @@ def main() -> None:
             )
             mc_expression = f"""{options["locations_subunits"]}=int(graph({locations},{", ".join(f"{cat}, int({create_sub_graph(values)})" for cat, values in range_dict.items())}))"""
 
-        Module("r.mapcalc", expression=mc_expression, nprocs=int(options["nprocs"]))
+        Module("r.mapcalc", expression=mc_expression, nprocs=nprocs)
 
         # Add category labels
         Module(

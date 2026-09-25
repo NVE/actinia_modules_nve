@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#!/usr/bin/env python3
 """
 MODULE:    t.rast.copytree
 AUTHOR(S): Stefan Blumentrath

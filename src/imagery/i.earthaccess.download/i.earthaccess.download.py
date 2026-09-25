@@ -186,6 +186,7 @@ COPYRIGHT: (C) 2024 by NVE, Stefan Blumentrath
 # %end
 
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -703,7 +704,7 @@ def main() -> None:
         gs.info(_("No data granules to download found for the given search criteria."))
         sys.exit(0)
 
-    nprocs = int(options["nprocs"])
+    nprocs = int(options["nprocs"]) or os.cpu_count() or 1
     gs.verbose(
         _("Start downloading {n} granules using {p} threads.").format(
             n=len(data_granules),
