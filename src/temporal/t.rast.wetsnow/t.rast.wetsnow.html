@@ -18,12 +18,13 @@ The pattern may include the mapset name where the reference data is stored.
 The raster maps in the reference data groups are expected to have the following
 semantic labels:
 <ol>
-  <li>VH: Average backscatter in VH polarization</li>
-  <li>VV: Average backscatter in VV polarization</li>
+  <li>VH: Average backscatter in VH polarization (required)</li>
+  <li>VV: Average backscatter in VV polarization (required)</li>
   <li>linc: Local incidence angle (optional if linc_weight is present)</li>
   <li>linc_weight: Weight for the local incidence angle (optional)</li>
-  <li>mask: Binary mask indicating valid pixels (combination of landcover and layover shadow)</li>
-  <li>mask_high_resolution: High-resolution binary mask indicating valid pixels</li>
+  <li>mask_high_resolution: High-resolution binary mask indicating valid pixels
+    (combination of landcover and layover shadow) (required)</li>
+  <li>mask: Binary mask resampled to target resolution (optional)</li>
 </ol>
 
 
