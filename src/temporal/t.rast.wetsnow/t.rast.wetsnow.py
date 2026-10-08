@@ -169,6 +169,7 @@ def _reduce_noise(
     nprocs: int = 1,
     memory: int = 2048,
     temp_name: str = TEMP_NAME,
+    env: dict | None = None,
 ) -> str:
     """Reduce noise in a raster map by reclassifying, resampling and filtering.
 
@@ -186,10 +187,12 @@ def _reduce_noise(
     :param int nprocs: Number of parallel processes to use for tool calls
     :param int memory: Memory in MB to use for tool calls
     :param str temp_name: Prefix used to name temporary raster maps
+    :param dict env: Environment to run tools in, shared with any active
+        mask/region managers; ``os.environ`` is used if None
     :return: Name of the resulting (possibly unmodified) raster map
     :rtype: str
     """
-    tools = Tools()
+    tools = Tools(env=env)
     result_name = raster_map
     raster_map_basename = next(iter(raster_map.split("@")))
     rmap_info = tools.r_info(map=raster_map, format="json").json
@@ -203,7 +206,7 @@ def _reduce_noise(
         or aggregate_resolution
     ):
         reclassed_map = f"{temp_name}_{raster_map_basename}_rc"
-        with gs.RegionManager(raster=raster_map, align=raster_map):
+        with gs.RegionManager(raster=raster_map, align=raster_map, env=env):
             tools.r_mapcalc(
                 expression=f"{reclassed_map}=if({input_map} >= {nodata_threshold}, {input_map}, null())",
                 nprocs=nprocs,
@@ -310,8 +313,6 @@ def compute_wet_snow(
     vh_map_reference = reference_maps["VH"]
     linc_weight = reference_maps.get("linc_weight")
     linc = reference_maps.get("linc")
-    if not linc_weight and not linc:
-        gs.fatal(_("Reference data must contain linc or linc_weight."))
     current_region = tools.g_region(flags="up", format="json").json
     resolution = int(current_region["nsres"])
     # Apply mask to all following operations
@@ -325,6 +326,7 @@ def compute_wet_snow(
             nprocs=nprocs,
             memory=memory,
             temp_name=temp_name,
+            env=env,
         )
         vh_map = _reduce_noise(
             vh_map,
@@ -335,10 +337,11 @@ def compute_wet_snow(
             nprocs=nprocs,
             memory=memory,
             temp_name=temp_name,
+            env=env,
         )
         start_time, end_time = timestamps
         result_map = (
-            f"{basename if mode_filter > 0 else temp_name}_"
+            f"{basename if mode_filter <= 0 else temp_name}_"
             f"{resolution}m_{track}_{start_time.strftime('%Y%m%d%H%M%S')}"
         )
         difference_vv = f"{vv_map} - {vv_map_reference}"
@@ -410,6 +413,8 @@ def get_reference_data(pattern: str) -> dict:
     :rtype: dict
     """
     groups_dict = {}
+    required_keys = {"VV", "VH", "mask_high_resolution"}
+    alternative_keys = {"linc", "linc_weight"}
     tools = Tools()
     mapset = None
     pattern_no_mapset = pattern
@@ -427,7 +432,29 @@ def get_reference_data(pattern: str) -> dict:
         if track is None:
             gs.warning(_("Group %s does not contain a track number.") % group)
             continue
-        groups_dict.update({track: gs.imagery.group_to_dict(group)})
+        group_dict = gs.imagery.group_to_dict(group)
+        missing_required = required_keys - set(group_dict)
+        if missing_required:
+            gs.warning(
+                _("Group %s is missing required semantic_label(s) <%s>.")
+                % (group, ", ".join(missing_required))
+            )
+            continue
+        missing_alternatives = alternative_keys - set(group_dict)
+        if missing_alternatives:
+            if len(missing_alternatives) == len(alternative_keys):
+                gs.warning(
+                    _("Group %s is missing all alternative semantic_labels <%s>.")
+                    % (group, ", ".join(missing_alternatives))
+                )
+                continue
+            gs.warning(
+                _("Group %s is missing the optional semantic_labels <%s>.")
+                % (group, next(iter(missing_alternatives)))
+            )
+        if "mask" not in group_dict:
+            gs.warning(_("Group %s is missing semantic label <mask>.") % group)
+        groups_dict.update({track: group_dict})
     if not groups_dict:
         gs.fatal(_("No reference data found with pattern <%s>") % pattern)
     return groups_dict
@@ -542,7 +569,7 @@ def register_in_tgis(
     :param bool overwrite: Whether to overwrite a existing output
     """
     tools = Tools()
-    output_id = f"{output}@{tgis.get_current_mapset()}"
+    output_id = output if "@" in output else f"{output}@{tgis.get_current_mapset()}"
     output_stds = tgis.dataset_factory("strds", output_id)
     output_stds_exists = output_stds.is_in_db()
     recreate = False
