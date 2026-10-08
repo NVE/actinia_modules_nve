@@ -196,7 +196,7 @@ def _reduce_noise(
     aggregate_resolution = (
         rmap_info["ewres"] < resolution or rmap_info["nsres"] < resolution
     )
-    input_map = raster_map_basename
+    input_map = raster_map
     if (
         (nodata_threshold and nodata_threshold > rmap_info["min"])
         or filter_size > 0
@@ -212,11 +212,7 @@ def _reduce_noise(
         result_name = reclassed_map
         input_map = reclassed_map
     if aggregate_resolution:
-        resampled_map = (
-            f"{raster_map_basename}_{resolution}m"
-            if filter_size == 0
-            else f"{temp_name}_{raster_map_basename}"
-        )
+        resampled_map = f"{temp_name}_{raster_map_basename}_{resolution}m"
         tools.r_resamp_stats(
             flags="w",
             input=input_map,
@@ -312,8 +308,10 @@ def compute_wet_snow(
     # Get reference_maps
     vv_map_reference = reference_maps["VV"]
     vh_map_reference = reference_maps["VH"]
-    linc_weight = reference_maps["linc_weight"]
-    linc = reference_maps["linc"]
+    linc_weight = reference_maps.get("linc_weight")
+    linc = reference_maps.get("linc")
+    if not linc_weight and not linc:
+        gs.fatal(_("Reference data must contain linc or linc_weight."))
     current_region = tools.g_region(flags="up", format="json").json
     resolution = int(current_region["nsres"])
     # Apply mask to all following operations
@@ -374,6 +372,7 @@ def compute_wet_snow(
                 memory=memory,
                 overwrite=overwrite,
             )
+            result_map = f"{result_map}_mode_{mode_filter:02}"
     # Remove temporary data
     tools.g_remove(type="raster", pattern=f"{temp_name}*", flags="f", quiet=True)
     if end_time:
@@ -443,6 +442,8 @@ def parse_semantic_label(semantic_label: str) -> tuple[str, int] | None:
         could not be found in the semantic label
     :rtype: tuple[str, int] | None
     """
+    if not semantic_label:
+        return None
     name = semantic_label.replace("S1", "")
     pol = re.search(r"(?P<polarization>VV|VH|vv|vh)", name)
     track_str = re.search(r"(?P<track>\d{1,3})", name)
@@ -450,7 +451,7 @@ def parse_semantic_label(semantic_label: str) -> tuple[str, int] | None:
         return None
     if not track_str:
         return None
-    return pol.group("polarization"), int(track_str.group("track"))
+    return pol.group("polarization").upper(), int(track_str.group("track"))
 
 
 def group_input_maps(map_list: list[Row]) -> dict:
@@ -565,6 +566,7 @@ def register_in_tgis(
 
     with NamedTemporaryFile("wt", encoding="utf-8") as register_file:
         register_file.write("".join(map_list))
+        register_file.flush()
         tools.t_register(
             input=output_id,
             file=register_file.name,
