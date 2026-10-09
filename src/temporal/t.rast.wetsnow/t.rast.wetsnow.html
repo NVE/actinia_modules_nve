@@ -1,0 +1,78 @@
+<h2>DESCRIPTION</h2>
+
+<em>t.rast.wetsnow</em> detects wet snow in dBi-scaled
+backscatter data from Sentinel-1 C-band SAR. It is based on an algorithm
+by Nagler et al. (2008) for wet snow detection.
+
+<b>input</b> is a time series of geocoded Sentinel-1 C-band SAR backscatter
+data scaled to <em>dbi</em> values, where <em>polarization</em> and
+<em>track</em> information are part of the semantic labels of the
+maps in the <b>input</b> SpaceTimeRasterDataset (STRDS).
+
+<b>output</b> is a SpaceTimeRasterDataset (STRDS) where wet snow detection results
+will be registered. It will be created or extended if the <b>e</b>-flag is set.
+
+Reference data are expected to be provided as imagery group(s) for each
+<em>track</em> that can be found using the <b>reference_pattern</b>.
+The pattern may include the mapset name where the reference data is stored.
+The raster maps in the reference data groups are expected to have the following
+semantic labels:
+<ol>
+  <li>VH: Average backscatter in VH polarization (required)</li>
+  <li>VV: Average backscatter in VV polarization (required)</li>
+  <li>linc: Local incidence angle (optional if linc_weight is present)</li>
+  <li>linc_weight: Weight for the local incidence angle (optional)</li>
+  <li>mask_high_resolution: High-resolution binary mask indicating valid pixels
+    (combination of landcover and layover shadow) (required)</li>
+  <li>mask: Binary mask resampled to target resolution (optional)</li>
+</ol>
+
+
+<h2>EXAMPLES</h2>
+
+<div class="code"><pre>
+t.rast.wetsnow \
+  input="Sentinel_1_GRDH_20m_daily_backscatter_intensity@Sentinel_1_GRDH_20m_daily_backscatter_intensity" \
+  output="Sentinel_1_WetSnow"
+  basename="Sentinel_1_WetSnow" \
+  reference_pattern="Sentinel_1_*" \
+  size=5 \
+  mode_size=3 \
+  k=0.5 \
+  nodata_threshold=-30.0 \
+  detection_threshold=-12.0,-1.4 \
+  memory=2048 \
+  method=median \
+  nprocs=8 \
+  where="start_time >= '2026-04-01 00:00:00' AND start_time <= '2026-05-31 00:00:00'" \
+  --overwrite --verbose
+</pre></div>
+
+<h2>REFERENCES</h2>
+
+<ul>
+  <li>Malnes, E. 2024: Deteksjon av våt snø med Sentinel-1. Teknisk Notat NORCE (unpublished)
+    Notat nr. 1. 105910</li>
+  <li>Malnes, E. & Guneriussen, T. 2002: Mapping of snow covered area with Radarsat in Norway.
+    IEEE International Geoscience and Remote Sensing Symposium (1):683-685.</li>
+  <li>Nagler, T. & Rott, H. 2000: Retrieval of wet snow by means of multitemporal SAR data.
+    IEEE Transactions on Geoscience and Remote Sensing. (38):754-765. 10.1109/36.842004.</li>
+  <li>Nagler, T., Rott, H., Ripper, E., Bippus, G., & Hetzenecker, M. 2016: Advancements
+    for snowmelt monitoring by means of Sentinel-1 SAR. Remote Sensing, 8(4):348.</li>
+  <li>Vickers, H., Malnes, E., & Eckerstorfer, M. (2022). A Synthetic Aperture Radar Based
+    Method for Long Term Monitoring of Seasonal Snowmelt and Wintertime Rain-On-Snow Events
+    in Svalbard. Frontiers in Earth Science (10):868945.</li>
+</ul>
+
+<h2>SEE ALSO</h2>
+
+<em>
+<a href="r.mapcalc.html">r.mapcalc</a>,
+<a href="t.rast.mapcalc.html">t.rast.mapcalc</a>
+</em>
+<p>
+<a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing">Temporal data processing Wiki</a>
+
+<h2>AUTHOR</h2>
+
+Stefan Blumentrath (NVE)
