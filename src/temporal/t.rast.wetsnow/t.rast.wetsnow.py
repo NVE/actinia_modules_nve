@@ -125,9 +125,14 @@
 # % description: Extend to existing output STRDS (requires overwrite flag)
 # %end
 
+
+# ToDo:
+# - handle mask after noise reduction (leaking neighborhood values)
+
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -147,6 +152,9 @@ import grass.script as gs
 from grass.tools import Tools
 
 TEMP_NAME = gs.tempname(12)
+
+# Satellite pass direction, as extracted from semantic labels
+Direction = Literal["ascending", "descending"]
 
 
 def cleanup() -> None:
@@ -200,13 +208,9 @@ def _reduce_noise(
         rmap_info["ewres"] < resolution or rmap_info["nsres"] < resolution
     )
     input_map = raster_map
-    if (
-        (nodata_threshold and nodata_threshold > rmap_info["min"])
-        or filter_size > 0
-        or aggregate_resolution
-    ):
+    if nodata_threshold is not None and nodata_threshold > rmap_info["min"]:
         reclassed_map = f"{temp_name}_{raster_map_basename}_rc"
-        with gs.RegionManager(raster=raster_map, align=raster_map, env=env):
+        with gs.RegionManager(align=raster_map, env=env):
             tools.r_mapcalc(
                 expression=f"{reclassed_map}=if({input_map} >= {nodata_threshold}, {input_map}, null())",
                 nprocs=nprocs,
@@ -250,6 +254,7 @@ def compute_wet_snow(
     vh_map: str,
     reference_maps: dict,
     *,
+    direction: Direction | None = None,
     method: str = "median",
     median_filter: int = 5,
     mode_filter: int = 3,
@@ -279,6 +284,8 @@ def compute_wet_snow(
     :param dict reference_maps: Reference maps for the track, with keys
         ``VV``, ``VH``, ``linc``, ``linc_weight`` and
         ``mask_high_resolution``
+    :param Direction direction: Satellite pass direction of the input maps,
+        appended to the output map name and semantic label if given
     :param str method: Method used for noise filtering
     :param int median_filter: Neighborhood size for noise filtering
     :param int mode_filter: Neighborhood size for mode filtering of the
@@ -340,10 +347,9 @@ def compute_wet_snow(
             env=env,
         )
         start_time, end_time = timestamps
-        result_map = (
-            f"{basename if mode_filter <= 0 else temp_name}_"
-            f"{resolution}m_{track}_{start_time.strftime('%Y%m%d%H%M%S')}"
-        )
+        direction_suffix = f"_{direction}" if direction else ""
+        result_suffix = f"{resolution}m_{track}{direction_suffix}_{start_time.strftime('%Y%m%d%H%M%S')}"
+        result_map = f"{temp_name if mode_filter > 0 else basename}_{result_suffix}"
         difference_vv = f"{vv_map} - {vv_map_reference}"
         difference_vh = f"{vh_map} - {vh_map_reference}"
         mc_expression = ""
@@ -366,21 +372,23 @@ def compute_wet_snow(
             overwrite=overwrite,
         )
         if mode_filter > 0:
+            final_map = f"{basename}_{result_suffix}_mode_{mode_filter:02}"
             tools.r_neighbors(
                 input=result_map,
-                output=f"{result_map}_mode_{mode_filter:02}",
+                output=final_map,
                 method="mode",
                 size=mode_filter,
                 nprocs=nprocs,
                 memory=memory,
                 overwrite=overwrite,
             )
-            result_map = f"{result_map}_mode_{mode_filter:02}"
+            result_map = final_map
     # Remove temporary data
     tools.g_remove(type="raster", pattern=f"{temp_name}*", flags="f", quiet=True)
+    semantic_label = f"S1_WetSnow_{track}{direction_suffix}"
     if end_time:
-        return f"{result_map}@{mapset}|{start_time}|{end_time}|S1_WetSnow_{track}\n"
-    return f"{result_map}@{mapset}|{start_time}|S1_WetSnow_{track}\n"
+        return f"{result_map}@{mapset}|{start_time}|{end_time}|{semantic_label}\n"
+    return f"{result_map}@{mapset}|{start_time}|{semantic_label}\n"
 
 
 def extract_track_number(name: str, pattern: str) -> int | None:
@@ -460,34 +468,44 @@ def get_reference_data(pattern: str) -> dict:
     return groups_dict
 
 
-def parse_semantic_label(semantic_label: str) -> tuple[str, int] | None:
+def parse_semantic_label(
+    semantic_label: str,
+) -> tuple[str, int, Direction | None] | None:
     """Extract track number and polarization from semantic label.
 
     :param str semantic_label: Semantic label of a registered map, expected
         to contain a polarization (VV/VH) and a track number
-    :return: Tuple of polarization and track number, or None if either
+    :return: Tuple of polarization, track number, and optionally direction
+        (if part of the semantic label), or None if either track or polarization
         could not be found in the semantic label
-    :rtype: tuple[str, int] | None
+    :rtype: tuple[str, int, Direction | None] | None
     """
     if not semantic_label:
         return None
     name = semantic_label.replace("S1", "")
     pol = re.search(r"(?P<polarization>VV|VH|vv|vh)", name)
     track_str = re.search(r"(?P<track>\d{1,3})", name)
+    direction = re.search(r"(?P<direction>ascending|descending)", name.lower())
     if not pol:
         return None
     if not track_str:
         return None
-    return pol.group("polarization").upper(), int(track_str.group("track"))
+    return (
+        pol.group("polarization").upper(),
+        int(track_str.group("track")),
+        direction.group("direction") if direction else None,
+    )
 
 
 def group_input_maps(map_list: list[Row]) -> dict:
-    """Group registered maps by track and time step, keyed by polarization.
+    """Group registered maps by track, direction and time step.
 
     :param list[sqlite3.Row]: Registered maps as returned by
         :func:`SpaceTimeRasterDataset.get_registered_maps`
-    :return: Mapping of track number to a mapping of
-        ``(start_time, end_time)`` to a mapping of polarization to map id
+    :return: Mapping of track number to a mapping of direction (direction
+        is None if it could not be extracted from the semantic label) to a
+        mapping of ``(start_time, end_time)`` to a mapping of polarization
+        to map id
     :rtype: dict
     """
     scenes_dict = {}
@@ -506,20 +524,10 @@ def group_input_maps(map_list: list[Row]) -> dict:
                 % (m["semantic_label"], m["id"]),
             )
             continue
-        polarization, track = pol_and_track
-        if track in scenes_dict:
-            if (m["start_time"], m["end_time"]) in scenes_dict[track]:
-                scenes_dict[track][m["start_time"], m["end_time"]][polarization] = m[
-                    "id"
-                ]
-            else:
-                scenes_dict[track][m["start_time"], m["end_time"]] = {
-                    polarization: m["id"],
-                }
-        else:
-            scenes_dict[track] = {
-                (m["start_time"], m["end_time"]): {polarization: m["id"]},
-            }
+        polarization, track, direction = pol_and_track
+        temporal_extents = scenes_dict.setdefault(track, {}).setdefault(direction, {})
+        temporal_key = (m["start_time"], m["end_time"])
+        temporal_extents.setdefault(temporal_key, {})[polarization] = m["id"]
     return scenes_dict
 
 
@@ -639,11 +647,17 @@ def main() -> None:
         input_stds.get_registered_maps(where=options["where"]),
     )
 
-    # Drop time steps with missing polarization, and tracks left with none
+    # Drop time steps with missing polarization, and directions/tracks left with none
     raster_maps = {
-        track: complete_extents
-        for track, temporal_extents in raster_maps.items()
-        if (complete_extents := check_complete_polarizations(temporal_extents))
+        track: filtered_directions
+        for track, directions in raster_maps.items()
+        if (
+            filtered_directions := {
+                direction: complete_extents
+                for direction, temporal_extents in directions.items()
+                if (complete_extents := check_complete_polarizations(temporal_extents))
+            }
+        )
     }
 
     reference_maps = get_reference_data(options["reference_pattern"])
@@ -674,6 +688,7 @@ def main() -> None:
             raster_map_dict["VV"],
             raster_map_dict["VH"],
             reference_maps[track],
+            direction=direction,
             basename=basename,
             nprocs=1,
             memory=memory,
@@ -685,10 +700,13 @@ def main() -> None:
             lower_detection_threshold=lower_detection_threshold,
             nodata_threshold=nodata_threshold,
             overwrite=overwrite,
-            temp_name=f"{TEMP_NAME}_{track}_{temporal_extent[0].strftime('%Y%m%d%H%M%S')}",
+            temp_name=(
+                f"{TEMP_NAME}_{track}_{direction}_{temporal_extent[0].strftime('%Y%m%d%H%M%S')}"
+            ),
             mapset=gs.gisenv()["MAPSET"],
         )
-        for track, temporal_extents in raster_maps.items()
+        for track, directions in raster_maps.items()
+        for direction, temporal_extents in directions.items()
         for temporal_extent, raster_map_dict in temporal_extents.items()
     ]
 
