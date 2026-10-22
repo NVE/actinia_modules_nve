@@ -237,6 +237,7 @@ def _reduce_noise(
         )
         tools.r_neighbors(
             input=input_map,
+            selection=input_map,
             output=result_name,
             method=method,
             size=filter_size,
@@ -375,6 +376,7 @@ def compute_wet_snow(
             final_map = f"{basename}_{result_suffix}_mode_{mode_filter:02}"
             tools.r_neighbors(
                 input=result_map,
+                selection=result_map,
                 output=final_map,
                 method="mode",
                 size=mode_filter,
