@@ -658,8 +658,11 @@ def main() -> None:
     # Assumes input STDS has semantic labels that identify polarization and track:
     # with semantic_labels like e.g.: VV_dbi_110_descending
     input_stds = tgis.open_old_stds(options["input"], "strds")
+    where = f"max IS NOT NULL AND max >= {nodata_threshold}"
+    if options["where"]:
+        where = f"({options['where']}) AND ({where})"
     raster_maps = group_input_maps(
-        input_stds.get_registered_maps(where=options["where"]),
+        input_stds.get_registered_maps(where=where) or [],
     )
 
     # Drop time steps with missing polarization, and directions/tracks left with none
@@ -674,6 +677,10 @@ def main() -> None:
             }
         )
     }
+
+    if not any(raster_maps.values()):
+        gs.warning(_("No raster maps found to process. Please check your input."))
+        return
 
     reference_maps = get_reference_data(options["reference_pattern"])
 

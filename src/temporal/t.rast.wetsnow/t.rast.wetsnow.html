@@ -4,17 +4,24 @@
 backscatter data from Sentinel-1 C-band SAR. It is based on an algorithm
 by Nagler et al. (2008) for wet snow detection.
 
+<p>
 <b>input</b> is a time series of geocoded Sentinel-1 C-band SAR backscatter
 data scaled to <em>dbi</em> values, where <em>polarization</em> and
 <em>track</em> information are part of the semantic labels of the
 maps in the <b>input</b> SpaceTimeRasterDataset (STRDS).
 
+<p>
 <b>output</b> is a SpaceTimeRasterDataset (STRDS) where wet snow detection results
 will be registered. It will be created or extended if the <b>e</b>-flag is set.
 
+<p>
 Reference data are expected to be provided as imagery group(s) for each
 <em>track</em> that can be found using the <b>reference_pattern</b>.
 The pattern may include the mapset name where the reference data is stored.
+Time steps are skipped when either the VV or VH raster contains no backscatter
+values at or above <b>nodata_threshold</b>.
+
+<p>
 The raster maps in the reference data groups are expected to have the following
 semantic labels:
 <ol>
