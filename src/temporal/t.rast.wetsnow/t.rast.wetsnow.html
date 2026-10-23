@@ -59,7 +59,7 @@ semantic labels:
 <div class="code"><pre>
 t.rast.wetsnow \
   input="Sentinel_1_GRDH_20m_daily_backscatter_intensity@Sentinel_1_GRDH_20m_daily_backscatter_intensity" \
-  output="Sentinel_1_WetSnow"
+  output="Sentinel_1_WetSnow" \
   basename="Sentinel_1_WetSnow" \
   reference_pattern="Sentinel_1_*" \
   size=5 \
@@ -70,7 +70,7 @@ t.rast.wetsnow \
   memory=2048 \
   method=median \
   nprocs=8 \
-  where="start_time >= '2026-04-01 00:00:00' AND start_time <= '2026-05-31 00:00:00'" \
+  where="start_time &gt;= '2026-04-01 00:00:00' AND start_time &lt;= '2026-05-31 00:00:00'" \
   --overwrite --verbose
 </pre></div>
 
