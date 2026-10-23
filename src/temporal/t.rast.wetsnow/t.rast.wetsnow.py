@@ -349,7 +349,11 @@ def compute_wet_snow(
         )
         start_time, end_time = timestamps
         direction_suffix = f"_{direction}" if direction else ""
-        result_suffix = f"{resolution}m_{track}{direction_suffix}_{start_time.strftime('%Y%m%d%H%M%S')}"
+        end_suffix = f"_{end_time.strftime('%Y%m%d%H%M%S')}" if end_time else ""
+        result_suffix = (
+            f"{resolution}m_{track}{direction_suffix}_"
+            f"{start_time.strftime('%Y%m%d%H%M%S')}{end_suffix}"
+        )
         result_map = f"{temp_name if mode_filter > 0 else basename}_{result_suffix}"
         difference_vv = f"{vv_map} - {vv_map_reference}"
         difference_vh = f"{vh_map} - {vh_map_reference}"
