@@ -628,12 +628,21 @@ def main() -> None:
         if value != 0 and value % 2 == 0:
             gs.fatal(_("Option <%s> must be odd, got %i.") % (label, value))
     k = float(options["k"])  # 0.5
-    detection_thresholds = sorted(
-        map(
-            float,
-            options["detection_thresholds"].split(","),
-        ),
-    )
+    detection_thresholds = options["detection_thresholds"].split(",")
+    if len(detection_thresholds) != 2:
+        gs.fatal(
+            _(
+                "Invalid input for detection_threshold. Must be exactly two floating point values. Got <{}>."
+            ).format(options["detection_thresholds"])
+        )
+    try:
+        detection_thresholds = sorted(map(float, detection_thresholds))
+    except:
+        gs.fatal(
+            _("Invalid input for detection_threshold <{}>").format(
+                options["detection_thresholds"]
+            )
+        )
     upper_detection_threshold = max(detection_thresholds)
     lower_detection_threshold = min(detection_thresholds)
     nodata_threshold = float(options["nodata_threshold"])
