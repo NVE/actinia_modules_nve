@@ -400,7 +400,8 @@ def compute_wet_snow(
 def extract_track_number(name: str, pattern: str) -> int | None:
     """Extract track number from group name using pattern.
 
-    Using unnamed groups. Alternative would be users specifying a full re pattern.
+    Only the portion matched by ``*`` is searched for the track number.
+    Fixed prefixes, suffixes and optional mapset names are excluded.
 
     :param str name: Name of the imagery group to match
     :param str pattern: Pattern with a single ``*`` wildcard marking the
@@ -408,13 +409,45 @@ def extract_track_number(name: str, pattern: str) -> int | None:
     :return: Extracted track number, or None if no match or no digits found
     :rtype: int | None
     """
-    regex = re.escape(pattern).replace(r"\*", r"(.+)")
-    match = re.fullmatch(regex, name)
-    if not match:
+    group_pattern, mapset = validate_reference_pattern(pattern)
+    group_name, separator, name_mapset = name.partition("@")
+    if mapset is not None and separator and name_mapset != mapset:
         return None
-    wildcard = match.group(1)
+    prefix, suffix = group_pattern.split("*")
+    if not group_name.startswith(prefix) or not group_name.endswith(suffix):
+        return None
+    wildcard_end = len(group_name) - len(suffix)
+    if wildcard_end <= len(prefix):
+        return None
+    wildcard = group_name[len(prefix) : wildcard_end]
     num = re.search(r"\d{1,3}", wildcard)
     return int(num.group()) if num else None
+
+
+def validate_reference_pattern(pattern: str) -> tuple[str, str | None]:
+    """Validate and split a reference group pattern and optional mapset.
+
+    Require exactly one ``*`` in the group-name portion, no other glob
+    operators, and a nonempty literal mapset when an ``@`` suffix is given.
+    Invalid patterns are reported as fatal errors.
+    """
+    group_pattern, separator, mapset = pattern.partition("@")
+    if group_pattern.count("*") != 1:
+        gs.fatal(
+            _("Reference pattern <%s> must contain exactly one '*' in the group name.")
+            % pattern
+        )
+    if any(character in group_pattern for character in "?[]"):
+        gs.fatal(
+            _("Reference pattern <%s> does not support '?' or character classes.")
+            % pattern
+        )
+    if separator and (not mapset or any(character in mapset for character in "@*?[]")):
+        gs.fatal(
+            _("Reference pattern <%s> must have a nonempty, literal mapset suffix.")
+            % pattern
+        )
+    return group_pattern, mapset if separator else None
 
 
 def get_reference_data(pattern: str) -> dict:
@@ -426,14 +459,11 @@ def get_reference_data(pattern: str) -> dict:
         returned by :func:`grass.script.imagery.group_to_dict`
     :rtype: dict
     """
+    pattern_no_mapset, mapset = validate_reference_pattern(pattern)
     groups_dict = {}
     required_keys = {"VV", "VH", "mask_high_resolution"}
     alternative_keys = {"linc", "linc_weight"}
     tools = Tools()
-    mapset = None
-    pattern_no_mapset = pattern
-    if "@" in pattern:
-        pattern_no_mapset, mapset = pattern.split("@", 1)
     groups = tools.g_list(
         type="group",
         pattern=pattern_no_mapset,
@@ -468,6 +498,14 @@ def get_reference_data(pattern: str) -> dict:
             )
         if "mask" not in group_dict:
             gs.warning(_("Group %s is missing semantic label <mask>.") % group)
+        if track in groups_dict:
+            gs.warning(
+                _(
+                    "Multiple reference groups resolve to track %s. "
+                    "Using group <%s> instead of the previously selected group."
+                )
+                % (track, group)
+            )
         groups_dict.update({track: group_dict})
     if not groups_dict:
         gs.fatal(_("No reference data found with pattern <%s>") % pattern)
@@ -652,6 +690,8 @@ def main() -> None:
     nodata_threshold = float(options["nodata_threshold"])
     memory = int(options["memory"])
 
+    reference_maps = get_reference_data(options["reference_pattern"])
+
     # Initialize TGIS
     tgis.init()
 
@@ -681,8 +721,6 @@ def main() -> None:
     if not any(raster_maps.values()):
         gs.warning(_("No raster maps found to process. Please check your input."))
         return
-
-    reference_maps = get_reference_data(options["reference_pattern"])
 
     missing_reference = sorted(set(raster_maps).difference(set(reference_maps)))
     if missing_reference:
