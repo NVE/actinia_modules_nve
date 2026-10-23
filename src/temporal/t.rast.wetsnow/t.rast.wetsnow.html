@@ -11,15 +11,34 @@ data scaled to <em>dbi</em> values, where <em>polarization</em> and
 maps in the <b>input</b> SpaceTimeRasterDataset (STRDS).
 
 <p>
+Time steps are skipped when either the VV or VH input raster contains no
+backscatter values at or above <b>nodata_threshold</b>. All backscatter pixels
+with values below the threshold are considered as no data.
+
+<p>
 <b>output</b> is a SpaceTimeRasterDataset (STRDS) where wet snow detection results
 will be registered. It will be created or extended if the <b>e</b>-flag is set.
+Resulting raster maps within the STRDS contain a binary classification where the
+value 1 represents "wet snow" and 0 represents "no wet snow". All input pixels
+considered as no data are also marked as no data in the output.
 
 <p>
 Reference data are expected to be provided as imagery group(s) for each
 <em>track</em> that can be found using the <b>reference_pattern</b>.
 The pattern may include the mapset name where the reference data is stored.
-Time steps are skipped when either the VV or VH raster contains no backscatter
-values at or above <b>nodata_threshold</b>.
+The group-name pattern must contain exactly one <em>*</em> wildcard marking
+the portion containing the track number, for example
+<em>Sentinel_1_reference_*</em>. Other wildcard syntax such as <em>?</em>
+or character classes is not supported. The wildcard-matched portion should
+contain only one number, the one-to-three-digit track number. Avoid years,
+dates, or other numbers in this portion: extraction uses the first sequence
+of up to three digits. For example, <em>Sentinel_1_reference_2026_110</em>
+matched by <em>Sentinel_1_reference_*</em> is interpreted as track
+<em>202</em>, not <em>110</em>. Use <em>Sentinel_1_reference_2026_*</em> instead.
+If the <b>reference_pattern</b> includes the <em>@mapset</em> suffix, reference
+data is read only from the specified mapset. Ensure that only one valid reference
+group matches each track. If several do, a warning is issued and the last group
+returned by <em>g.list</em> is used.
 
 <p>
 The raster maps in the reference data groups are expected to have the following
