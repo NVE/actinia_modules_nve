@@ -373,7 +373,7 @@ def compute_wet_snow(
         )
         with gs.RegionManager(
             raster=",".join(reference_maps.values()),
-            align=mask or vh_map_reference,
+            res=resolution,
             flags="a",
             env=env,
         ):
