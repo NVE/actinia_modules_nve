@@ -184,6 +184,7 @@ from pathlib import Path
 from subprocess import PIPE
 
 import grass.script as gs
+from grass.pygrass.modules.interface import Module
 
 S3_FILE_PATTERN = {
     # "S3OL1ERF": None,
@@ -372,6 +373,7 @@ def process_scene_group(
     """
     gs.verbose(_("Processing scene group {}...").format(scene_group[0]))
 
+    module_options = module_options.copy()
     module_options["basename"] = module_options["basename"] or scene_group[0]
 
     swath_mask_band, swath_mask_buffer = swath_mask
@@ -561,7 +563,6 @@ if __name__ == "__main__":
 
     # Lazy imports
     import grass.temporal as tgis
-    from grass.pygrass.modules.interface import Module
     from grass.temporal.register import register_maps_in_space_time_dataset
 
     sys.exit(main())
