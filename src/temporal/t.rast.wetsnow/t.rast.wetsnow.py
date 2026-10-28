@@ -210,7 +210,7 @@ def _reduce_noise(
     input_map = raster_map
     if nodata_threshold is not None and nodata_threshold > rmap_info["min"]:
         reclassed_map = f"{temp_name}_{raster_map_basename}_rc"
-        with gs.RegionManager(align=raster_map, env=env):
+        with gs.RegionManager(raster=raster_map, align=raster_map, env=env):
             tools.r_mapcalc(
                 expression=f"{reclassed_map}=if({input_map} >= {nodata_threshold}, {input_map}, null())",
                 nprocs=nprocs,
@@ -218,33 +218,32 @@ def _reduce_noise(
             )
         result_name = reclassed_map
         input_map = reclassed_map
-    if aggregate_resolution:
-        resampled_map = f"{temp_name}_{raster_map_basename}_{resolution}m"
-        tools.r_resamp_stats(
-            flags="w",
-            input=input_map,
-            output=resampled_map,
-            method=method,
-            nprocs=nprocs,
-            memory=memory,
-            overwrite=True,
-        )
-        result_name = resampled_map
-        input_map = resampled_map
-    if filter_size > 0:
-        result_name = (
-            f"{temp_name}_{raster_map_basename}_{resolution}m_{method}{filter_size:02}"
-        )
-        tools.r_neighbors(
-            input=input_map,
-            selection=input_map,
-            output=result_name,
-            method=method,
-            size=filter_size,
-            nprocs=nprocs,
-            memory=memory,
-            overwrite=True,
-        )
+    with gs.RegionManager(raster=raster_map, res=resolution, flags="a", env=env):
+        if aggregate_resolution:
+            resampled_map = f"{temp_name}_{raster_map_basename}_{resolution}m"
+            tools.r_resamp_stats(
+                flags="w",
+                input=input_map,
+                output=resampled_map,
+                method=method,
+                nprocs=nprocs,
+                memory=memory,
+                overwrite=True,
+            )
+            result_name = resampled_map
+            input_map = resampled_map
+        if filter_size > 0:
+            result_name = f"{temp_name}_{raster_map_basename}_{resolution}m_{method}{filter_size:02}"
+            tools.r_neighbors(
+                input=input_map,
+                selection=input_map,
+                output=result_name,
+                method=method,
+                size=filter_size,
+                nprocs=nprocs,
+                memory=memory,
+                overwrite=True,
+            )
     return result_name
 
 
@@ -321,6 +320,7 @@ def compute_wet_snow(
     vh_map_reference = reference_maps["VH"]
     linc_weight = reference_maps.get("linc_weight")
     linc = reference_maps.get("linc")
+    mask = reference_maps.get("mask")
     current_region = tools.g_region(flags="up", format="json").json
     resolution = int(current_region["nsres"])
     # Apply mask to all following operations
@@ -371,24 +371,30 @@ def compute_wet_snow(
             f"{result_map}=if(({difference_combined}) < {upper_detection_threshold} && "
             f"({difference_combined}) > {lower_detection_threshold}, 1, 0)"
         )
-        tools.r_mapcalc(
-            expression=mc_expression,
-            nprocs=nprocs,
-            overwrite=overwrite,
-        )
-        if mode_filter > 0:
-            final_map = f"{basename}_{result_suffix}_mode_{mode_filter:02}"
-            tools.r_neighbors(
-                input=result_map,
-                selection=result_map,
-                output=final_map,
-                method="mode",
-                size=mode_filter,
+        with gs.RegionManager(
+            raster=",".join(reference_maps.values()),
+            res=resolution,
+            flags="a",
+            env=env,
+        ):
+            tools.r_mapcalc(
+                expression=mc_expression,
                 nprocs=nprocs,
-                memory=memory,
                 overwrite=overwrite,
             )
-            result_map = final_map
+            if mode_filter > 0:
+                final_map = f"{basename}_{result_suffix}_mode_{mode_filter:02}"
+                tools.r_neighbors(
+                    input=result_map,
+                    selection=result_map,
+                    output=final_map,
+                    method="mode",
+                    size=mode_filter,
+                    nprocs=nprocs,
+                    memory=memory,
+                    overwrite=overwrite,
+                )
+                result_map = final_map
     # Remove temporary data
     tools.g_remove(type="raster", pattern=f"{temp_name}*", flags="f", quiet=True)
     semantic_label = f"S1_WetSnow_{track}{direction_suffix}"
